@@ -11,7 +11,7 @@ exports.signUp = async ( req, res, next ) => {
     try {
         const hashPassw = await bcrypt.hash(userData.password, saltRounds)
         
-        const users = User.find({userName: userData.userName, email: userData.email})
+        const users = await User.find({userName: userData.userName, email: userData.email}).toArray()
         //Si se encontro mas de un usuario
         if ( users.length > 1 ) {
             // console.log(usersfind.recordset[0])
@@ -58,53 +58,46 @@ exports.signUp = async ( req, res, next ) => {
  * @param {*} req 
  * @param {*} res 
  */
-exports.singIn = ( req, res ) => {
+exports.singIn = async ( req, res, next ) => {
     const   userData = matchedData(req);
     let     user =  null;
-
-    User.getUserByUsername( userData.Username )
-    .then( userResult => {
-        user = userResult.recordset[0];
+    
+    try {
+        const user = await User.findOne({ userName: userData.userName })
         if (user) {
-            const passh = user.Password;
+            const isequal = await bcrypt.compare(userData.password, passh);
 
-            return  bcrypt.compare(userData.Password, passh);
-        } else {
-            console.log('Usuario no encontrado!');
-            throw { status: '401', code: 'NEXIST', message: 'El usuario ingresado no existe en la base de dato!' };
-        }
-    })
-    .then((isequal) => {
-        if (isequal) {
-            console.log((!!userData.gettoken) ? 'Se retornara un token' : 'Se retornara la informacion del usuario');
-            if (!!userData.gettoken) {
-                console.log('Mande get token')
-                let {_token : tokenGen, expiration} = jwt.createToken(user);
-                //console.log('Devolviendo token, del usuario '+user.username);
-                console.log('token:' + tokenGen);
-                res.status(200)
-                    .json({ token: tokenGen, expiration });
+            if ( isequal ) {
+                if ( !user.isVerified ) {
+                    throw { status: 401, code: 'NVERIF', message: 'You need to verify your email address in order to login'}
+                }
+                if ( !userData.getUserInfo ) {
+                    console.log('Sending the token')
+                    let {_token : tokenGen, expiration} = await jwt.createToken(user);
+                    res.status(200)
+                        .json({ token: tokenGen, expiration });
+                } else {
+                    console.log('Sending the user info.');
+                    res.status(200)
+                        .json(user);
+                }
             } else {
-                //delete user.password
-                res.status(200)
-                    .json(user);
+                throw { status: 401, code: 'EPASSW', message: 'Wrong Password.' };
             }
         } else {
-            console.log('Las contrasenas no coinciden');
-            throw { status: 401, code: 'EPASSW', message: 'La contraseña es incorrecta' };
+            console.log('User not found!');
+            throw { status: '401', code: 'NEXIST', message: 'User not found!' };
         }
-    })
-    .catch((err) => {
-        console.log('Error principal: ' + err);
-        res.status( res.status || 500)
-            .json(err)
-    })
+    } catch( err ) {
+        next( err );
+    }
 }
 
 exports.getUsers = (req, res) => {
-    const Habilitado = req.query.Habilitado;
+    const filters = matchedData(req, {locations: ['query']});
     
-    User.getUsers( {Habilitado} )
+    User.find( )
+    .toArray()
     .then((result) => {
         res.status(200)
             .json({
@@ -115,20 +108,41 @@ exports.getUsers = (req, res) => {
             .json(error)
     })
 }
-//
+
+exports.verifyEmail = ( req, res, next ) => {
+    const data = matchedData(req, {locations: ['params', 'query']});
+
+    User.findOne({ secretToken: data.token, userName: data.userName})
+    .then(user => {
+        if ( user ) {
+            user.secretToken = null;
+            user.isVerified = true;
+            return user.save()
+        } else {
+            throw { status: 400, code: 'EVERIF', message: "The verify token is not valid." }
+        }
+    })
+    .then((result) => {
+        res.status(200)
+            .json({success: "Welcome to Seven for One, your email is verified!"})  
+    }).catch((err) => {
+        next(err);
+    });
+
+}
+
 exports.updateUser = (req, res) => {
     const userData = matchedData(req, { locations: ['body', 'query']});
-    if (IdUsuario != req.user.sub) {
+    if ( userId != req.user._id ) {
         return res.status(403)
                 .json({ 
                     status: 403, 
                     code: 'EUNAUTH', 
-                    message: 'Este no es tu usuario' 
+                    message: 'You cant not edit this user.' 
                 });
     }
     User.updateUser( userData )
     .then( result => {
-
         res.status(200)
             .json({ 
                 status: 200, 
@@ -144,22 +158,24 @@ exports.updateUser = (req, res) => {
 exports.changeStateUser = ( req, res ) => {
     const data = matchedData(req, {locations: ['body', 'params']});
 
-    User.changeStateUser( data.IdUsuario, data.Habilitado )
-    .then((results) => {
-        console.log(results)
-        let afectadas = results.rowsAffected[0]
-        let accion = (Habilitado == 0) ? 'Deshabilitado' : 'Habilitado';
+    User.findById( data.userId )
+    .then( user => {
+        user.enable  = data.state;
+        let accion = state ? 'Enable' : 'Disable';
+    })
+    .then(result=> {
+        console.log(result);
         res.status(200)
             .json((afectadas > 0) ? { success: 'Usuario ' + accion + ' con exito!' } : { failed: 'No se encontro el usuario solicitado!' })
         console.log('Usuario cambiado de estado con exito!')
-    }).catch((err) => {
+    })
+    .catch((err) => {
         res.status(500).json(err)
         console.log('Error:', err)
     });
 }
 
 exports.getAuthenticateUserInfo = ( req, res ) => {
-    
     res.status(200)
         .json(req.user)
 }
