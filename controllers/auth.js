@@ -4,8 +4,17 @@ const randomstring = require('randomstring');
 const User      = require('../models/User');
 const UserActivityLog =require('../models/UserActivityLog');
 const Role      = require('../models/Role');
+// To send Mails
+const nodemailer = require('nodemailer');
+const sendgridTransport = require('nodemailer-sendgrid-transport');
 const {mssqlErrors, matchedData} = require('../Utils/defaultImports')
 const saltRounds    = 10;
+const {getHtml} = require('../utils/verifyEmailUtil');
+const transporter = nodemailer.createTransport(sendgridTransport({
+    auth: {
+        api_key: "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"
+    }
+}));
 
 //funcion registro
 exports.signUp = async ( req, res, next ) => {
@@ -38,7 +47,7 @@ exports.signUp = async ( req, res, next ) => {
                 birthDate: userData.birthDate,
                 isVerified: false,
                 secretToken:  token,
-                enable: false
+                enabled: false
             });
             const insertInfo =  await user.save();
             // console.log(insertInfo._id);
@@ -47,6 +56,19 @@ exports.signUp = async ( req, res, next ) => {
                 .json({ 
                     success: 'You have successfully registered, proceed to verify your email!'
                 })
+            transporter.sendMail({
+                to: userData.email,
+                from: 'no-reply@sevenforone.com',
+                subject:"Welcome to Seven for One! Confirm Your Email",
+                html: getHtml( insertInfo.userName,'http:localhost:3000/users')
+            })
+            .then((result) => {
+                console.log('Email enviado', result);
+                
+            }).catch((err) => {
+                console.log('Error enviando', err);
+                
+            });
         }
         // next();
     } catch ( _err ) {
