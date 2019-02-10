@@ -101,6 +101,8 @@ function saveLog( userId, {userName, firstName, lastName, email, role},  activit
  */
 exports.signIn = async ( req, res, next ) => {
     const   userData = matchedData(req);
+    console.log('Visto');
+    console.log(userData);
     
     try {
         const user = await User.findOne({ userName: userData.userName })
@@ -111,12 +113,12 @@ exports.signIn = async ( req, res, next ) => {
                 if ( !user.isVerified ) {
                     throw { status: 401, code: 'NVERIF', message: 'You need to verify your email address in order to login'}
                 }
-                if ( user.enabled === false ) {
-                    res.status(403)
-                            .json({
-                                status:403, code:'UDISH',   message:'Your user has been disabled!'
-                            });
-                }
+                // if ( user.enabled === false ) {
+                //     res.status(403)
+                //             .json({
+                //                 status:403, code:'UDISH',   message:'Your user has been disabled!'
+                //             });
+                // }
                 if ( !userData.getUserInfo ) {
                     console.log('Sending the token', user)
                     let {_token : tokenGen, expiration} = await jwt.createToken(user);
