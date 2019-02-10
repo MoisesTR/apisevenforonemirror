@@ -33,7 +33,6 @@ const userSchema = new Schema({
     },
     secretToken: {
         type: String, 
-        required: true
     },
     isVerified: {
         type: Boolean,
@@ -59,4 +58,10 @@ const userSchema = new Schema({
     }
 });
 
+userSchema.methods.verifyToken = function( ) {
+    this.secretToken = "";
+    this.isVerified = true;
+
+    return this.save();
+}   
 module.exports = model('User', userSchema);

@@ -13,7 +13,7 @@ router
     .get( '/users',     validations.getUsers,   validsParams,   authController.getUsers)
     .get( '/users/:userId', validations.getUser,    validsParams,   authController.getUser)
     // .put( '/user/:')
-    // .post('/verifyUser/:token')
+    .post('/verifyemail/:token/:userName',   authController.verifyEmail)
     // .get('/me/:token')
     // .delete('/user',)
     .get( '/roles\$',     authController.getRoles)

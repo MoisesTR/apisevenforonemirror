@@ -2,6 +2,7 @@ const jwt = require('../services/jwt');
 const bcrypt    = require('bcryptjs');
 const randomstring = require('randomstring');
 const User      = require('../models/User');
+const UserActivityLog =require('../models/UserActivityLog');
 const Role      = require('../models/Role');
 const {mssqlErrors, matchedData} = require('../Utils/defaultImports')
 const saltRounds    = 10;
@@ -40,7 +41,8 @@ exports.signUp = async ( req, res, next ) => {
                 enable: false
             });
             const insertInfo =  await user.save();
-            console.log(insertInfo);
+            // console.log(insertInfo._id);
+            saveLog( insertInfo._id, insertInfo.userName, insertInfo.firstName, insertInfo.lastName, insertInfo.email, insertInfo.role,'The user was successfully register!')
             res.status(200)
                 .json({ 
                     success: 'You have successfully registered, proceed to verify your email!'
@@ -54,6 +56,18 @@ exports.signUp = async ( req, res, next ) => {
     }
 }
 
+function saveLog( userId, userName, firstName, lastName, email, role,  activity ) {
+    const userActivity = new  UserActivityLog({
+        userId,
+        userSnapshot: {userName, firstName, lastName, email, role},
+        activityName: activity
+    });
+        userActivity.save()
+        .then(result => {
+            console.log('Success');
+        })
+        .catch(err => console.log('Error Saving Log',err))
+}
 /**
  * @name singIn
  * @param {*} req 
@@ -61,12 +75,11 @@ exports.signUp = async ( req, res, next ) => {
  */
 exports.singIn = async ( req, res, next ) => {
     const   userData = matchedData(req);
-    let     user =  null;
     
     try {
         const user = await User.findOne({ userName: userData.userName })
         if (user) {
-            const isequal = await bcrypt.compare(userData.password, passh);
+            const isequal = await bcrypt.compare(userData.password, user.passwordHash);
 
             if ( isequal ) {
                 if ( !user.isVerified ) {
@@ -111,16 +124,20 @@ exports.getUsers = (req, res) => {
 }
 
 exports.verifyEmail = ( req, res, next ) => {
-    const data = matchedData(req, {locations: ['params', 'query']});
+    const data = req.params;
 
     User.findOne({ secretToken: data.token, userName: data.userName})
     .then(user => {
+        console.log(user);
+        
         if ( user ) {
-            user.secretToken = null;
-            user.isVerified = true;
-            return user.save()
+            return user.verifyToken()
         } else {
-            throw { status: 400, code: 'EVERIF', message: "The verify token is not valid." }
+            throw { 
+                status: 400, 
+                code: 'EVERIF',
+                message: "The verify token is not valid." 
+            }
         }
     })
     .then((result) => {
