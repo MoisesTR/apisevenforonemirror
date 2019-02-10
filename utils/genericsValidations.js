@@ -4,9 +4,9 @@ const {ObjectId} = require('mongodb');
 
 exports.isValidDate = (value, fieldName) => {
     let date = new Date(value);
-       
+
     if(isNaN(date)) {
-        throw new Error(`The field ${fieldName} must be a valid Date.`);
+        throw new Error(`The field ${fieldName.path} must be a valid Date.`);
     }
     date = date.toISOString();
     return date;

@@ -12,7 +12,7 @@ exports.signUp = async ( req, res, next ) => {
     try {
         const hashPassw = await bcrypt.hash(userData.password, saltRounds)
         
-        const users = await User.find({userName: userData.userName, email: userData.email}).toArray()
+        const users = await User.find({userName: userData.userName, email: userData.email})
         //Si se encontro mas de un usuario
         if ( users.length > 1 ) {
             // console.log(usersfind.recordset[0])
@@ -21,7 +21,7 @@ exports.signUp = async ( req, res, next ) => {
         } else if ( users.length === 1 ) {
             // if(usersfind[0].username == userData.username || usersfind[1].username== userData.username)
             if ( users[0].Username === userData.Username )
-                throw { status: 401, code: "UEXIST", message: 'El usuario:' + userData.Username + ', ya se encuentra registrado!' };
+                throw { status: 401, code: "UEXIST", message: 'The userName:' + userData.userName + ' already exists!' };
             else
                 throw { status: 401, code: "EEXIST", message: 'No se registro el usuario con email:' + userData.Email + ', ya se encuentra registrado!' };
         } else {
@@ -43,7 +43,7 @@ exports.signUp = async ( req, res, next ) => {
             console.log(insertInfo);
             res.status(200)
                 .json({ 
-                    user: insertInfo
+                    success: 'You have successfully registered, proceed to verify your email!'
                 })
         }
         // next();
@@ -186,11 +186,25 @@ exports.refreshToken = ( req, res ) => {
 }
 
 exports.getRoles = (req, res, next) => {
-    
+    Role
+    .find()
+    .then( roles => {
+        res.status(200)
+            .json(roles)
+    })  
+    .catch(err => next(err))
 };
 
 exports.getRole = (req, res, next) => {
-    
+    const roleId = req.params.roleId;
+
+    Role
+    .findById( roleId )
+    .then( roles => {
+        res.status(200)
+            .json(roles)
+    })
+    .catch(err => next(err))
 };
 
 exports.getUser = (req, res, next) => {
