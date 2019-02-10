@@ -1,5 +1,5 @@
 const {param, body, query, sanitize} = require('../../utils/defaultImports');
-const { isValidDate } = require('../../utils/genericsValidations');
+const { isValidDate, isObjectId } = require('../../utils/genericsValidations');
 
 exports.signUp = [
     body('firstName', 'Must be a String, min length 3 max length 150').isLength({min: 3, max: 150}),
@@ -23,6 +23,12 @@ exports.verifyUser =  [
     param('token').isLength({min: 7}),
     query('userName').isLength({min: 4, max: 40})
 ];
+
+exports.changeStateUser = [
+    param('userId').custom(isObjectId),
+    query('enabled').isBoolean(),
+    sanitize('enabled').toBoolean()
+]
 
 exports.getUsers = [
 

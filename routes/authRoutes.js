@@ -15,7 +15,7 @@ router
     // .put( '/user/:')
     .post('/verifyemail/:token/:userName',   authController.verifyEmail)
     // .get('/me/:token')
-    // .delete('/user',)
+    .delete('/users/:userId',    validations.changeStateUser,     validsParams,   authController.changeStateUser)
     .get( '/roles\$',     authController.getRoles)
     .get( '/roles/:roleId', authController.getRole)
 module.exports = router;

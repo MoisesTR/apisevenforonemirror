@@ -1,4 +1,4 @@
-[
+db.roles.insertMany([
     {
         "_id": ObjectId("51111111111111111aa11111"),
         "name": "Admin",
@@ -11,4 +11,4 @@
         "description": "Normal User",
         "enabled": true
     }
-]
+])

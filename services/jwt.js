@@ -79,17 +79,15 @@ exports.ensureAuth = ( req, res, next ) => {
         
         decoded = _decoded;
         //A continuacion procedemos a buscar el usuario para validar que se encuentre habilitado
-        return User.getUserByUsername( _decoded.Username )
+        return User.findById( _decoded.sub )
     })
-    .then( userResult => {
+    .then( user => {
         //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
-        console.log('Busqueda de usuarios realizada', userResult);
-        //Resultado del procedimiento
-        let user = userResult.recordset[0];
-        //Si encontramos el usuario
+        console.log('Busqueda de usuarios realizada', user);
         if ( !!user ) {
+            //Si encontramos el usuario
             console.log('Se encontro el usuario');
-            if ( user.Habilitado == false ) {
+            if ( user.enabled === false ) {
                 //si el usuario se encuentra deshabilitado
                 throw {status:401, code:'EPUSER', message:'Usuario deshabilitado,favor contactar con soporte AtomicDev.'};
             } 

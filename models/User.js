@@ -47,7 +47,7 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
-    enable: {
+    enabled: {
         type: Boolean,
         required: true
     },

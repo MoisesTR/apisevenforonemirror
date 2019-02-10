@@ -43,7 +43,7 @@ exports.signUp = async ( req, res, next ) => {
             const insertInfo =  await user.save();
             // console.log(insertInfo._id);
             saveLog( insertInfo._id, insertInfo.userName, insertInfo.firstName, insertInfo.lastName, insertInfo.email, insertInfo.role,'The user was successfully register!')
-            res.status(200)
+            res.status(201)
                 .json({ 
                     success: 'You have successfully registered, proceed to verify your email!'
                 })
@@ -56,7 +56,7 @@ exports.signUp = async ( req, res, next ) => {
     }
 }
 
-function saveLog( userId, userName, firstName, lastName, email, role,  activity ) {
+function saveLog( userId, {userName, firstName, lastName, email, role},  activity ) {
     const userActivity = new  UserActivityLog({
         userId,
         userSnapshot: {userName, firstName, lastName, email, role},
@@ -85,12 +85,27 @@ exports.singIn = async ( req, res, next ) => {
                 if ( !user.isVerified ) {
                     throw { status: 401, code: 'NVERIF', message: 'You need to verify your email address in order to login'}
                 }
+                if ( user.enabled === false ) {
+                    res.status(403)
+                            .json({
+                                status:403, code:'UDISH',   message:'Your user has been disabled!'
+                            });
+                }
                 if ( !userData.getUserInfo ) {
-                    console.log('Sending the token')
+                    console.log('Sending the token', user)
                     let {_token : tokenGen, expiration} = await jwt.createToken(user);
+                    if ( user.secretToken === "") {
+                        const refreshToken = randomstring.generate(20);
+                        user.secretToken = refreshToken;
+                    }
+                    const saveResult = await user.save();
                     res.status(200)
-                        .json({ token: tokenGen, expiration });
-                } else {
+                    .json({ 
+                        token: tokenGen, 
+                        refreshToken: saveResult.secretToken, 
+                        expiration });
+                        saveLog(saveResult._id, {userName: saveResult.userName},`${saveResult.userName} joined us.`)
+                    } else {
                     console.log('Sending the user info.');
                     res.status(200)
                         .json(user);
@@ -108,10 +123,10 @@ exports.singIn = async ( req, res, next ) => {
 }
 
 exports.getUsers = (req, res) => {
-    const filters = matchedData(req, {locations: ['query']});
+    // const filters = matchedData(req, {locations: ['query']});
     
     User
-    .find({},'firstName lastName userName email role birthDate isVerified enable createdAt')
+    .find({},'firstName lastName userName email role birthDate isVerified enabled createdAt')
     .populate('role')
     .exec()
     .then((result) => {
@@ -120,7 +135,7 @@ exports.getUsers = (req, res) => {
     }).catch((error) => {
         res.status( error.status | 500)
             .json(error)
-    })
+})
 }
 
 exports.verifyEmail = ( req, res, next ) => {
@@ -173,24 +188,25 @@ exports.updateUser = (req, res) => {
     })
 }
 
-exports.changeStateUser = ( req, res ) => {
-    const data = matchedData(req, {locations: ['body', 'params']});
+exports.changeStateUser = async ( req, res, next ) => {
+    const data = matchedData(req, {locations: ['query', 'params']});
 
-    User.findById( data.userId )
-    .then( user => {
-        user.enable  = data.state;
-        let accion = state ? 'Enable' : 'Disable';
-    })
-    .then(result=> {
-        console.log(result);
+    try {
+        const user = await User.findById( data.userId )
+        if ( !user ) {
+            res.status(400)
+                .json({failed: "User not found!"})
+            return;
+        }
+        const action = data.enabled ? 'Enable' : 'Disable';
+        user.secretToken = "";
+        user.enabled = data.enabled;
+        const saveResult = await user.save();
         res.status(200)
-            .json((afectadas > 0) ? { success: 'Usuario ' + accion + ' con exito!' } : { failed: 'No se encontro el usuario solicitado!' })
-        console.log('Usuario cambiado de estado con exito!')
-    })
-    .catch((err) => {
-        res.status(500).json(err)
-        console.log('Error:', err)
-    });
+            .json({ success: 'User has been ' + action })
+    } catch( _err ) {
+        next(_err);
+    }
 }
 
 exports.getAuthenticateUserInfo = ( req, res ) => {
@@ -227,7 +243,7 @@ exports.getRole = (req, res, next) => {
 exports.getUser = (req, res, next) => {
     const userId = req.params.userId;
 
-    User.findById( userId, 'firstName lastName userName email role birthDate isVerified secretToken phones enable createdAt updatedAt' )
+    User.findById( userId, 'firstName lastName userName email role birthDate isVerified secretToken phones enabledcreatedAt updatedAt' )
     .populate('role')
     .exec()
     .then( user => {
