@@ -2,6 +2,7 @@ const jwt = require('../services/jwt');
 const bcrypt    = require('bcryptjs');
 const randomstring = require('randomstring');
 const User      = require('../models/User');
+const Role      = require('../models/Role');
 const {mssqlErrors, matchedData} = require('../Utils/defaultImports')
 const saltRounds    = 10;
 
@@ -96,13 +97,13 @@ exports.singIn = async ( req, res, next ) => {
 exports.getUsers = (req, res) => {
     const filters = matchedData(req, {locations: ['query']});
     
-    User.find( )
-    .toArray()
+    User
+    .find({},'firstName lastName userName email role birthDate isVerified enable createdAt')
+    .populate('role')
+    .exec()
     .then((result) => {
         res.status(200)
-            .json({
-                 usuarios: result.recordset 
-            });
+            .json(result);
     }).catch((error) => {
         res.status( error.status | 500)
             .json(error)
@@ -181,5 +182,26 @@ exports.getAuthenticateUserInfo = ( req, res ) => {
 }
 
 exports.refreshToken = ( req, res ) => {
+    const data = matchedData(req, {locations: []})
+}
+
+exports.getRoles = (req, res, next) => {
     
+};
+
+exports.getRole = (req, res, next) => {
+    
+};
+
+exports.getUser = (req, res, next) => {
+    const userId = req.params.userId;
+
+    User.findById( userId, 'firstName lastName userName email role birthDate isVerified secretToken phones enable createdAt updatedAt' )
+    .populate('role')
+    .exec()
+    .then( user => {
+        res.status(200)
+            .json(user)
+    })
+    .catch(err => next(err))
 }

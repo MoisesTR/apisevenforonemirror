@@ -23,3 +23,11 @@ exports.verifyUser =  [
     param('token').isLength({min: 7}),
     query('userName').isLength({min: 4, max: 40})
 ];
+
+exports.getUsers = [
+
+];
+
+exports.getUser = [
+    
+];

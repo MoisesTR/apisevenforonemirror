@@ -1,0 +1,14 @@
+[
+    {
+        "_id": ObjectId("51111111111111111aa11111"),
+        "name": "Admin",
+        "description": "Admin of App",
+        "enabled": true
+    },
+    {
+        "_id": ObjectId("51111111111111111aa22222"),
+        "name": "User",
+        "description": "Normal User",
+        "enabled": true
+    }
+]
