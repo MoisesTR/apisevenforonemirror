@@ -67,59 +67,45 @@ exports.containToken = ( req, res, next ) => {
  * @param {HttpResponse} res 
  * @param {Middleware} next 
  */
-exports.ensureAuth = ( req, res, next ) => {
+exports.ensureAuth = async ( req, res, next ) => {
     const token   = req.headers.authorization.replace(/['"]+/g,'').replace('Bearer ', '');
-    let     decoded;
-    // console.log(req.headers.authorization);
-    const addOtherUInfo   =   'true' === req.query.addOtherUInfo;
 
-    verifyToken( token )
-    .then( _decoded => {
-        console.log(_decoded);
-        
-        decoded = _decoded;
-        //A continuacion procedemos a buscar el usuario para validar que se encuentre habilitado
-        return User.findById( _decoded.sub )
-    })
-    .then( user => {
+    try {
+        const decode = await verifyToken( token );
+        const user =  await User.findById( decode.sub );
         //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
-        console.log('Busqueda de usuarios realizada', user);
         if ( !!user ) {
             //Si encontramos el usuario
             console.log('Se encontro el usuario');
             if ( user.enabled === false ) {
                 //si el usuario se encuentra deshabilitado
-                throw {status:401, code:'EPUSER', message:'Usuario deshabilitado,favor contactar con soporte AtomicDev.'};
+                throw {
+                        status:401, code:'EPUSER', 
+                        message:'Usuario deshabilitado,favor contactar con soporte AtomicDev.'
+                    };
             } 
             //Si el usuario esta habilitado se procede a actualizar el username y el email
             //por si ha habido un cambio en estos
             //Verificamos que no ah habido cambio en la informacion del usuario, desde la creacion del token
-            if( moment(user.UpdatedAt).unix() > decoded.iat ){
-                // si su info cambio no lo dejamos procedere
-                throw {
-                        status: 401, code:'EUCHAN',
-                        message: 'La informacion del usuario cambio por favor vuelve a iniciar sesion!'
-                    };
-            }
-            //setear el valor del payload en la request, para poder acceder a esta informacion
+            // if( moment(user.UpdatedAt).unix() > decoded.iat ){
+            //     // si su info cambio no lo dejamos procedere
+            //     throw {
+            //             status: 401, code:'EUCHAN',
+            //             message: 'La informacion del usuario cambio por favor vuelve a iniciar sesion!'
+            //         };
+            // }
+            // //setear el valor del payload en la request, para poder acceder a esta informacion
             //en todas la funciones de nuestros controladores
-            req.user    = {...decoded};
-            delete user.Password;
-            if ( addOtherUInfo ) {
-                req.user    = {...req.user, ...user };
-            }
+            req.user    = user;
             next(); //next para pasar al siguiente controlador
         } else {
             throw {
-                    status: 404, code:'EPUSER',
-                    message:'Usuario no encontrado, favor contactar con soporte AtomicDev'
+                    status: 404, code:'NFUSER',
+                    message:'User not found, contact to the admin.'
                 };
         }
-    })
-    .catch( error => {
-        console.log('Error del catch', error);
-        
-        res.status(error.status | 500)
-            .json(error)
-    })
+    }
+    catch ( error ) {
+        next( error );
+    }
 }

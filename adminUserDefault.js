@@ -3,7 +3,7 @@ db.users.insertOne({
         "phones" : [
                 "555555555"
         ],
-        "firstName" : "Admin of",
+        "firstName" : "Admin",
         "lastName" : "Seven for One",
         "userName" : "admin",
         "email" : "admin@sevenforone.com",

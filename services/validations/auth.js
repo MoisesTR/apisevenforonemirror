@@ -24,6 +24,11 @@ exports.verifyUser =  [
     query('userName').isLength({min: 4, max: 40})
 ];
 
+exports.refreshToken = [
+    body('refreshToken').isLength({min: 15}),
+    body('userName').isLength({min: 4, max: 40})
+];
+
 exports.changeStateUser = [
     param('userId').custom(isObjectId),
     query('enabled').isBoolean(),

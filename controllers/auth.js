@@ -42,7 +42,7 @@ exports.signUp = async ( req, res, next ) => {
             });
             const insertInfo =  await user.save();
             // console.log(insertInfo._id);
-            saveLog( insertInfo._id, insertInfo.userName, insertInfo.firstName, insertInfo.lastName, insertInfo.email, insertInfo.role,'The user was successfully register!')
+            saveLog( insertInfo._id, {userName:insertInfo.userName, firstName:insertInfo.firstName, lastName:insertInfo.lastName, email:insertInfo.email, role:insertInfo.role},'The user was successfully register!')
             res.status(201)
                 .json({ 
                     success: 'You have successfully registered, proceed to verify your email!'
@@ -57,23 +57,26 @@ exports.signUp = async ( req, res, next ) => {
 }
 
 function saveLog( userId, {userName, firstName, lastName, email, role},  activity ) {
+    console.log(userId, userName, activity);
+    
     const userActivity = new  UserActivityLog({
         userId,
         userSnapshot: {userName, firstName, lastName, email, role},
         activityName: activity
     });
-        userActivity.save()
-        .then(result => {
-            console.log('Success');
-        })
-        .catch(err => console.log('Error Saving Log',err))
+    
+    userActivity.save()
+    .then(result => {
+        console.log('Success');
+    })
+    .catch(err => console.log('Error Saving Log',err))
 }
 /**
- * @name singIn
+ * @name signIn
  * @param {*} req 
  * @param {*} res 
  */
-exports.singIn = async ( req, res, next ) => {
+exports.signIn = async ( req, res, next ) => {
     const   userData = matchedData(req);
     
     try {
@@ -214,8 +217,42 @@ exports.getAuthenticateUserInfo = ( req, res ) => {
         .json(req.user)
 }
 
-exports.refreshToken = ( req, res ) => {
-    const data = matchedData(req, {locations: []})
+exports.refreshToken = async ( req, res, next ) => {
+    const {refreshToken, userName} = matchedData(req, {locations: ['body']});
+
+    try {
+        const user = await User.findOne({ secretToken: refreshToken, userName})
+        console.log('users', req.user);
+        
+        if ( !user ) {
+            throw {
+                status:401, code:'DTOKEN', 
+                message:'The refresh token is not valid.'
+            }
+        }
+        if( user._id.toString() !== req.user._id.toString() ) {
+            throw {
+                status: 401, code:'ITOKEN',
+                message: 'The sent token does not belong to your user.',
+            }
+        }
+        if ( user.enabled == 0 ) {
+           throw {
+                    status:403, code:'UDESH',   
+                    message:'Tu usuario se encuentra deshabilitado!'
+                };
+        }
+        const {_token : tokenGen, expiration} = await jwt.createToken(user);
+            res.status(200)
+            .json({ 
+                token: tokenGen, 
+                refreshToken, 
+                expiration 
+            });
+        saveLog(user._id, {userName: user.userName},`${userName} refresh token.`)                   
+    } catch( _err ) {
+        next( _err );
+    }
 }
 
 exports.getRoles = (req, res, next) => {
