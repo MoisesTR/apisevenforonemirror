@@ -272,9 +272,8 @@ exports.getHtml = ( userName,url ) =>{
                                                         <!-- main section button -->
     
                                                         <div style="line-height: 22px;">
-                                                            <a href="#" style="color: #ffffff; text-decoration: none;">Verify your email</a>
+                                                            <a href="${url}" style="color: #ffffff; text-decoration: none;">Verify your email</a>
                                                         </div>
-                                                        <a href="#" style="color: #ffffff; text-decoration: none;">Verify your email</a>
                                                     </td>
                                                 </tr>
     
