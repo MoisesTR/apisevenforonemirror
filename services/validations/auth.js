@@ -11,6 +11,7 @@ exports.signUp = [
     body('phones.*').isLength({min: 7, max: 25}),
     body('role').isString(),
     body('birthDate', 'Must be a Valid Date').custom(isValidDate),
+    body('gender').isString(),
     sanitize('birthDate').toDate()
 ];
 
@@ -20,7 +21,7 @@ exports.signIn = [
 ];
 
 exports.verifyUser =  [
-    param('token').isLength({min: 7}),
+    query('token').isLength({min: 7}),
     query('userName').isLength({min: 4, max: 40})
 ];
 
