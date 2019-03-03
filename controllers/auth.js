@@ -7,7 +7,7 @@ const Role      = require('../models/Role');
 // To send Mails
 const nodemailer = require('nodemailer');
 const sendgridTransport = require('nodemailer-sendgrid-transport');
-const {mssqlErrors, matchedData} = require('../Utils/defaultImports')
+const {mssqlErrors, matchedData} = require('../utils/defaultImports')
 const saltRounds    = 10;
 const {getHtml} = require('../utils/verifyEmailUtil');
 const transporter = nodemailer.createTransport(sendgridTransport({
