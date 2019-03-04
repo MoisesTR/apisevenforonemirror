@@ -18,6 +18,9 @@ const userActivitySchema = new Schema({
 },{
     timestamps: {
         createdAt: 'createdAt'
+    },
+    writeConcern: {
+        w: 0
     }
 });
 
