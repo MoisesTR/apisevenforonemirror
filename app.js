@@ -52,7 +52,7 @@ app.use(function(err, req, res, next) {
         .json(err);
 });
 
-mongoose.connect('mongodb:sevenone@seven7xone1//localhost:27017/sevenforone', {useNewUrlParser: true, useCreateIndex: true, ssl: true})
+mongoose.connect('mongodb://sevenone:seven7one1@ec2-54-82-6-159.compute-1.amazonaws.com:27017/sevenforone', {useNewUrlParser: true, useCreateIndex: true})
 .then((result) => {
     console.log('Mongo is Connected');
 })
