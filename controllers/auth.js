@@ -61,7 +61,7 @@ exports.signUp = async ( req, res, next ) => {
                 to: userData.email,
                 from: 'no-reply@sevenforone.com',
                 subject:"Welcome to Seven for One! Confirm Your Email",
-                html: getHtml( insertInfo.userName,'http://localhost:4200/confirm/' + insertInfo.secretToken)
+                html: getHtml( insertInfo.userName,'http://sevenxone.s3-website-us-east-1.amazonaws.com/dashboard/' + insertInfo.secretToken)
             })
             .then((result) => {
                 console.log('Email enviado', result);
