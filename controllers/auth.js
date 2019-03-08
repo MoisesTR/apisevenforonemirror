@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport(sendgridTransport({
 }));
 
 
-const HOST_URL = process.env.HOST_URL;
+const URL_HOST  = process.env.URL_HOST ;
 
 //funcion registro
 exports.signUp = async ( req, res, next ) => {
@@ -65,7 +65,7 @@ exports.signUp = async ( req, res, next ) => {
                 to: userData.email,
                 from: 'no-reply@sevenforone.com',
                 subject:"Welcome to Seven for One! Confirm Your Email",
-                html: getHtml( insertInfo.userName, HOST_URL  + '/confirm/' + insertInfo.secretToken)
+                html: getHtml( insertInfo.userName, URL_HOST  + '/confirm/' + insertInfo.secretToken)
             })
             .then((result) => {
                 console.log('Email enviado', result);
