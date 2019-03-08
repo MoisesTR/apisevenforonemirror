@@ -2,6 +2,8 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+// Utilizar variables de entorno en archivo .env (en la raiz)
+const dotenv = require('dotenv');
 // Evitar ataques basicos
 const helmet = require('helmet');
 // Compress Response
@@ -14,6 +16,8 @@ const mongoose = require('mongoose');
 
 const app = express();
 
+// Ya podemos usar variables de entorno en todo el api
+dotenv.config();
 app.use(logger('dev'));
 app.use(helmet());
 app.use(compression());
