@@ -15,7 +15,7 @@ router
     .get( '/users/:userId', validations.getUser,    validsParams,   authController.getUser)
     .post('/refreshtoken', containToken, ensureAuth, validations.refreshToken, validsParams, authController.refreshToken)
     // .put( '/user/:')
-    .post('/verifyemail/:token/:userName',   authController.verifyEmail)
+    .post('/verifyemail/:token',   authController.verifyEmail)
     // .get('/me/:token')
     .delete('/users/:userId',    validations.changeStateUser,     validsParams,   authController.changeStateUser)
     .get( '/roles\$',     authController.getRoles)
