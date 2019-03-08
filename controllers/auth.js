@@ -4,10 +4,11 @@ const randomstring = require('randomstring');
 const User      = require('../models/User');
 const UserActivityLog =require('../models/UserActivityLog');
 const Role      = require('../models/Role');
+const doteenv = require('dotenv').config();
 // To send Mails
 const nodemailer = require('nodemailer');
 const sendgridTransport = require('nodemailer-sendgrid-transport');
-const {mssqlErrors, matchedData} = require('../Utils/defaultImports')
+const {mssqlErrors, matchedData} = require('../utils/defaultImports')
 const saltRounds    = 10;
 const {getHtml} = require('../utils/verifyEmailUtil');
 const transporter = nodemailer.createTransport(sendgridTransport({
@@ -15,6 +16,9 @@ const transporter = nodemailer.createTransport(sendgridTransport({
         api_key: "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"
     }
 }));
+
+
+const HOST_URL = process.env.HOST_URL;
 
 //funcion registro
 exports.signUp = async ( req, res, next ) => {
@@ -61,7 +65,7 @@ exports.signUp = async ( req, res, next ) => {
                 to: userData.email,
                 from: 'no-reply@sevenforone.com',
                 subject:"Welcome to Seven for One! Confirm Your Email",
-                html: getHtml( insertInfo.userName,'http://localhost:4200/confirm/' + insertInfo.secretToken)
+                html: getHtml( insertInfo.userName, HOST_URL  + '/confirm/' + insertInfo.secretToken)
             })
             .then((result) => {
                 console.log('Email enviado', result);
@@ -101,6 +105,8 @@ function saveLog( userId, {userName, firstName, lastName, email, role},  activit
  */
 exports.signIn = async ( req, res, next ) => {
     const   userData = matchedData(req);
+    console.log('Visto');
+    console.log(userData);
     
     try {
         const user = await User.findOne({ userName: userData.userName })
@@ -111,12 +117,12 @@ exports.signIn = async ( req, res, next ) => {
                 if ( !user.isVerified ) {
                     throw { status: 401, code: 'NVERIF', message: 'You need to verify your email address in order to login'}
                 }
-                if ( user.enabled === false ) {
-                    res.status(403)
-                            .json({
-                                status:403, code:'UDISH',   message:'Your user has been disabled!'
-                            });
-                }
+                // if ( user.enabled === false ) {
+                //     res.status(403)
+                //             .json({
+                //                 status:403, code:'UDISH',   message:'Your user has been disabled!'
+                //             });
+                // }
                 if ( !userData.getUserInfo ) {
                     console.log('Sending the token', user)
                     let {_token : tokenGen, expiration} = await jwt.createToken(user);
@@ -167,7 +173,7 @@ exports.getUsers = (req, res) => {
 exports.verifyEmail = ( req, res, next ) => {
     const data = req.params;
 
-    User.findOne({ secretToken: data.token, userName: data.userName})
+    User.findOne({ secretToken: data.token})
     .then(user => {
         console.log(user);
         

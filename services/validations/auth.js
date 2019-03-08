@@ -18,6 +18,7 @@ exports.signUp = [
 exports.signIn = [
     body('userName').isLength({min: 4, max: 40}),
     body('password').isLength({min: 5, max: 25}),
+    body('getUserInfo')
 ];
 
 exports.verifyUser =  [

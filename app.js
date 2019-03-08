@@ -16,6 +16,8 @@ const mongoose = require('mongoose');
 
 const app = express();
 
+const MONGO_URL = process.env.MONGO_URL;
+
 // Ya podemos usar variables de entorno en todo el api
 dotenv.config();
 app.use(logger('dev'));
@@ -56,7 +58,7 @@ app.use(function(err, req, res, next) {
         .json(err);
 });
 
-mongoose.connect('mongodb://sevenone:seven7one1@ec2-54-82-6-159.compute-1.amazonaws.com:27017/sevenforone', {useNewUrlParser: true, useCreateIndex: true})
+mongoose.connect(MONGO_URL, {useNewUrlParser: true, useCreateIndex: true})
 .then((result) => {
     console.log('Mongo is Connected');
 })
