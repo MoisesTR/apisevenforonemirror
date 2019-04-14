@@ -7,11 +7,11 @@ exports.signUp = [
     body('userName','Must be a String, min length 3 max length 40').isLength({min: 4, max: 40}),
     body('email', 'Must be a valid Email').isEmail(),
     body('password', 'Must be a String, min length 5 max length 25').isLength({min: 5, max: 25}),
-    body('phones', 'Must be a Array of Strings').isArray(),
-    body('phones.*').isLength({min: 7, max: 25}),
+    body('phones', 'Must be a Array of Strings').isArray().optional({ nullable: true }),
+    body('phones.*').isLength({min: 7, max: 25}).optional({ nullable: true }),
     body('role').isString(),
-    body('birthDate', 'Must be a Valid Date').custom(isValidDate),
-    body('gender').isString(),
+    body('birthDate', 'Must be a Valid Date').custom(isValidDate).optional({ nullable: true }),
+    body('gender').isString().optional({ nullable: true }),
     sanitize('birthDate').toDate()
 ];
 
@@ -19,6 +19,11 @@ exports.signIn = [
     body('userName').isLength({min: 4, max: 40}),
     body('password').isLength({min: 5, max: 25}),
     body('getUserInfo')
+];
+
+exports.signInGoogle = [
+    body('role').isString(),
+    body('tokenGoogle')
 ];
 
 exports.verifyUser =  [

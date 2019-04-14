@@ -25,16 +25,13 @@ module.exports = ( Schema, model ) => {
             unique: true
         },
         phones: {
-            type:[String],
-            required: true
+            type:[String]
         },
         birthDate: {
-            type: Date,
-            required: true
+            type: Date
         },
         gender: {
-           type: String,
-           required: true
+           type: String
         },
         secretToken: {
             type: String,
@@ -48,6 +45,9 @@ module.exports = ( Schema, model ) => {
             required: true,
             ref: 'Role'
         },
+        image: {
+            type: String
+        },
         passwordHash: {
             type: String,
             required: true
@@ -56,6 +56,14 @@ module.exports = ( Schema, model ) => {
             type: Boolean,
             required: true
         },
+        google : {
+            type: Boolean,
+            default: false
+        },
+        facebook : {
+            type: Boolean,
+            default: false
+        }
     },{
         timestamps: true
     });
