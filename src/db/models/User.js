@@ -74,5 +74,9 @@ module.exports = ( Schema, model ) => {
 
         return this.save();
     };
+
+    userSchema.methods.getPurchaseHistory = function () {
+        return this.model('PurchaseHistory').find()
+    };
     return model('User', userSchema);
 };

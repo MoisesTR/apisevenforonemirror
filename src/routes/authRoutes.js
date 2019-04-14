@@ -19,6 +19,7 @@ module.exports = app => {
         .get( '/users',     validations.getUsers,   validsParams,   authController.getUsers)
         .get( '/users/:userId', validations.getUser,    validsParams,   authController.getUser)
         .post('/refreshtoken', containToken, ensureAuth, validations.refreshToken, validsParams, authController.refreshToken)
+        .get('/activities', authController.getActivityTypes)
         // .put( '/user/:')
         .post('/verifyemail/:token',   authController.verifyEmail)
         // .get('/me/:token')

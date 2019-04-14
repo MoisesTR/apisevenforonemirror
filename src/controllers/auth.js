@@ -430,6 +430,31 @@ module.exports = app => {
         .catch(err => next(err))
     };
 
+    methods.getActivityTypes = (req, res, next ) => {
+        models.ActivityTypes.find()
+            .then( activities => res.status(200).json(activities))
+            .catch(next)
+    };
+
+    methods.getOwnPurchaseHistory = ( req, res, next ) => {
+        req.user.getPurchaseHistory()
+            .then( history => res.status(200).json(history))
+            .catch(next)
+    };
+
+    methods.getPurchaseHistory = ( req, res, next ) => {
+        const userId = req.params.userId;
+
+        mode.User.find(userId)
+            .then(user => {
+                if (!user )
+                    res.status(404).json({message: 'User not found!'});
+                return user.getPurchaseHistory()
+            })
+            .then( history => res.status(200).json(history))
+            .catch(next)
+    };
+
     return methods;
 };
 

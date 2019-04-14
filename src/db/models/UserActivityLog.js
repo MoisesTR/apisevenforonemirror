@@ -12,8 +12,9 @@ module.exports = (Schema, model) => {
             type: Object,
             required: true
         },
-        activityName: {
-            type: String,
+        activityId: {
+            type: Schema.Types.ObjectId,
+            ref: 'ActivityTypes',
             required: true
         },
     },{
@@ -22,6 +23,10 @@ module.exports = (Schema, model) => {
             w: 0
         }
     });
+
+    userActivitySchema.statics.byUser = ( userId ) => {
+        this.model.find({userId: userId})
+    };
 
     return model('UserActivityLog', userActivitySchema);
 };
