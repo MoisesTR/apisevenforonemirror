@@ -1,5 +1,6 @@
 const bcrypt    = require('bcryptjs');
 const randomstring = require('randomstring');
+const randomNumber = require('random-number');
 // To send Mails
 const nodemailer = require('nodemailer');
 const sendgridTransport = require('nodemailer-sendgrid-transport');
@@ -12,6 +13,11 @@ const transporter = nodemailer.createTransport(sendgridTransport({
     }
 }));
 
+// GOOGLE AUTHENTICATION
+var CLIENT_ID = require('../config/config').CLIENT_ID;
+const {OAuth2Client} = require('google-auth-library');
+const client = new OAuth2Client(CLIENT_ID);
+
 //Logger
 const logger = require('../utils/logger');
 
@@ -20,6 +26,131 @@ module.exports = app => {
     const models = app.db.core.models;
     const jwt = app.services.jwt;
     let methods = {};
+
+    //funcion registro
+    methods.signInGoogle = async ( req, res, next ) => {
+        const   userData    = matchedData(req);
+        const tokenGoogle = userData.tokenGoogle;
+
+        var googleUser = await verify(tokenGoogle)
+        
+        .catch( e => {
+            res.status(403).json({
+                ok : false
+                , message: 'Token not valid!'
+            });
+        })
+
+        try {
+
+            const user = await models.User.findOne({email: googleUser.email});
+
+            if (user) {
+                if (!user.google) {
+                    throw { status: 400, code: "AUTHNOR", message: "You must use your normal authentication!" };
+                } else {
+     
+                    let {_token : tokenGen, expiration} = await jwt.createToken(user);
+                    
+                    if ( user.secretToken === "") {
+                        const refreshToken = randomstring.generate(20);
+                        user.secretToken = refreshToken;
+                    }
+                    
+                    const saveResult = await user.save();
+                    
+                    res.status(200)
+                    .json({
+                        user: user
+                        , token: tokenGen
+                        , refreshToken: saveResult.secretToken
+                        , expiration 
+                    });
+                    
+                    saveLog(saveResult._id, {userName: saveResult.userName},`${saveResult.userName} joined us.`)
+                } 
+
+            } else {
+                // El usuario no existe
+                userData.password = randomstring.generate(4);
+                const secretToken = randomstring.generate(20);
+                const hashPassw = await bcrypt.hash(userData.password, saltRounds);
+                const randomUserName = generateRandomUserName(googleUser.email);
+                
+                const user = new models.User({
+                    firstName: googleUser.firstName,
+                    lastName: googleUser.lastName,
+                    userName: randomUserName,
+                    image: googleUser.img,
+                    google: googleUser.google,
+                    email: googleUser.email,
+                    passwordHash: hashPassw,
+                    role: userData.role,
+                    isVerified: true,
+                    secretToken: secretToken,
+                    enabled: true
+                });
+
+                const insertInfo =  await user.save();
+
+                let {_token : tokenGen, expiration} = await jwt.createToken(user);
+                
+                saveLog( 
+                    insertInfo._id
+                    , { userName:insertInfo.userName
+                        , firstName:insertInfo.firstName
+                        , lastName:insertInfo.lastName
+                        , email:insertInfo.email
+                        , role:insertInfo.role }
+                        ,'The user was successfully register!');
+                res.status(200)
+                .json({
+                    user: user
+                    , token: tokenGen
+                    , refreshToken: user.secretToken
+                    , expiration 
+                });
+            }
+
+        } catch ( _err ) {
+            next(_err)
+        }
+    };
+
+    function generateRandomUserName(email) {
+        var options = {
+            min:  0
+          , max:  999
+          , integer: true
+        }
+        var number = randomNumber(options);
+        var arrays = email.split('@') ;
+        return arrays[0] + number;
+    }
+
+    async function verify(token) {
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: CLIENT_ID,  // Specify the CLIENT_ID of the app that accesses the backend
+            // Or, if multiple clients access the backend:
+            //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
+        });
+
+        const payload = ticket.getPayload();
+        const userid = payload['sub'];
+        // If request specified a G Suite domain:
+        //const domain = payload['hd'];
+        console.log(payload);
+        return {
+            name: payload.name
+            , firstName: payload.given_name
+            , lastName: payload.family_name
+            , email: payload.email
+            , img: payload.picture
+            , google: true
+        }
+    }
+
     //funcion registro
     methods.signUp = async ( req, res, next ) => {
         const   userData    = matchedData(req);
