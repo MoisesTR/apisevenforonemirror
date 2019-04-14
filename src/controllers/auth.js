@@ -96,6 +96,7 @@ module.exports = app => {
         })
         .catch(err => console.log('Error Saving Log',err))
     }
+    
     /**
      * @name signIn
      * @param {*} req
@@ -106,8 +107,9 @@ module.exports = app => {
         console.log('Visto');
         console.log(userData);
 
-        try {
-            const user = await models.User.findOne({ userName: userData.userName });
+        try {    
+            // find user by username or email
+            const user = await models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]});
             if (user) {
                 const isequal = await bcrypt.compare(userData.password, user.passwordHash);
 
