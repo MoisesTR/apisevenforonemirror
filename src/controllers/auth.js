@@ -38,7 +38,7 @@ module.exports = app => {
                     throw { status: 401, code: "EEXIST", message: 'No se registro el usuario con email:' + userData.Email + ', ya se encuentra registrado!' };
             } else {
                 const token = randomstring.generate(20);
-                const user = new User({
+                const user = new models.User({
                     firstName: userData.firstName,
                     lastName: userData.lastName,
                     userName: userData.userName,
@@ -52,7 +52,7 @@ module.exports = app => {
                     secretToken:  token,
                     enabled: false
                 });
-                const insertInfo =  await models.User.save();
+                const insertInfo =  await user.save();
                 // console.log(insertInfo._id);
                 saveLog( insertInfo._id, {userName:insertInfo.userName, firstName:insertInfo.firstName, lastName:insertInfo.lastName, email:insertInfo.email, role:insertInfo.role},'The user was successfully register!');
                 res.status(201)
@@ -84,7 +84,7 @@ module.exports = app => {
     function saveLog( userId, {userName, firstName, lastName, email, role},  activity ) {
         console.log(userId, userName, activity);
 
-        const userActivity = new  UserActivityLog({
+        const userActivity = new  models.UserActivityLog({
             userId,
             userSnapshot: {userName, firstName, lastName, email, role},
             activityName: activity
@@ -109,7 +109,7 @@ module.exports = app => {
         try {
             const user = await models.User.findOne({ userName: userData.userName });
             if (user) {
-                const isequal = await bcrypt.compare(userData.password, models.User.passwordHash);
+                const isequal = await bcrypt.compare(userData.password, user.passwordHash);
 
                 if ( isequal ) {
                     if ( !models.User.isVerified ) {

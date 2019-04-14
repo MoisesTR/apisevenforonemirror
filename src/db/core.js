@@ -16,7 +16,12 @@ module.exports = app => {
             const modelo = require(modelDir)(Schema, db.model);
             db.models[path.basename(filename, '.js')] = modelo;
         });
-
+    //
+    // db.models.Role.findAll()
+    //     .then(roles => {
+    //         if (roles.length() === 0)
+    //             console.log('no hay roles')
+    //     })
 
     return db;
 };
