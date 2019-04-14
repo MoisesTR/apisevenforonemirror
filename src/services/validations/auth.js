@@ -35,7 +35,7 @@ exports.changeStateUser = [
     param('userId').custom(isObjectId),
     query('enabled').isBoolean(),
     sanitize('enabled').toBoolean()
-]
+];
 
 exports.getUsers = [
 
@@ -43,4 +43,9 @@ exports.getUsers = [
 
 exports.getUser = [
 
+];
+
+exports.createRole = [
+  body('name', 'Name are required!').isLength({min: 3, max: 50}),
+  body('description', 'Description are required!').isLength({min: 3, max: 200})
 ];
