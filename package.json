@@ -23,6 +23,7 @@
     "morgan": "~1.9.0",
     "nodemailer": "^5.1.1",
     "nodemailer-sendgrid-transport": "^0.2.0",
-    "randomstring": "^1.1.5"
+    "randomstring": "^1.1.5",
+    "winston": "^3.2.1"
   }
 }
