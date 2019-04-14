@@ -112,7 +112,7 @@ module.exports = app => {
                 const isequal = await bcrypt.compare(userData.password, user.passwordHash);
 
                 if ( isequal ) {
-                    if ( !models.User.isVerified ) {
+                    if ( !user.isVerified ) {
                         throw { status: 401, code: 'NVERIF', message: 'You need to verify your email address in order to login'}
                     }
                     // if ( models.User.enabled === false ) {
@@ -124,11 +124,11 @@ module.exports = app => {
                     if ( !userData.getUserInfo ) {
                         console.log('Sending the token', user);
                         let {_token : tokenGen, expiration} = await jwt.createToken(user);
-                        if ( models.User.secretToken === "") {
+                        if ( user.secretToken === "") {
                             const refreshToken = randomstring.generate(20);
-                            models.User.secretToken = refreshToken;
+                            user.secretToken = refreshToken;
                         }
-                        const saveResult = await models.User.save();
+                        const saveResult = await user.save();
                         res.status(200)
                         .json({
                             token: tokenGen,
@@ -177,7 +177,7 @@ module.exports = app => {
             console.log(user);
 
             if ( user ) {
-                return models.User.verifyToken()
+                return user.verifyToken()
             } else {
                 throw {
                     status: 400,
@@ -197,12 +197,12 @@ module.exports = app => {
 
     methods.updateUser = (req, res) => {
         const userData = matchedData(req, { locations: ['body', 'query']});
-        if ( userId != req.models.User._id ) {
+        if ( userId != req.user._id ) {
             return res.status(403)
                     .json({
                         status: 403,
                         code: 'EUNAUTH',
-                        message: 'You cant not edit this models.User.'
+                        message: 'You cant not edit this User.'
                     });
         }
         models.User.updateUser( userData )
@@ -256,13 +256,13 @@ module.exports = app => {
                 message: 'The refresh token is not valid.'
             };
 
-            if( models.User._id.toString() !== req.models.User._id.toString() ) {
+            if( user._id.toString() !== req.user._id.toString() ) {
                 throw {
                     status: 401, code:'ITOKEN',
-                    message: 'The sent token does not belong to your models.User.',
+                    message: 'The sent token does not belong to your User.',
                 }
             }
-            if ( models.User.enabled == 0 ) {
+            if ( user.enabled == 0 ) {
                throw {
                         status:403, code:'UDESH',
                         message:'Tu usuario se encuentra deshabilitado!'
@@ -275,7 +275,7 @@ module.exports = app => {
                     refreshToken,
                     expiration
                 });
-            saveLog(models.User._id, {userName: models.User.userName},`${userName} refresh token.`)
+            saveLog(user._id, {userName: user.userName},`${userName} refresh token.`)
         } catch( _err ) {
             next( _err );
         }
