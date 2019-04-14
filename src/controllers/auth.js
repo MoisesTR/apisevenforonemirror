@@ -12,6 +12,8 @@ const transporter = nodemailer.createTransport(sendgridTransport({
     }
 }));
 
+//Logger
+const logger = require('../utils/logger');
 
 module.exports = app => {
     const URL_HOST  = process.env.URL_HOST ;
@@ -106,6 +108,8 @@ module.exports = app => {
         const   userData = matchedData(req);
         console.log('Visto');
         console.log(userData);
+        logger.info('Login usuario');
+
 
         try {    
             // find user by username or email
