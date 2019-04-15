@@ -1,6 +1,7 @@
 'use strict';
+const bson = require('bson');
 
-module.exports = ( Schema, model) => {
+module.exports = ( Schema, model, mongoose) => {
 
     const memberSchema = new Schema({
        userId: {
@@ -18,9 +19,20 @@ module.exports = ( Schema, model) => {
         initialInvertion: {
             type: Schema.Types.Number,
             required: true,
-            unique: true
+            unique: true,
+            index: true
         },
         members: [memberSchema],
+        winners: {
+            type: Schema.Types.Number,
+            required: true,
+            default: 0
+        },
+        totalInvested: {
+            type: Schema.Types.Number,
+            required: true,
+            default: 0
+        },
         enabled: {
             type: Boolean,
             required: true,
@@ -30,23 +42,49 @@ module.exports = ( Schema, model) => {
         timestamps: true
     });
 
-    groupSchema.methods.addMember = async (memberData) => {
+    groupSchema.methods.removeMember = async function( memberId ) {
+        console.log(this.members)
+        console.log(mongoose.Types.ObjectId(memberId))
+        this.members.forEach(member => {
+            console.log(mongoose.Types.ObjectId(member.userId)
+                            .equals( mongoose.Types.ObjectId(memberId)))
+        })
+        const removeMember = this.members.find(member => member.userId.equals(mongoose.Types.ObjectId(memberId)));
+        if (!removeMember )
+            throw  { status: 404, message: 'This user is not a member of this group!'};
+        removeMember.remove();
+
+        return this.save();
+    };
+
+    groupSchema.methods.addMember = async function(memberData, payReference) {
         const maxGroupSize = process.env.MAX_MEMBERS_PER_GROUP || 6;
 
-        const session = await app.db.core.mongoose.startSession();
+        const session = await mongoose.startSession();
         try {
             session.startTransaction();
             const membersSize = this.members.length;
+            // const alreadyIndex = this.members.find( member => member.userId.equals( memberData.userId))
+            // if ( alreadyIndex )
+            //     throw {status: 409, message: 'This user is already member!'}
             if ( membersSize >= maxGroupSize ) {
                 const winner = this.members.shift();
-                console.log('Hay un ganador', winner);
+                /**
+                 * TODO: Create pay prize reference
+                 */
+                const userHistory = this.model('PurchaseHistory')({userId: winner.userId, action: 'win',  groupId:this._id ,quantity:this.initialInvertion *6, payReference: 'pay prize reference'});
+                this.winners++;
+                await userHistory.save();
             }
-            const user = await app.db.core.models.User.find(userId);
+            const user = await this.model('User').findById(memberData.userId);
             if ( !user )
                 throw {status: 404, message: 'User not found!'};
+
             this.members.push({...memberData});
+
+            this.totalInvested += this.initialInvertion;
             await this.save();
-            const userHistory = app.db.core.models.UserHistory({userId: memberData.userId, action: 'Are joined'});
+            const userHistory = this.model('PurchaseHistory')({userId: memberData.userId, action: 'invest',  groupId:this._id ,quantity: this.initialInvertion,payReference: payReference});
             await userHistory.save();
             session.commitTransaction();
         } catch ( _err ) {

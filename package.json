@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "start": "node ./src/app.js",
-    "start-watch": "nodemon ./bin/www"
+    "start-watch": "nodemon ./src/app.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "bson": "^4.0.2",
     "compression": "^1.7.3",
     "consign": "^0.1.6",
     "cookie-parser": "~1.4.3",

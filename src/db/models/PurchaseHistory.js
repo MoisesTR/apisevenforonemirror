@@ -15,17 +15,25 @@ module.exports  = ( Schema, model) => {
             type: Schema.Types.Boolean,
             required: true,
             default: function() {
-                return ( this.action === 'win' );
+                console.log('valor',this, this.action !== 'win')
+                return this.action !== 'win';
             },
         },
         action: {
             type: String,
             enum: ['win','invest'],
             required: true,
+        },
+        payReference: {
+            type: String,
+        },
+        quantity: {
+            type: Schema.Types.Decimal128,
+            required: true
         }
     },{
         timestamps: true
     });
 
-    return model('UserHistory', purchaseHistory);
+    return model('PurchaseHistory', purchaseHistory);
 };

@@ -14,7 +14,7 @@ module.exports = app => {
         })
         .forEach(filename => {
             const modelDir = path.join(dir, filename);
-            const modelo = require(modelDir)(Schema, db.model);
+            const modelo = require(modelDir)(Schema, db.model, mongoose);
             db.models[path.basename(filename, '.js')] = modelo;
         });
     //

@@ -10,16 +10,16 @@ exports.isValidDate = (value, fieldName) => {
     }
     date = date.toISOString();
     return date;
-}
+};
 
 exports.isObjectId = (value) => {
+    console.log(ObjectId.isValid())
     return ObjectId(value);
-} 
+};
 
 exports.validsParams = (req, res, next) => {
     const errors = validationResult(req);
     if ( !errors.isEmpty() )
-        res.status(400).json(errors.array()) 
-    else 
-        next();
-}
+        return res.status(400).json(errors.array());
+    next();
+};

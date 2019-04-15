@@ -4,7 +4,7 @@ const randomNumber = require('random-number');
 // To send Mails
 const nodemailer = require('nodemailer');
 const sendgridTransport = require('nodemailer-sendgrid-transport');
-const {mssqlErrors, matchedData} = require('../utils/defaultImports');
+const { matchedData, resultOrNotFound} = require('../utils/defaultImports');
 const saltRounds    = 10;
 const {getHtml} = require('../utils/verifyEmailUtil');
 const transporter = nodemailer.createTransport(sendgridTransport({
@@ -334,7 +334,7 @@ module.exports = app => {
 
     methods.updateUser = (req, res) => {
         const userData = matchedData(req, { locations: ['body', 'query']});
-        if ( userId != req.user._id ) {
+        if ( userData.userId != req.user._id ) {
             return res.status(403)
                     .json({
                         status: 403,
@@ -436,30 +436,5 @@ module.exports = app => {
             .catch(next)
     };
 
-    methods.getOwnPurchaseHistory = ( req, res, next ) => {
-        req.user.getPurchaseHistory()
-            .then( history => res.status(200).json(history))
-            .catch(next)
-    };
-
-    methods.getPurchaseHistory = ( req, res, next ) => {
-        const userId = req.params.userId;
-
-        mode.User.find(userId)
-            .then(user => {
-                if (!user )
-                    res.status(404).json({message: 'User not found!'});
-                return user.getPurchaseHistory()
-            })
-            .then( history => res.status(200).json(history))
-            .catch(next)
-    };
-
     return methods;
-};
-
-const resultOrNotFound = ( resp, result, name ) => {
-    const cnf = {status: !result ? 404 : 200, message: `${name} not found!`};
-    resp.status(cnf.status)
-        .json(!result ? cnf : result)
 };
