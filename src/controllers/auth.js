@@ -50,12 +50,9 @@ module.exports = app => {
                     throw { status: 400, code: "AUTHNOR", message: "You must use your normal authentication!" };
                 } else {
      
-                    let {_token : tokenGen, expiration} = await jwt.createToken(user);
-                    
-                    if ( user.secretToken === "") {
-                        const refreshToken = randomstring.generate(20);
-                        user.secretToken = refreshToken;
-                    }
+                    let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
+                    if ( user.secretToken === "")
+                        user.secretToken = await jwt.createRefreshToken(user);
                     
                     const saveResult = await user.save();
                     
