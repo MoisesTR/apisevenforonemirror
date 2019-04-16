@@ -15,6 +15,17 @@ exports.signUp = [
     sanitize('birthDate').toDate()
 ];
 
+exports.updateUser =[
+    param('userId').custom(isObjectId),
+    body('firstName', 'Must be a String, min length 3 max length 150').isLength({min: 3, max: 150}),
+    body('lastName', 'Must be a String, min length 3 max length 150').isLength({min: 3, max: 150}),
+    body('phones', 'Must be a Array of Strings').isArray().optional({ nullable: true }),
+    body('phones.*').isLength({min: 7, max: 25}).optional({ nullable: true }),
+    body('role').isString(),
+    body('birthDate', 'Must be a Valid Date').custom(isValidDate).optional({ nullable: true }),
+    body('gender').isString().optional({ nullable: true }),
+];
+
 exports.signIn = [
     body('userName').isLength({min: 4, max: 40}),
     body('password').isLength({min: 5, max: 25})

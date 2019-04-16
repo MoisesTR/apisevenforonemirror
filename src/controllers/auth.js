@@ -325,14 +325,18 @@ module.exports = app => {
                         message: 'You cant not edit this User.'
                     });
         }
-        models.User.updateUser( userData )
-        .then( result => {
-            res.status(200)
-                .json({
-                    status: 200,
-                    message: 'Usuario actualizado'
-                });
+        models.User.findById( userData.userId )
+        .then( user => {
+            if (!user)
+                throw { status: 404, message:'User not found!'};
+            return user.updateUser(userData)
         })
+        .then( userUpdate => res.status(200)
+            .json({
+                status: 200,
+                message: 'Usuario actualizado'
+            })
+        )
         .catch( err => {
             res.status(err.status || 500)
                 .json(mssqlErrors(err))

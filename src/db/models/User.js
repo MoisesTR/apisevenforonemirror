@@ -75,6 +75,16 @@ module.exports = ( Schema, model ) => {
         return this.save();
     };
 
+    userSchema.methods.updateUser = function( {firstName, lastName, phones, role, birthDate, gender} ) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.phones = phones;
+        this.role = role;
+        this.birthDate = birthDate;
+        this.gender = gender;
+        return this.save();
+    }
+
     userSchema.methods.getPurchaseHistory = function () {
         return this.model('PurchaseHistory').find()
     };
