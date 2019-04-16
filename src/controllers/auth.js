@@ -90,7 +90,7 @@ module.exports = app => {
 
                 const insertInfo =  await user.save();
 
-                let {_token : tokenGen, expiration} = await jwt.createToken(user);
+                let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
                 
                 saveLog( 
                     insertInfo._id
@@ -388,7 +388,7 @@ module.exports = app => {
                         message:'Tu usuario se encuentra deshabilitado!'
                     };
             }
-            const {_token : tokenGen, expiration} = await jwt.createToken(user);
+            const {_token : tokenGen, expiration} = await jwt.createRefreshToken(user);
                 res.status(200)
                 .json({
                     token: tokenGen,
