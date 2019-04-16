@@ -17,8 +17,7 @@ exports.signUp = [
 
 exports.signIn = [
     body('userName').isLength({min: 4, max: 40}),
-    body('password').isLength({min: 5, max: 25}),
-    body('getUserInfo')
+    body('password').isLength({min: 5, max: 25})
 ];
 
 exports.signInGoogle = [

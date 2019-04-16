@@ -237,49 +237,35 @@ module.exports = app => {
      */
     methods.signIn = async ( req, res, next ) => {
         const   userData = matchedData(req);
-        console.log('Visto');
-        console.log(userData);
         logger.info('Login usuario');
-
-
-        try {    
+        console.log(userData)
+        try {
             // find user by username or email
-            const user = await models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]});
+            const user = await models.User.findOne({userName: userData.userName});
+            logger.info(user)
             if (user) {
                 const isequal = await bcrypt.compare(userData.password, user.passwordHash);
-
+                console.log(user)
                 if ( isequal ) {
-                    if ( !user.isVerified ) {
-                        throw { status: 401, code: 'NVERIF', message: 'You need to verify your email address in order to login'}
-                    }
-                    // if ( models.User.enabled === false ) {
-                    //     res.status(403)
-                    //             .json({
-                    //                 status:403, code:'UDISH',   message:'Your user has been disabled!'
-                    //             });
-                    // }
-                    if ( !userData.getUserInfo ) {
-                        console.log('Sending the token', user);
-                        let {_token : tokenGen, expiration} = await jwt.createToken(user);
-                        if ( user.secretToken === "") {
-                            const refreshToken = randomstring.generate(20);
-                            user.secretToken = refreshToken;
-                        }
-                        const saveResult = await user.save();
-                        res.status(200)
+                    if ( !user.isVerified )
+                        throw { status: 401, code: 'NVERIF', message: 'You need to verify your email address in order to login'};
+                    if ( !user.enabled )
+                        throw { status:403, code:'UDISH',   message:'Your user has been disabled!' };
+                    console.log('Sending the token', user);
+                    let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
+                    if ( user.secretToken === "")
+                        user.secretToken = await jwt.createRefreshToken(user);
+
+                    const saveResult = await user.save();
+                    res.status(200)
                         .json({
                             token: tokenGen,
                             refreshToken: saveResult.secretToken,
                             expiration });
-                            saveLog(saveResult._id, {userName: saveResult.userName},`${saveResult.userName} joined us.`)
-                        } else {
-                        console.log('Sending the user info.');
-                        res.status(200)
-                            .json(user);
-                    }
-                } else {
+                            // saveLog(saveResult._id, {userName: saveResult.userName},`${saveResult.userName} joined us.`)
+
+                } else
                     throw { status: 401, code: 'EPASSW', message: 'Wrong Password.' };
-                }
             } else {
                 console.log('User not found!');
                 throw { status: '401', code: 'NEXIST', message: 'User not found!' };

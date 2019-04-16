@@ -1,35 +1,44 @@
 'use strict';
 const jwt       = require('jsonwebtoken');
 const moment    = require('moment');
-const secret    = "R3st@urAn3_C4aN";
+const accessSecret = process.env.JWT_SECRET || "NIC@R46U@";
+const refreshSecret = process.env.JWT_REFRESH_SECRET || "R3@CT_Cl13nt_7X0ne";
 
 module.exports = app => {
     let methods = {};
     const models = app.db.core.models;
-    /**
-     * @name createToken
-     * @description Esta funcion recibe un usuario, para la creacion de un token personalizado
-     * @param {Object} user
-     */
-    methods.createToken = async ( user )  => {
-        let     _token  ='';
-        const   payload = {
-            sub:        user._id,
-            userName:   user.userName,
-            email:      user.email,
-            iar:    moment().unix(), /* Fecha de creacion */
-            exp:    moment().add(1,"hours").unix() /* Token expira en un dia */
+
+    async function createToken(customPayload, secret, expiration, unitTime) {
+        let _token;
+        const payload = {
+            ...customPayload,
+            // iar:    moment().unix(), /* Fecha de creacion */
+            exp: moment().add(expiration, unitTime).unix() /* Token expira en una hora */
         };
         //jsonwebtoken agrega el campo iat por defecto
         //Generated jwts will include an iat (issued at) claim by default unless noTimestamp is specified.
         //If iat is inserted in the payload, it will be used instead of the real timestamp for calculating other things like exp given a timespan in options.expiresIn.
         //En este caso la fecha de expiracion la calculamos con moment
-        console.log('Creando payload');
-        _token  = await jwt.sign(payload, secret);
-        return { _token, expiration: payload.exp}
+        //HMAC SHA256
+        _token = await jwt.sign(payload, secret);
+        return {_token, expiration: payload.exp}
+    }
+
+    methods.createAccessToken = async (user, expiration = 10, unitOfTime = "minutes") => {
+        return createToken({
+            sub: user._id,
+            email: user.email,
+            username: user.userName,
+        }, accessSecret, expiration, unitOfTime)
     };
 
-    async function verifyToken( token ) {
+    methods.createRefreshToken = async (user, expiration = 1, unitOfTime = "hours") => {
+        return createToken({
+            sub: user._id
+        }, refreshSecret, expiration, unitOfTime)
+    };
+
+    async function verifyToken( token, secret ) {
         let _decoded;
         try {
             _decoded = await jwt.verify( token, secret );
@@ -73,7 +82,8 @@ module.exports = app => {
         const token   = req.headers.authorization.replace(/['"]+/g,'').replace('Bearer ', '');
 
         try {
-            const decode = await verifyToken( token );
+            const decode = await verifyToken( token, accessSecret );
+            console.log(decode)
             const user =  await models.User.findById( decode.sub );
             //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
             if ( !!user ) {
@@ -112,6 +122,20 @@ module.exports = app => {
         }
     };
 
+    methods.midOwnUserOrAdmon = ( req, res, next )  => {
+        const receivedId = req.params.id_user || req.body.id_user;
+        /**
+         * TODO: Obtener el rol de administrador al desplegar la aplicacion
+         */
+        console.log(global.roleAdmon, req.user.id_role)
+        if ( (req.user.id_user !== +receivedId) || (req.user.id_role !== global.roleAdmon) )
+            return next({
+                status: 403,
+                code: 'NOTPER',
+                message: 'You dont have permission!'
+            });
+        next();
+    };
 
     return methods;
 };
