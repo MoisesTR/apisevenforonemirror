@@ -65,7 +65,7 @@ module.exports = app => {
                     .json({
                         status: 401,
                         code:   'NAUTH',
-                        message:'La peticion no tiene cabecera de autenticaciòn'
+                        message: 'The request has no authentication header'
                     });
         }
         next();
@@ -88,12 +88,12 @@ module.exports = app => {
             //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
             if ( !!user ) {
                 //Si encontramos el usuario
-                console.log('Se encontro el usuario');
+                console.log('The user was found');
                 if ( user.enabled === false ) {
                     //si el usuario se encuentra deshabilitado
                     throw {
                             status:401, code:'EPUSER',
-                            message:'Usuario deshabilitado,favor contactar con soporte AtomicDev.'
+                            message: 'User disabled, please contact support AtomicDev.'
                         };
                 }
                 //Si el usuario esta habilitado se procede a actualizar el username y el email

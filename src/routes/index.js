@@ -18,7 +18,7 @@ module.exports =  app => {
       .post('/game-groups/members/:groupId', containToken, ensureAuth, groupValidations.addMemberToGroup,  validsParams, gameController.addMemberToGroup)
       .delete('/game-groups/members/:groupId',  containToken,ensureAuth, groupValidations.removeMemberFromGroup, validsParams, gameController.removeMemberFromGroup)
       .get('/purchase-history/me',   containToken, ensureAuth, gameController.getOwnPurchaseHistory)
-      .get('/purchase-history',   containToken, ensureAuth, gameController.getPurchaseHistory)
+      .get('/purchase-history/:userId',   containToken, ensureAuth, gameController.getPurchaseHistory)
 
   app.use('/', router);
 };

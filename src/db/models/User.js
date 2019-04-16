@@ -1,5 +1,9 @@
 'use strict';
 
+var validGenders = {
+    values : ['M', 'F'],
+    message: '{VALUE} is an invalid gender'
+};
 module.exports = ( Schema, model ) => {
 
     const userSchema = new Schema({
@@ -32,6 +36,7 @@ module.exports = ( Schema, model ) => {
         },
         gender: {
            type: String
+           , enum: validGenders
         },
         secretToken: {
             type: String,
@@ -69,8 +74,10 @@ module.exports = ( Schema, model ) => {
     });
 
     userSchema.methods.verifyToken = function( ) {
-        this.secretToken = "";
+        // Descomentar secretToken hasta que el metodo refresh token funcione correctamente
+        // this.secretToken = "";
         this.isVerified = true;
+        this.enabled = true;
 
         return this.save();
     };
@@ -79,14 +86,18 @@ module.exports = ( Schema, model ) => {
         this.firstName = firstName;
         this.lastName = lastName;
         this.phones = phones;
-        this.role = role;
         this.birthDate = birthDate;
         this.gender = gender;
         return this.save();
-    }
+    };
 
     userSchema.methods.getPurchaseHistory = function () {
         return this.model('PurchaseHistory').find()
     };
+
+    userSchema.methods.getPurchaseHistoryById = function (userId) {
+        return this.model('PurchaseHistory').find({userId: userId})
+    };
+
     return model('User', userSchema);
 };

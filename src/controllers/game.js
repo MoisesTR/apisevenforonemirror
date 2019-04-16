@@ -56,7 +56,11 @@ module.exports  = app => {
                 if (!group)
                     throw ({ status: 404, message: 'Group not found!'});
                 console.log(group)
-                return group.addMember({userId: req.user._id, userName: req.user.userName}, relationData.payReference)
+                return group.addMember({
+                    userId: req.user._id
+                    , userName: req.user.userName
+                    , image: req.user.image
+                } , relationData.payReference)
             })
             .then(result => res.status(201).json({message: 'Succesful member added!'}))
             .catch(next)
@@ -75,6 +79,7 @@ module.exports  = app => {
             .catch(next)
     };
     methods.getOwnPurchaseHistory = ( req, res, next ) => {
+        console.log(req.user);
         req.user.getPurchaseHistory()
             .then( history => res.status(200).json(history))
             .catch(next)
@@ -82,12 +87,11 @@ module.exports  = app => {
 
     methods.getPurchaseHistory = ( req, res, next ) => {
         const userId = req.params.userId;
-
-        mode.User.find(userId)
+        models.User.findById(userId)
             .then(user => {
                 if (!user )
                     res.status(404).json({message: 'User not found!'});
-                return user.getPurchaseHistory()
+                return user.getPurchaseHistoryById(userId)
             })
             .then( history => res.status(200).json(history))
             .catch(next)
