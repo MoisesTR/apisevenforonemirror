@@ -26,7 +26,7 @@ module.exports = app => {
 
     methods.getRole = (req, res, next) => {
         const roleId = req.params.roleId;
-
+        console.log(roleId);
         models.Role
             .findById( roleId )
             .then( role => {

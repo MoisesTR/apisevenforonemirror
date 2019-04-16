@@ -11,6 +11,9 @@ module.exports = ( Schema, model, mongoose) => {
         userName: {
            type: Schema.Types.String,
            required: true
+        },
+        image: {
+            type: Schema.Types.String,
         }
     },{
         timestamps: true
@@ -58,21 +61,21 @@ module.exports = ( Schema, model, mongoose) => {
     };
 
     groupSchema.methods.addMember = async function(memberData, payReference) {
-        const maxGroupSize = process.env.MAX_MEMBERS_PER_GROUP || 6;
+        const maxGroupSize = process.env.MAX_MEMBERS_PER_GROUP || 2;
 
         const session = await mongoose.startSession();
         try {
             session.startTransaction();
             const membersSize = this.members.length;
-            // const alreadyIndex = this.members.find( member => member.userId.equals( memberData.userId))
-            // if ( alreadyIndex )
-            //     throw {status: 409, message: 'This user is already member!'}
+            const alreadyIndex = this.members.find( member => member.userId.equals( memberData.userId))
+            if ( alreadyIndex )
+                throw {status: 409, message: 'This user is already member!'}
             if ( membersSize >= maxGroupSize ) {
                 const winner = this.members.shift();
                 /**
                  * TODO: Create pay prize reference
                  */
-                const userHistory = this.model('PurchaseHistory')({userId: winner.userId, action: 'win',  groupId:this._id ,quantity:this.initialInvertion *6, payReference: 'pay prize reference'});
+                const userHistory = this.model('PurchaseHistory')({userId: winner.userId, action: 'win',  groupId:this._id ,quantity:this.initialInvertion * 3, payReference: 'pay prize reference'});
                 this.winners++;
                 await userHistory.save();
             }

@@ -39,11 +39,11 @@ module.exports = app => {
                 ok : false
                 , message: 'Token not valid!'
             });
-        })
+        });
 
         try {
 
-            const user = await models.User.findOne({email: googleUser.email});
+            const user = await models.User.findOne({email: googleUser.email}).populate('role');
 
             if (user) {
                 if (!user.google) {
@@ -51,9 +51,11 @@ module.exports = app => {
                 } else {
      
                     let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
-                    if ( user.secretToken === "")
+                    if ( user.secretToken === "") {
                         user.secretToken = await jwt.createRefreshToken(user);
-                    
+                        logger.info('Create secret token');
+                    }
+
                     const saveResult = await user.save();
                     
                     res.status(200)
@@ -82,7 +84,7 @@ module.exports = app => {
                     google: googleUser.google,
                     email: googleUser.email,
                     passwordHash: hashPassw,
-                    role: userData.role,
+                    role: userData.role._id,
                     isVerified: true,
                     secretToken: secretToken,
                     enabled: true
@@ -91,18 +93,20 @@ module.exports = app => {
                 const insertInfo =  await user.save();
 
                 let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
-                
-                saveLog( 
-                    insertInfo._id
-                    , { userName:insertInfo.userName
-                        , firstName:insertInfo.firstName
-                        , lastName:insertInfo.lastName
-                        , email:insertInfo.email
-                        , role:insertInfo.role }
-                        ,'The user was successfully register!');
+                const userInfo = await models.User.findOne({email: googleUser.email}).populate('role');
+
+                logger.info('Token de usuario creado');
+                // saveLog(
+                //     insertInfo._id
+                //     , { userName:insertInfo.userName
+                //         , firstName:insertInfo.firstName
+                //         , lastName:insertInfo.lastName
+                //         , email:insertInfo.email
+                //         , role:insertInfo.role}
+                //         ,'The user was successfully register!');
                 res.status(200)
                 .json({
-                    user: user
+                    user: userInfo
                     , token: tokenGen
                     , refreshToken: user.secretToken
                     , expiration 
@@ -115,13 +119,14 @@ module.exports = app => {
     };
 
     function generateRandomUserName(email) {
-        var options = {
+        const options = {
             min:  0
           , max:  999
           , integer: true
-        }
-        var number = randomNumber(options);
-        var arrays = email.split('@') ;
+        };
+
+        const number = randomNumber(options);
+        const arrays = email.split('@') ;
         return arrays[0] + number;
     }
 
@@ -158,14 +163,14 @@ module.exports = app => {
             //Si se encontro mas de un usuario
             if ( users.length > 1 ) {
                 // console.log(usersfind.recordset[0])
-                throw { status: 401, code: "UEEXIST", message: "No se registro el usuario, email y username ya se encuentran registrados!" };
+                throw { status: 401, code: "UEEXIST", message: "Not registered user, email and username are already registered!" };
                 //res.status(401).json({code:"UEXIST",message:"No se registro el usuario, email o username ya registrados!"})
             } else if ( users.length === 1 ) {
                 // if(usersfind[0].username == userData.username || usersfind[1].username== userData.username)
                 if ( users[0].Username === userData.Username )
                     throw { status: 401, code: "UEXIST", message: 'The userName:' + userData.userName + ' already exists!' };
                 else
-                    throw { status: 401, code: "EEXIST", message: 'No se registro el usuario con email:' + userData.Email + ', ya se encuentra registrado!' };
+                    throw { status: 401, code: "EEXIST", message: 'The user was not registered with email:' + userData.email + ', already registered!' };
             } else {
                 const token = randomstring.generate(20);
                 const user = new models.User({
@@ -175,7 +180,7 @@ module.exports = app => {
                     email: userData.email,
                     passwordHash: hashPassw,
                     phones: userData.phones,
-                    role: userData.role,
+                    role: userData.role._id,
                     birthDate: userData.birthDate,
                     gender: userData.gender,
                     isVerified: false,
@@ -183,8 +188,14 @@ module.exports = app => {
                     enabled: false
                 });
                 const insertInfo =  await user.save();
-                // console.log(insertInfo._id);
-                saveLog( insertInfo._id, {userName:insertInfo.userName, firstName:insertInfo.firstName, lastName:insertInfo.lastName, email:insertInfo.email, role:insertInfo.role},'The user was successfully register!');
+
+                saveLog( insertInfo._id
+                    , {userName:insertInfo.userName
+                        , firstName:insertInfo.firstName
+                        , lastName:insertInfo.lastName
+                        , email:insertInfo.email
+                        , role:insertInfo.role}
+                        ,'The user was successfully register!');
                 res.status(201)
                     .json({
                         success: 'You have successfully registered, proceed to verify your email!'
@@ -235,27 +246,32 @@ module.exports = app => {
     methods.signIn = async ( req, res, next ) => {
         const   userData = matchedData(req);
         logger.info('Login usuario');
-        console.log(userData)
+
         try {
             // find user by username or email
-            const user = await models.User.findOne({userName: userData.userName});
-            logger.info(user)
+            const user = await models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]}).populate('role');
             if (user) {
                 const isequal = await bcrypt.compare(userData.password, user.passwordHash);
-                console.log(user)
+
                 if ( isequal ) {
+
                     if ( !user.isVerified )
                         throw { status: 401, code: 'NVERIF', message: 'You need to verify your email address in order to login'};
                     if ( !user.enabled )
-                        throw { status:403, code:'UDISH',   message:'Your user has been disabled!' };
-                    console.log('Sending the token', user);
+                        throw { status:403, code: 'UDISH',   message:'Your user has been disabled!' };
+
                     let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
-                    if ( user.secretToken === "")
+
+                    if ( user.secretToken === "") {
+                        logger.info('Create refresh token');
                         user.secretToken = await jwt.createRefreshToken(user);
+                    }
 
                     const saveResult = await user.save();
+
                     res.status(200)
                         .json({
+                            user: user,
                             token: tokenGen,
                             refreshToken: saveResult.secretToken,
                             expiration });

@@ -19,5 +19,5 @@ exports.addMemberToGroup = [
 
 exports.removeMemberFromGroup = [
     param('groupId').custom(isObjectId),
-    body('userId').isLength({min: 10}).custom(isObjectId)
+    param('userId').isLength({min: 10}).custom(isObjectId)
 ];
