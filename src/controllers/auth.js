@@ -34,7 +34,7 @@ module.exports = app => {
 
         var googleUser = await verify(tokenGoogle)
         
-        .catch( e => {
+        .catch( () => {
             res.status(403).json({
                 ok : false
                 , message: 'Token not valid!'
@@ -57,7 +57,8 @@ module.exports = app => {
                     }
 
                     const saveResult = await user.save();
-                    
+                    user.passwordHash = '';
+
                     res.status(200)
                     .json({
                         user: user
@@ -66,7 +67,7 @@ module.exports = app => {
                         , expiration 
                     });
                     
-                    saveLog(saveResult._id, {userName: saveResult.userName},`${saveResult.userName} joined us.`)
+                    // saveLog(saveResult._id, {userName: saveResult.userName},`${saveResult.userName} joined us.`)
                 } 
 
             } else {
@@ -93,7 +94,9 @@ module.exports = app => {
                 const insertInfo =  await user.save();
 
                 let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
+
                 const userInfo = await models.User.findOne({email: googleUser.email}).populate('role');
+                userInfo.passwordHash = '';
 
                 logger.info('Token de usuario creado');
                 // saveLog(
@@ -189,22 +192,24 @@ module.exports = app => {
                 });
                 const insertInfo =  await user.save();
 
-                saveLog( insertInfo._id
-                    , {userName:insertInfo.userName
-                        , firstName:insertInfo.firstName
-                        , lastName:insertInfo.lastName
-                        , email:insertInfo.email
-                        , role:insertInfo.role}
-                        ,'The user was successfully register!');
+                // saveLog( insertInfo._id
+                //     , {userName:insertInfo.userName
+                //         , firstName:insertInfo.firstName
+                //         , lastName:insertInfo.lastName
+                //         , email:insertInfo.email
+                //         , role:insertInfo.role}
+                //         ,'The user was successfully register!');
                 res.status(201)
                     .json({
                         success: 'You have successfully registered, proceed to verify your email!'
                     });
+
+                logger.info('Sending email');
                 transporter.sendMail({
                     to: userData.email,
                     from: 'no-reply@sevenforone.com',
                     subject:"Welcome to Seven for One! Confirm Your Email",
-                    html: getHtml( insertInfo.userName, URL_HOST  + '/confirm/' + insertInfo.secretToken)
+                    html: getHtml( insertInfo.userName, URL_HOST  + '/confirm/' + insertInfo.secretToken + "/" + insertInfo.userName)
                 })
                 .then((result) => {
                     console.log('Email enviado', result);
@@ -268,6 +273,7 @@ module.exports = app => {
                     }
 
                     const saveResult = await user.save();
+                    user.passwordHash = '';
 
                     res.status(200)
                         .json({
@@ -415,7 +421,7 @@ module.exports = app => {
                     refreshToken,
                     expiration
                 });
-            saveLog(user._id, {userName: user.userName},`${userName} refresh token.`)
+            // saveLog(user._id, {userName: user.userName},`${userName} refresh token.`)
         } catch( _err ) {
             next( _err );
         }
