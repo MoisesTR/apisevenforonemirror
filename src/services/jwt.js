@@ -79,6 +79,13 @@ module.exports = app => {
      * @param {Middleware} next
      */
     methods.ensureAuth = async ( req, res, next ) => {
+        if ( !req.headers.authorization ) {
+            return next({
+                    status: 401,
+                    code:   'NAUTH',
+                    message: 'The request has no authentication header'
+                });
+        }
         const token   = req.headers.authorization.replace(/['"]+/g,'').replace('Bearer ', '');
 
         try {

@@ -385,8 +385,31 @@ module.exports = app => {
             next(_err);
         }
     };
+    methods.changePassword = async ( req, res, next ) => {
+        const userData =  matchedData(req,{locations: ['body','params']});
+
+        try {
+            const user = await models.User.findById( userData.userId );
+            if ( !user ) {
+                throw {
+                    status: 404,
+                    message: 'User not found!'
+                }
+            }
+            const hashPassw = await bcrypt.hash(userData.password, saltRounds);
+            user.passwordHash =  hashPassw;
+            await user.save();
+            res.status(200)
+                .json({
+                    message: 'Password changed.'
+                })
+        } catch ( _er ) {
+            next(_er);
+        }
+    };
 
     methods.getAuthenticateUserInfo = ( req, res ) => {
+        delete req.user.passwordHash;
         res.status(200)
             .json(req.user)
     };
