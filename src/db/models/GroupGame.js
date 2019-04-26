@@ -26,6 +26,12 @@ module.exports = ( Schema, model, mongoose) => {
             index: true
         },
         members: [memberSchema],
+        lastWinner: {
+            userId: Schema.Types.ObjectId,
+            firstName: String,
+            userName: String,
+            required: false
+        },
         winners: {
             type: Schema.Types.Number,
             required: true,

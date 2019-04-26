@@ -299,7 +299,7 @@ module.exports = app => {
 
         console.log(app.db);
         models.User
-        .find({},'firstName lastName userName email role birthDate isVerified enabled createdAt')
+        .find({},'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
         .populate('role')
         .exec()
         .then((result) => {
