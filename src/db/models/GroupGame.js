@@ -81,7 +81,7 @@ module.exports = ( Schema, model, mongoose) => {
                 /**
                  * TODO: Create pay prize reference
                  */
-                const userHistory = this.model('PurchaseHistory')({userId: winner.userId, action: 'win',  groupId:this._id ,quantity:this.initialInvertion * 7, payReference: 'pay prize reference'});
+                const userHistory = this.model('PurchaseHistory')({userId: winner.userId, action: 'win',  groupId:this._id ,quantity:this.initialInvertion * 6, payReference: 'pay prize reference'});
                 this.winners++;
                 await userHistory.save();
             }
