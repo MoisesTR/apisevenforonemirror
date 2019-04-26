@@ -13,8 +13,11 @@ const transporter = nodemailer.createTransport(sendgridTransport({
     }
 }));
 
+// Using require() in ES5
+const FB = require('fb').default;
+
 // GOOGLE AUTHENTICATION
-var CLIENT_ID = require('../config/config').CLIENT_ID;
+const CLIENT_ID = require('../config/config').CLIENT_ID;
 const {OAuth2Client} = require('google-auth-library');
 const client = new OAuth2Client(CLIENT_ID);
 
@@ -27,27 +30,112 @@ module.exports = app => {
     const jwt = app.services.jwt;
     let methods = {};
 
+
+    methods.signInFacebook = async ( req, res, next ) => {
+        const   userData    = matchedData(req);
+        console.log(userData);
+
+        FB.setAccessToken(userData.accessToken);
+        FB.api(
+            '/me',
+            'GET',
+            {"fields":"id,name,email,first_name,last_name,picture.width(300).height(300){url}"},
+            async (response) => {
+
+                if(!response || response.error) {
+                    logger.info(!response ? 'error occurred' : response.error);
+                    res.status(403).json({
+                        ok : false
+                        , message: !response ? 'error occurred' : response.error
+                    });
+                    return;
+                }
+
+                const facebookCredentials = {
+                    firstName : response.first_name
+                    , lastName: response.last_name
+                    , email: response.email
+                    , img: response.picture.data.url
+                    , provider: 'facebook'
+                };
+
+                console.log('Facebook credentials' + facebookCredentials);
+                verifyCredentialsFacebook(req, res, next, userData, facebookCredentials);
+            }
+        );
+
+    };
+
+    async function verifyCredentialsFacebook(req, res, next, userData, facebookCredentials) {
+
+        try {
+
+            const facebookUser = facebookCredentials;
+
+            const user = await models.User.findOne({email: facebookUser.email}).populate('role');
+
+            if (user) {
+                if (user.provider === 'none') {
+                    throw { status: 400, code: "AUTHNOR", message: "You must use your normal authentication!" };
+                } else if (user.provider === 'google') {
+                    throw { status: 400, code: "AUTHNOR", message: "This email already has a Registered Gmail account!" };
+                } else {
+
+                    let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
+                    if ( user.secretToken === "") {
+                        user.secretToken = await jwt.createRefreshToken(user);
+                        logger.info('Create secret token');
+                    }
+
+                    const saveResult = await user.save();
+                    user.passwordHash = '';
+
+                    logger.info('Sending info to login');
+                    res.status(200)
+                        .json({
+                            user: user
+                            , token: tokenGen
+                            , refreshToken: saveResult.secretToken
+                            , expiration
+                        });
+                }
+            } else {
+
+                const dataLogin = await createUserWithSocialLogin(userData, facebookUser);
+
+                logger.info('Sending info to login');
+                res.status(200).json(dataLogin);
+            }
+
+        } catch ( _err ) {
+            next(_err)
+        }
+    }
+
     //funcion registro
     methods.signInGoogle = async ( req, res, next ) => {
         const   userData    = matchedData(req);
-        const tokenGoogle = userData.tokenGoogle;
+        const accessToken = userData.accessToken;
+        logger.info('Token google: ' + accessToken);
 
-        var googleUser = await verify(tokenGoogle)
-        
-        .catch( () => {
-            res.status(403).json({
+        const googleUser = await verify(accessToken).catch( () => {
+            return res.status(403).json({
                 ok : false
                 , message: 'Token not valid!'
             });
         });
+
+        if (!googleUser) return;
 
         try {
 
             const user = await models.User.findOne({email: googleUser.email}).populate('role');
 
             if (user) {
-                if (!user.google) {
+                if (user.provider === 'none') {
                     throw { status: 400, code: "AUTHNOR", message: "You must use your normal authentication!" };
+                } else if (user.provider === 'facebook') {
+                    throw { status: 400, code: "AUTHNOR", message: "This email already has a Registered Facebook account!" };
                 } else {
      
                     let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
@@ -59,6 +147,7 @@ module.exports = app => {
                     const saveResult = await user.save();
                     user.passwordHash = '';
 
+                    logger.info('Sending info to login');
                     res.status(200)
                     .json({
                         user: user
@@ -66,60 +155,58 @@ module.exports = app => {
                         , refreshToken: saveResult.secretToken
                         , expiration 
                     });
-                    
-                    // saveLog(saveResult._id, {userName: saveResult.userName},`${saveResult.userName} joined us.`)
                 } 
 
             } else {
-                // El usuario no existe
-                userData.password = randomstring.generate(4);
-                const secretToken = randomstring.generate(20);
-                const hashPassw = await bcrypt.hash(userData.password, saltRounds);
-                const randomUserName = generateRandomUserName(googleUser.email);
-                
-                const user = new models.User({
-                    firstName: googleUser.firstName,
-                    lastName: googleUser.lastName,
-                    userName: randomUserName,
-                    image: googleUser.img,
-                    google: googleUser.google,
-                    email: googleUser.email,
-                    passwordHash: hashPassw,
-                    role: userData.role._id,
-                    isVerified: true,
-                    secretToken: secretToken,
-                    enabled: true
-                });
 
-                const insertInfo =  await user.save();
+                const dataLogin = await createUserWithSocialLogin(userData, googleUser);
 
-                let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
-
-                const userInfo = await models.User.findOne({email: googleUser.email}).populate('role');
-                userInfo.passwordHash = '';
-
-                logger.info('Token de usuario creado');
-                // saveLog(
-                //     insertInfo._id
-                //     , { userName:insertInfo.userName
-                //         , firstName:insertInfo.firstName
-                //         , lastName:insertInfo.lastName
-                //         , email:insertInfo.email
-                //         , role:insertInfo.role}
-                //         ,'The user was successfully register!');
-                res.status(200)
-                .json({
-                    user: userInfo
-                    , token: tokenGen
-                    , refreshToken: user.secretToken
-                    , expiration 
-                });
+                logger.info('Sending info to login');
+                res.status(200).json(dataLogin);
             }
 
         } catch ( _err ) {
             next(_err)
         }
     };
+
+    async function createUserWithSocialLogin(userData, socialUser) {
+
+        userData.password = randomstring.generate(4);
+        const secretToken = randomstring.generate(20);
+        const hashPassw = await bcrypt.hash(userData.password, saltRounds);
+        const randomUserName = generateRandomUserName(socialUser.email);
+
+        const user = new models.User({
+            firstName: socialUser.firstName,
+            lastName: socialUser.lastName,
+            userName: randomUserName,
+            image: socialUser.img,
+            provider: socialUser.provider,
+            email: socialUser.email,
+            passwordHash: hashPassw,
+            role: userData.role._id,
+            isVerified: true,
+            secretToken: secretToken,
+            enabled: true
+        });
+
+        const insertInfo =  await user.save();
+
+        let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
+
+        const userInfo = await models.User.findOne({email: socialUser.email}).populate('role');
+        userInfo.passwordHash = '';
+
+        logger.info('Token de usuario creado');
+
+        return {
+            user: userInfo
+            , token: tokenGen
+            , refreshToken: user.secretToken
+            , expiration
+        };
+    }
 
     function generateRandomUserName(email) {
         const options = {
@@ -145,6 +232,7 @@ module.exports = app => {
         const userid = payload['sub'];
         // If request specified a G Suite domain:
         //const domain = payload['hd'];
+        logger.info('Payload google user: ' + payload);
         console.log(payload);
         return {
             name: payload.name
@@ -152,7 +240,7 @@ module.exports = app => {
             , lastName: payload.family_name
             , email: payload.email
             , img: payload.picture
-            , google: true
+            , provider: 'google'
         }
     }
 
