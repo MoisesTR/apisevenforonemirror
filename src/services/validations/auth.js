@@ -42,7 +42,12 @@ exports.signIn = [
 
 exports.signInGoogle = [
     body('role').exists(),
-    body('tokenGoogle')
+    body('accessToken')
+];
+
+exports.signInFacebook = [
+    body('role').exists(),
+    body('accessToken')
 ];
 
 exports.verifyUser =  [

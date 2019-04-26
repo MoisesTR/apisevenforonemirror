@@ -16,6 +16,7 @@ module.exports = app => {
         .post('/signup',    validations.signUp,     validsParams,   authController.signUp)
         .post('/login',     validations.signIn,     validsParams,   authController.signIn)
         .post('/loginGoogle',     validations.signInGoogle,     validsParams,   authController.signInGoogle)
+        .post('/loginFacebook',   validations.signInFacebook, validsParams, authController.signInFacebook)
         .get( '/users',     validations.getUsers,   validsParams,   authController.getUsers)
         .get( '/users/:userId', validations.getUser,    validsParams,   authController.getUser)
         .post('/refreshtoken', ensureAuth, validations.refreshToken, validsParams, authController.refreshToken)
@@ -27,7 +28,7 @@ module.exports = app => {
         .delete('/users/:userId',    validations.changeStateUser,     validsParams,   authController.changeStateUser)
         .post('/roles\$', validations.createRole,   validsParams,   roleController.createRole)
         .get( '/roles\$',     roleController.getRoles)
-        .get( '/roles/:roleId', roleController.getRole)
+        .get( '/roles/:roleId', roleController.getRole);
 
     app.use('/auth', router);
 };

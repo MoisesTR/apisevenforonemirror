@@ -61,13 +61,9 @@ module.exports = ( Schema, model ) => {
             type: Boolean,
             required: true
         },
-        google : {
-            type: Boolean,
-            default: false
-        },
-        facebook : {
-            type: Boolean,
-            default: false
+        provider: {
+            type: String
+            , default : 'none'
         }
     },{
         timestamps: true
