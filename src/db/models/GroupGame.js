@@ -30,6 +30,7 @@ module.exports = ( Schema, model, mongoose) => {
             userId: Schema.Types.ObjectId,
             firstName: String,
             userName: String,
+            image: String,
             required: false
         },
         winners: {
