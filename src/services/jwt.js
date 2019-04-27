@@ -3,6 +3,7 @@ const jwt       = require('jsonwebtoken');
 const moment    = require('moment');
 const accessSecret = process.env.JWT_SECRET || "NIC@R46U@";
 const refreshSecret = process.env.JWT_REFRESH_SECRET || "R3@CT_Cl13nt_7X0ne";
+const logger = require('../utils/logger');
 
 module.exports = app => {
     let methods = {};
@@ -89,8 +90,9 @@ module.exports = app => {
         const token   = req.headers.authorization.replace(/['"]+/g,'').replace('Bearer ', '');
 
         try {
+            logger.info('Verificando token: ' + token)
             const decode = await verifyToken( token, accessSecret );
-            console.log(decode)
+            console.log(decode);
             const user =  await models.User.findById( decode.sub );
             //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
             if ( !!user ) {

@@ -271,7 +271,7 @@ module.exports = app => {
                     email: userData.email,
                     passwordHash: hashPassw,
                     phones: userData.phones,
-                    role: userData.role._id,
+                    role: userData.role,
                     birthDate: userData.birthDate,
                     gender: userData.gender,
                     isVerified: false,
@@ -355,10 +355,10 @@ module.exports = app => {
 
                     let {_token : tokenGen, expiration} = await jwt.createAccessToken(user);
 
-                    if ( user.secretToken === "") {
-                        logger.info('Create refresh token');
-                        user.secretToken = await jwt.createRefreshToken(user);
-                    }
+                    // if ( user.secretToken === "") {
+                    //     logger.info('Create refresh token');
+                    //     user.secretToken = await jwt.createRefreshToken(user);
+                    // }
 
                     const saveResult = await user.save();
                     user.passwordHash = '';

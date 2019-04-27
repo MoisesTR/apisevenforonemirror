@@ -12,13 +12,14 @@ module.exports =  app => {
   });
 
   router
-      .get('/game-groups',  containToken, ensureAuth, gameController.getGameGroups)
-      .get('/game-groups/:groupId', containToken, ensureAuth, groupValidations.getGroup, validsParams, gameController.getGroupMembers)
-      .post('/game-groups', containToken, ensureAuth, groupValidations.createGroup, validsParams, gameController.createGroup)
-      .post('/game-groups/members/:groupId', containToken, ensureAuth, groupValidations.addMemberToGroup,  validsParams, gameController.addMemberToGroup)
-      .delete('/game-groups/members/:groupId',  containToken,ensureAuth, groupValidations.removeMemberFromGroup, validsParams, gameController.removeMemberFromGroup)
-      .get('/purchase-history/me',   containToken, ensureAuth, gameController.getOwnPurchaseHistory)
-      .get('/purchase-history/:userId',   containToken, ensureAuth, gameController.getPurchaseHistory)
-
+      .get('/game-groups',  ensureAuth, gameController.getGameGroups)
+      .get('/game-groups/:groupId', ensureAuth, groupValidations.getGroup, validsParams, gameController.getGroupMembers)
+      .post('/game-groups', ensureAuth, groupValidations.createGroup, validsParams, gameController.createGroup)
+      .post('/game-groups/members/:groupId', ensureAuth, groupValidations.addMemberToGroup,  validsParams, gameController.addMemberToGroup)
+      .delete('/game-groups/members/:groupId',  ensureAuth, groupValidations.removeMemberFromGroup, validsParams, gameController.removeMemberFromGroup)
+      .get('/purchase-history/me',   ensureAuth, gameController.getOwnPurchaseHistory)
+      .get('/purchase-history/:userId',   ensureAuth, groupValidations.userIdParam, validsParams, gameController.getPurchaseHistory)
+      .get('/me/game-groups', ensureAuth, gameController.getMyCurrentsGroups)
+      .get('/game-groups/current/:userId',   ensureAuth, groupValidations.userIdParam, validsParams,gameController.getCurrentGroups)
   app.use('/', router);
 };

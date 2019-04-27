@@ -42,6 +42,10 @@ module.exports = ( Schema, model, mongoose) => {
             required: true,
             default: 0
         },
+        uniqueChance: {
+            type: Boolean,
+            default: false
+        },
         enabled: {
             type: Boolean,
             required: true,
@@ -74,21 +78,30 @@ module.exports = ( Schema, model, mongoose) => {
             session.startTransaction();
             const membersSize = this.members.length;
             const alreadyIndex = this.members.find( member => member.userId.equals( memberData.userId))
-            if ( alreadyIndex )
-                throw {status: 409, message: 'This user is already member!'}
+
+            if ( alreadyIndex && !!this.uniqueChance)
+                throw {status: 409, message: 'This user is already member!'};
+
+            const user = await this.model('User').findById(memberData.userId);
+            if ( !user )
+                throw {status: 404, message: 'User not found!'};
+
             if ( membersSize >= maxGroupSize ) {
                 const winner = this.members.shift();
                 /**
                  * TODO: Create pay prize reference
                  */
+                this.lastWinner = {
+                    userId: user._id,
+                    userName: user.userName,
+                    firstName: user.firstName,
+                    image: user.image
+                };
+
                 const userHistory = this.model('PurchaseHistory')({userId: winner.userId, action: 'win',  groupId:this._id ,quantity:this.initialInvertion * 6, payReference: 'pay prize reference'});
                 this.winners++;
                 await userHistory.save();
             }
-            const user = await this.model('User').findById(memberData.userId);
-            if ( !user )
-                throw {status: 404, message: 'User not found!'};
-
             this.members.push({...memberData});
 
             this.totalInvested += this.initialInvertion;
