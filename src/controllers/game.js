@@ -3,6 +3,7 @@ const { matchedData, resultOrNotFound} = require('../utils/defaultImports');
 module.exports  = app => {
     const methods = {};
     const models = app.db.core.models;
+    const {ObjectID} = app.db.core.mongo;
 
     methods.createGroup = ( req, res, next ) => {
         const groupData = matchedData(req, {locations: ['body']});
@@ -96,6 +97,22 @@ module.exports  = app => {
             .then( history => res.status(200).json(history))
             .catch(next)
     };
+    methods.getMyCurrentsGroups = ( req, res, next ) => {
+       getGroupsByUser( req.user._id, res, next);
+    };
+    methods.getCurrentGroups = ( req, res, next ) => {
+        const {userId} = matchedData(req);
+        getGroupsByUser( userId, res, next);
+    };
+    function getGroupsByUser( userId, res, next) {
+        console.log('Searching by userID: ' + userId)
+        models.GroupGame.find({ "members.userId": ObjectID(userId)})
+            .then( groups => {
+                res.status(200)
+                    .json(groups)
+            })
+            .catch(next)
+    }
 
     return methods;
 };

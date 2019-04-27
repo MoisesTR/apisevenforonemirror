@@ -1,6 +1,6 @@
 'use strict';
 
-var validGenders = {
+const validGenders = {
     values : ['M', 'F'],
     message: '{VALUE} is an invalid gender'
 };

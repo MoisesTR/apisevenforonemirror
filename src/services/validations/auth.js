@@ -19,9 +19,9 @@ exports.signUp = [
     // body('phones', 'Must be a Array of Strings').isArray().optional({ nullable: true }),
     ...commonPasswordAndConfirmation,
     body('phones.*').isLength({min: 7, max: 25}).optional({ nullable: true }),
-    body('role').exists(),
+    body('role').custom(isObjectId),
     body('birthDate', 'Must be a Valid Date').custom(isValidDate).optional({ nullable: true }),
-    body('gender').isString().optional({ nullable: true }),
+    body('gender','Gender must be M or F.').isIn(['M','F']).optional({ nullable: true }),
     sanitize('birthDate').toDate()
 ];
 

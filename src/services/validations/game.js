@@ -15,7 +15,9 @@ exports.addMemberToGroup = [
     param('groupId').custom(isObjectId),
     body('payReference').isLength({min: 5, max: 150})
 ];
-
+exports.userIdParam = [
+    param('userId').isLength({min: 10}).custom(isObjectId)
+];
 
 exports.removeMemberFromGroup = [
     param('groupId').custom(isObjectId),

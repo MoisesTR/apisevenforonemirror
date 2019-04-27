@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
+const mongo = require('mongodb');
 const {Schema, model } = mongoose;
 const fs    = require('fs');
 const path  = require('path');
 const basename = path.basename(__filename);
 
 module.exports = app => {
-    const db = {models:{}, model, Schema, mongoose};
+    const db = {models:{}, model, Schema, mongoose, mongo};
 
     const dir = path.join(__dirname, 'models');
     fs.readdirSync(dir)
