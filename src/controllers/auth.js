@@ -185,7 +185,7 @@ module.exports = app => {
             provider: socialUser.provider,
             email: socialUser.email,
             passwordHash: hashPassw,
-            role: userData.role._id,
+            role: userData.roleId,
             isVerified: true,
             secretToken: secretToken,
             enabled: true
@@ -271,7 +271,7 @@ module.exports = app => {
                     email: userData.email,
                     passwordHash: hashPassw,
                     phones: userData.phones,
-                    role: userData.role,
+                    role: userData.roleId,
                     birthDate: userData.birthDate,
                     gender: userData.gender,
                     isVerified: false,
