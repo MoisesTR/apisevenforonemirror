@@ -7,7 +7,7 @@ module.exports = app => createLogger({
     format: format.combine(
         format.colorize()
         , format.timestamp()
-        , format.printf( info => `[${info.timestamp}] ${info.level} ${info.message} `)
+        , format.printf( ({timestamp, level,message,...rest}) => `[${timestamp}] ${level} ${message} \n meta: ${JSON.stringify(rest)}`)
     )
     , transports: [
         new transports.File({

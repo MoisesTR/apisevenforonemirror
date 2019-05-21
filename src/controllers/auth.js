@@ -21,13 +21,11 @@ const CLIENT_ID = require('../config/config').CLIENT_ID;
 const {OAuth2Client} = require('google-auth-library');
 const client = new OAuth2Client(CLIENT_ID);
 
-//Logger
-const logger = require('../utils/logger');
-
 module.exports = app => {
     const URL_HOST  = process.env.URL_HOST ;
     const models = app.db.core.models;
     const jwt = app.services.jwt;
+    const logger = app.utils.logger;
     let methods = {};
 
 
@@ -280,19 +278,12 @@ module.exports = app => {
                 });
                 const insertInfo =  await user.save();
 
-                // saveLog( insertInfo._id
-                //     , {userName:insertInfo.userName
-                //         , firstName:insertInfo.firstName
-                //         , lastName:insertInfo.lastName
-                //         , email:insertInfo.email
-                //         , role:insertInfo.role}
-                //         ,'The user was successfully register!');
                 res.status(201)
                     .json({
                         success: 'You have successfully registered, proceed to verify your email!'
                     });
 
-                logger.info('Sending email');
+                logger.info(`You're successfully registered, we're Sending the verification email`);
                 transporter.sendMail({
                     to: userData.email,
                     from: 'no-reply@sevenforone.com',
@@ -315,6 +306,7 @@ module.exports = app => {
         }
     };
 
+    //TODO: manage the tokens in the database
     function saveLog( userId, {userName, firstName, lastName, email, role},  activity ) {
         console.log(userId, userName, activity);
 
@@ -370,7 +362,6 @@ module.exports = app => {
                             refreshToken: saveResult.secretToken,
                             expiration });
                             // saveLog(saveResult._id, {userName: saveResult.userName},`${saveResult.userName} joined us.`)
-
                 } else
                     throw { status: 401, code: 'EPASSW', message: 'Wrong Password.' };
             } else {

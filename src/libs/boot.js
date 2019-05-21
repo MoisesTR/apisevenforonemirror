@@ -81,7 +81,7 @@ module.exports = app => {
         .then((result) => {
             console.log('Mongo is Connected');
 
-            app.utils.logger.info(`The API is already running, on the ${port}`)
+            app.utils.logger.info(`The API is already running, on the ${port}`,{port})
             server.listen(port);
         })
         .catch((err) => {
