@@ -7,6 +7,7 @@
     "start-watch": "nodemon ./src/app.js"
   },
   "dependencies": {
+    "@paypal/checkout-server-sdk": "^1.0.0",
     "bcryptjs": "^2.4.3",
     "bson": "^4.0.2",
     "compression": "^1.7.3",
