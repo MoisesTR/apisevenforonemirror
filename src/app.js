@@ -15,6 +15,7 @@ app.express = express;
         .then('services/jwt.js')
         .then('libs/middlewares.js')
         .then('libs/routes.js')
+        .then('libs/paypalClient.js')
         .then('libs/error-middlewares.js')
         .then('libs/boot.js')
         .into(app);
