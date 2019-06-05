@@ -8,7 +8,7 @@ module.exports =  app => {
 
   /* GET home page. */
   router.get('/', function(req, res, next) {
-    res.render('index', { title: 'Express' });
+    res.send('<h1>This is a API Rest</h1>');
   });
 
   router

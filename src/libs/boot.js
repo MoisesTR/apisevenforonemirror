@@ -74,15 +74,24 @@ module.exports = app => {
     }
     server.on('error', onError);
     server.on('listening', onListening);
+    server.on('close', () => console.log('closing'))
 
     console.log(app.config.database)
     mongoose.connect(app.config.database.mongoURI, {useNewUrlParser: true, useCreateIndex: true})
         .then((result) => {
             console.log('Mongo is Connected');
+
+            app.utils.logger.info(`The API is already running, on the ${port}`,{port})
             server.listen(port);
         })
         .catch((err) => {
-            console.log(err);
+            app.utils.logger.error('Cannot be established a connection with the MongoDb server!',{ metadata:{ boot: true}});
             process.exit();
         })
+    process.on('SIGINT', () => {
+        app.utils.logger.error('The signal has been interrupt!');
+        mongoose.connection.close(() =>{
+            app.utils.logger.info('Interrupt Signal, the mongo connection has been close!');
+        })
+    })
 };

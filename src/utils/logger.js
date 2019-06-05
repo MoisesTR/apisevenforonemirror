@@ -1,19 +1,26 @@
-const {createLogger, format, transports} = require('winston');
+const winston = require('winston');
+const {createLogger, format, transports} = winston;
+const isDevelopment = (process.env.NODE_ENV || "development") === "development";
 
-module.exports = createLogger({
+module.exports = app => createLogger({
+    levels: winston.config.syslog.levels,
     format: format.combine(
-        format.simple()
+        format.colorize()
         , format.timestamp()
-        , format.printf( info => `[${info.timestamp}] ${info.level} ${info.message}`)
+        , format.printf( ({timestamp, level,message,...rest}) => `[${timestamp}] ${level} ${message} \n meta: ${JSON.stringify(rest)}`)
     )
     , transports: [
         new transports.File({
-            maxsize: 5120000
+            maxsize: 512000
             , maxFiles: 5
-            , filename: `${__dirname}/../logs/log-api.log`
+            , filename: `${app.locals.baseDir}/logs/log_api_combined.log`
+        }),
+        new transports.File({
+            level: 'error',
+            filename: `${app.locals.baseDir}/logs/errors.log`
         })
         , new transports.Console({
-            level: 'debug'
+            level: isDevelopment ?  'debug' : 'error'
         })
     ]
-})
+});
