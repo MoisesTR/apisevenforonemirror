@@ -21,5 +21,5 @@ module.exports =  app => {
       .get('/purchase-history/:userId',   ensureAuth, groupValidations.userIdParam, validsParams, gameController.getPurchaseHistory)
       .get('/me/game-groups', ensureAuth, gameController.getMyCurrentsGroups)
       .get('/game-groups/current/:userId',   ensureAuth, groupValidations.userIdParam, validsParams,gameController.getCurrentGroups)
-  app.use('/', router);
+  app.use('/api', router);
 };

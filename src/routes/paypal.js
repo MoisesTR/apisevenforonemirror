@@ -15,5 +15,5 @@ module.exports =  app => {
         .post('/create-paypal-transaction', ensureAuth,paypalValidations.createPaypalTransaction, validsParams, paypalController.createPaypalTransaction)
         .post('/authorize-paypal-transaction',ensureAuth,  paypalController.createAuthorizationTransaction)
         .post('/capture-authorization',ensureAuth,  paypalController.captureAuthorization);
-    app.use('/', router);
+    app.use('/api', router);
 };
