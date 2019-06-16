@@ -28,8 +28,6 @@ module.exports  = app => {
         const descriptionItem = "Inversion en grupo de juego 7x1";
         const nameItemBuy = "Inversion Grupo";
 
-        logger.info('Creando transaccion paypal');
-
         let order;
 
         try {
