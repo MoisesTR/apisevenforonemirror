@@ -27,7 +27,7 @@ module.exports  = app => {
                     totalMembers: {$cond: {if: {$isArray: "$members"}, then: {$size: "$members"}, else: "NA"}}
                 }
             }
-            ])
+            ]).sort( { initialInvertion: 1 } )
             .exec()
             .then(groups => res.status(200).json(groups))
             .catch(next)
