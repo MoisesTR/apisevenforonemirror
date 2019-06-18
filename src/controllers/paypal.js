@@ -42,7 +42,7 @@ module.exports  = app => {
         } catch (err) {
 
             // 4. Handle any errors from the call
-            logger.error('Error Paypal', err);
+            app.utils.logger.error('Error Paypal', err);
 
             let messageError = '';
             if (err.code === 'EERPAYPALPRICE') {

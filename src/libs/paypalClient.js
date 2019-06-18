@@ -23,12 +23,21 @@ function client() {
  *
  */
 function environment() {
-    let clientId = process.env.PAYPAL_CLIENT_ID || 'AesFU7Gm3IQFQTtJ_T9KW_a6DQIDebT7FBXizSgYhRaeiHxfyv6WoENa1dcbthiFyidViSkzevyTuauh';
-    let clientSecret = process.env.PAYPAL_CLIENT_SECRET || 'EAPEBKhXVeGjr6hK9a0qro2GR7y7ef2EtcU3A0iRW_PJF1DLuYY9JQ1J7hLp9aonj7G7bfwcK1ISQQI6';
+    let clientId = process.env.PAYPAL_CLIENT_ID || 'AfDe_RWKoxHwsgbPRCXsuvZDXnIys9hUN56brSbuxZVHdHWHXihW-0IbBeyiTJ7I1aSzYKE_NiRGKI01';
+    let clientSecret = process.env.PAYPAL_CLIENT_SECRET || 'EEBR4UR-qPQZTX-jVjoFsQweU0ndzkan91Rx_dA0_DplomO_qaE-AJkjTCB2bS5tk0IVZykg7CL_XCOo';
+    let environment = process.env.ENVIRONMENT || 'development';
 
-    return new checkoutNodeJssdk.core.LiveEnvironment(
-        clientId, clientSecret
-    );
+    console.log(environment)
+    if (environment === 'production') {
+        return new checkoutNodeJssdk.core.LiveEnvironment(
+            clientId, clientSecret
+        );
+    } else {
+        return new checkoutNodeJssdk.core.SandboxEnvironment(
+            clientId, clientSecret
+        );
+    }
+
 }
 
 async function prettyPrint(jsonData, pre=""){
