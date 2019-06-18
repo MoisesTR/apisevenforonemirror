@@ -17,12 +17,12 @@ const transporter = nodemailer.createTransport(sendgridTransport({
 const FB = require('fb').default;
 
 // GOOGLE AUTHENTICATION
-const CLIENT_ID = require('../config/config').CLIENT_ID;
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const {OAuth2Client} = require('google-auth-library');
 const client = new OAuth2Client(CLIENT_ID);
 
 module.exports = app => {
-    const URL_HOST  = process.env.URL_HOST ;
+    const URL_HOST  = process.env.URL_HOST || 'http://localhost:4200';
     const models = app.db.core.models;
     const jwt = app.services.jwt;
     const logger = app.utils.logger;

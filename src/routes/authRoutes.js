@@ -29,5 +29,5 @@ module.exports = app => {
         .post('/roles\$', validations.createRole,   validsParams,   roleController.createRole)
         .get( '/roles\$',     roleController.getRoles)
         .get( '/roles/:roleId', roleController.getRole);
-    app.use('/auth', router);
+    app.use('/api/auth', router);
 };
