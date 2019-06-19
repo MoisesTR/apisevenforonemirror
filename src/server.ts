@@ -6,7 +6,15 @@ import {Logger} from "winston";
 import MyLogger from "./services/logger";
 import envVars from "./global/environment";
 import {Core} from "./db/core";
-
+// middlewares
+import * as ErrorMiddleware from './middlewares/error-middlewares';
+import * as ThirdPartyMiddlewares from './middlewares/thirdparty-middlewares';
+// Routers
+import * as AuthRouter from './routes/authRoutes';
+import * as GroupGamesRouter from './routes/group-games';
+import * as PaypalRouter from './routes/paypal';
+import * as JWT     from './services/jwt';
+import {IjwtResponse} from "./services/jwt";
 const debug = require('debug')('sevenforoneapi:server');
 
 
@@ -23,6 +31,7 @@ export default class Server {
     public dbCore: Core;
     public io: socketIO.Server;
     private httpServer: http.Server;
+    public  jwt: IjwtResponse;
 
 
     private constructor() {
@@ -40,6 +49,7 @@ export default class Server {
         const MyLogg = new MyLogger('');
         this.logger = MyLogg.logger;
         this.dbCore = new Core();
+        this.jwt = JWT.get(this);
         // this.escucharSockets();
     }
 
@@ -69,7 +79,13 @@ export default class Server {
             res.header('Allow', 'GET, POST, OPTIONS, PUT, DELETE');
             next();
         });
-
+        ErrorMiddleware.apply(this.app);
+        ThirdPartyMiddlewares.apply(this.app, __dirname);
+    }
+    public registerRouter() {
+        AuthRouter.register(this);
+        GroupGamesRouter.register(this);
+        PaypalRouter.register(this);
     }
 
     start(callback: (port: number) => void) {

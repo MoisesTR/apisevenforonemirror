@@ -4,7 +4,7 @@ import {IModels} from "../db/core";
 import Server from "../server";
 import {resultOrNotFound} from "../utils/defaultImports";
 
-export default class GameController {
+export default class RoleController {
     private models: IModels;
 
     constructor(server: Server) {

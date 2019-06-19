@@ -10,7 +10,7 @@ import paypal from '@paypal/checkout-server-sdk';
  *
  * PayPal HTTP client dependency
  */
-import {client} from '../libs/paypalClient';
+import {client} from '../paypalClient';
 
 // @ts-ignore
 import checkoutNodeJssdk from '@paypal/checkout-server-sdk';

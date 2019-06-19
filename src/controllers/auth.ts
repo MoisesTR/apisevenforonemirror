@@ -15,7 +15,8 @@ import {IUserDocument} from "../db/interfaces/User";
 import {ICustomError} from "../../typings/global";
 import {IActivityTypesDocument} from "../db/interfaces/ActivityTypes";
 import {Logger} from "winston";
-import {createAccessToken, createRefreshToken} from "../services/jwt";
+import envVars from '../global/environment';
+import {IjwtResponse} from "../services/jwt";
 
 const saltRounds = 10;
 const transporter = nodemailer.createTransport(sendgridTransport({
@@ -28,10 +29,7 @@ const transporter = nodemailer.createTransport(sendgridTransport({
 const FB = require('fb').default;
 
 // GOOGLE AUTHENTICATION
-const CLIENT_ID = require('../global/config/config').CLIENT_ID;
-const client = new OAuth2Client(CLIENT_ID);
-
-const URL_HOST = process.env.URL_HOST;
+const client = new OAuth2Client(envVars.GOOGLE_CLIENT_ID);
 
 const generateRandomUserName = (email: string) => {
     const options = {
@@ -48,10 +46,11 @@ const generateRandomUserName = (email: string) => {
 export class UserController {
     private models: IModels;
     private logger: Logger;
-
+    private jwt: IjwtResponse;
     constructor(server: Server) {
         this.models = server.dbCore.models;
         this.logger = server.logger;
+        this.jwt = server.jwt;
     }
 
     signInFacebook = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -119,9 +118,9 @@ export class UserController {
                     };
                 } else {
 
-                    let {_token: tokenGen, expiration} = await createAccessToken(user);
+                    let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
                     if (user.secretToken === "") {
-                        const _token = await createRefreshToken(user);
+                        const _token = await this.jwt.createRefreshToken(user);
                         user.secretToken = _token._token;
                         this.logger.info('Create secret token');
                     }
@@ -177,7 +176,7 @@ export class UserController {
 
         const insertInfo = await user.save();
 
-        let {_token: tokenGen, expiration} = await createAccessToken(user);
+        let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
 
         const userInfo = await this.models.User.findOne({email: socialUser.email}).populate('role');
         if (!userInfo)
@@ -197,7 +196,7 @@ export class UserController {
     async verify(token: string) {
         const ticket = await client.verifyIdToken({
             idToken: token,
-            audience: CLIENT_ID,  // Specify the CLIENT_ID of the app that accesses the backend
+            audience: envVars.GOOGLE_CLIENT_ID,  // Specify the CLIENT_ID of the app that accesses the backend
             // Or, if multiple clients access the backend:
             //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
         });
@@ -277,10 +276,10 @@ export class UserController {
                     to: userData.email,
                     from: 'no-reply@sevenforone.com',
                     subject: "Welcome to Seven for One! Confirm Your Email",
-                    html: getHtml(insertInfo.userName, URL_HOST + '/confirm/' + insertInfo.secretToken + "/" + insertInfo.userName)
+                    html: getHtml(insertInfo.userName, envVars.URL_HOST + '/confirm/' + insertInfo.secretToken + "/" + insertInfo.userName)
                 })
                     .then((result) => {
-                        console.log('Email enviado', result);
+                        console.log('Email envado', result);
 
                     }).catch((err) => {
                     console.log('Error enviando', err);
@@ -324,7 +323,7 @@ export class UserController {
                     if (!user.enabled)
                         throw {status: 403, code: 'UDISH', message: 'Your user has been disabled!'};
 
-                    let {_token: tokenGen, expiration} = await createAccessToken(user);
+                    let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
 
                     // if ( user.secretToken === "") {
                     //     logger.info('Create refresh token');
@@ -511,7 +510,7 @@ export class UserController {
                     message: 'Tu usuario se encuentra deshabilitado!'
                 };
             }
-            const {_token: tokenGen, expiration} = await createRefreshToken(user);
+            const {_token: tokenGen, expiration} = await this.jwt.createRefreshToken(user);
             res.status(200)
                 .json({
                     token: tokenGen,
@@ -557,9 +556,9 @@ export class UserController {
                     throw {status: 400, code: "AUTHNOR", message: "This email already has a Registered Gmail account!"};
                 } else {
 
-                    let {_token: tokenGen, expiration} = await createAccessToken(user);
+                    let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
                     if (user.secretToken === "") {
-                        const _tempToken = await createRefreshToken(user);
+                        const _tempToken = await this.jwt.createRefreshToken(user);
                         user.secretToken = _tempToken._token;
                         this.logger.info('Create secret token');
                     }

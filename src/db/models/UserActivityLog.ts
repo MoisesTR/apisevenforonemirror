@@ -1,6 +1,6 @@
 'use strict';
 import {model, Schema} from "mongoose";
-import {IUserActivityLogDocument, IUserActivityModel} from "../interfaces/UserActivityLog";
+import {IUserActivityLogDocument} from "../interfaces/UserActivityLog";
 
 const userActivitySchema = new Schema({
     userId: {
@@ -28,4 +28,4 @@ userActivitySchema.statics.byUser = function(userId: string) {
     return this.model.find({userId: userId})
 };
 
-export default  model<IUserActivityLogDocument,IUserActivityModel>('UserActivityLog', userActivitySchema);
+export default  model<IUserActivityLogDocument>('UserActivityLog', userActivitySchema);

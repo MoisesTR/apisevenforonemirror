@@ -1,5 +1,6 @@
+import envVars from '../global/environment';
 import {createLogger, format, config, transports, Logger} from 'winston';
-const isDevelopment = (process.env.NODE_ENV || "development") === "development";
+const isDevelopment = (envVars.ENVIRONMENT === "development");
 
 export default class MyLogger {
     // private static _instance: MyLogger;

@@ -2,6 +2,7 @@
 import {model, Types, Schema} from "mongoose";
 import {IGroupGameDocument, IMember, IMemberDocument} from "../interfaces/IGroupGame";
 import * as mongoose from "mongoose";
+import envVars from '../../global/environment';
 
 export const memberSchema = new Schema({
     userId: {
@@ -73,7 +74,6 @@ groupSchema.methods.removeMember = async function (memberId: string | Types.Obje
 };
 
 groupSchema.methods.addMember = async function (memberData: IMember, payReference: string) {
-    const maxGroupSize = process.env.MAX_MEMBERS_PER_GROUP || 6;
     const session = await mongoose.startSession();
     try {
         session.startTransaction();
@@ -87,7 +87,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
         if (!user)
             throw {status: 404, message: 'User not found!'};
 
-        if (membersSize >= maxGroupSize) {
+        if (membersSize >= envVars.MAX_MEMBERS_PER_GROUP) {
             const winner = this.members.shift();
             /**
              * TODO: Create pay prize reference

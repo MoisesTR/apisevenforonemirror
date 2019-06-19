@@ -1,14 +1,15 @@
+import Express, {NextFunction} from "express";
 
-module.exports = app => {
-    // catch 404 and forward to error handler
-    app.use(function(req: Express.Request, res: Express.Response, next: NextFunction) {
+export const apply = (app: Express.Application) => {
+
+    app.use(function (req: Express.Request, res: Express.Response, next: NextFunction) {
         let err = new Error('Not Found');
         err.status = 404;
         next(err);
     });
 
-// error handler
-    app.use(function(err, req, res, next) {
+    // error handler
+    app.use(function (err: Error, req: Express.Request, res: Express.Response, next: NextFunction) {
         // set locals, only providing error in development
         console.log('Middleware errores', err);
 
@@ -18,4 +19,5 @@ module.exports = app => {
         res.status(err.status || 500)
             .json(err);
     });
+    // catch 404 and forward to error handler
 };

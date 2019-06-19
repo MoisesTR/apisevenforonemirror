@@ -7,6 +7,8 @@
 // @ts-ignore
 import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
 
+import envVars from './global/environment';
+
 /**
  *
  * Returns PayPal HTTP client instance with environment that has access
@@ -24,31 +26,28 @@ export function client() {
  *
  */
 function environment() {
-    let clientId = process.env.PAYPAL_CLIENT_ID || 'AfDe_RWKoxHwsgbPRCXsuvZDXnIys9hUN56brSbuxZVHdHWHXihW-0IbBeyiTJ7I1aSzYKE_NiRGKI01';
-    let clientSecret = process.env.PAYPAL_CLIENT_SECRET || 'EEBR4UR-qPQZTX-jVjoFsQweU0ndzkan91Rx_dA0_DplomO_qaE-AJkjTCB2bS5tk0IVZykg7CL_XCOo';
-    let environment = process.env.ENVIRONMENT || 'development';
 
     console.log(environment)
-    if (environment === 'production') {
+    if (envVars.ENVIRONMENT === 'production') {
         return new checkoutNodeJssdk.core.LiveEnvironment(
-            clientId, clientSecret
+            envVars.PAYPAL_CLIENT_ID, envVars.PAYPAL_CLIENT_SECRET
         );
     } else {
         return new checkoutNodeJssdk.core.SandboxEnvironment(
-            clientId, clientSecret
+            envVars.PAYPAL_CLIENT_ID, envVars.PAYPAL_CLIENT_SECRET
         );
     }
 
 }
 
-async function prettyPrint(jsonData, pre=""){
+async function prettyPrint(jsonData: any, pre=""){
     let pretty = "";
-    function capitalize(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+    function capitalize(text: string) {
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
     }
     for (let key in jsonData){
         if (jsonData.hasOwnProperty(key)){
-            if (isNaN(key))
+            if (isNaN(+key))
                 pretty += pre + capitalize(key) + ": ";
             else
                 pretty += pre + (parseInt(key) + 1) + ": ";

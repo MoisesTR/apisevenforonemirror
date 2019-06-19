@@ -18,7 +18,7 @@ export const isObjectId = (value: any) => {
     return new ObjectId(value);
 };
 
-export const validsParams = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+export const validsParams = (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
     const errors = validationResult(req);
     if ( !errors.isEmpty() )
         return res.status(400).json(errors.array());
