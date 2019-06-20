@@ -14,7 +14,7 @@ export const register = (server: Server) => {
     });
 
     router
-        .get('/game-groups', ensureAuth, gameController.getGameGroups)
+        .get('/game-groups',  gameController.getGameGroups)
         .get('/game-groups/:groupId', ensureAuth, groupValidations.getGroup, validsParams, gameController.getGroupMembers)
         .post('/game-groups', ensureAuth, groupValidations.createGroup, validsParams, gameController.createGroup)
         .post('/game-groups/members/:groupId', ensureAuth, groupValidations.addMemberToGroup, validsParams, gameController.addMemberToGroup)
@@ -24,5 +24,5 @@ export const register = (server: Server) => {
         .get('/me/game-groups', ensureAuth, gameController.getMyCurrentsGroups)
         .get('/game-groups/current/:userId', ensureAuth, groupValidations.userIdParam, validsParams, gameController.getCurrentGroups);
 
-    server.app.use(router);
+    server.app.use('api/',router);
 };

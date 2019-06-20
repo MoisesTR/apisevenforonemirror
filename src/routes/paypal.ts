@@ -17,5 +17,5 @@ export const register = (server: Server) => {
         .post('/create-paypal-transaction', ensureAuth, paypalValidations.createPaypalTransaction, validsParams, paypalController.createPaypalTransaction)
         .post('/authorize-paypal-transaction', ensureAuth, paypalController.createAuthorizationTransaction)
         .post('/capture-authorization', ensureAuth, paypalController.captureAuthorization);
-    server.app.use('/', router);
+    server.app.use('api/', router);
 }
