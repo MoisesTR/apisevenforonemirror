@@ -24,5 +24,5 @@ export const register = (server: Server) => {
         .get('/me/game-groups', ensureAuth, gameController.getMyCurrentsGroups)
         .get('/game-groups/current/:userId', ensureAuth, groupValidations.userIdParam, validsParams, gameController.getCurrentGroups);
 
-    server.app.use('api/',router);
+    server.app.use('/api',router);
 };
