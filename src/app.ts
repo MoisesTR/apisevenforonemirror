@@ -7,7 +7,7 @@ console.log(path.resolve(__dirname,'..','.env'));
 
 server.basicMiddlewares();
 server.registerRouter();
-
+server.errorMiddlewares();
 server.dbCore.connect(server.logger,() => {
         server.start((port: number) => {
 

@@ -79,8 +79,10 @@ export default class Server {
             res.header('Allow', 'GET, POST, OPTIONS, PUT, DELETE');
             next();
         });
-        ErrorMiddleware.apply(this.app);
         ThirdPartyMiddlewares.apply(this.app, __dirname);
+    }
+    public errorMiddlewares() {
+        ErrorMiddleware.apply(this.app);
     }
     public registerRouter() {
         AuthRouter.register(this);
