@@ -1,7 +1,7 @@
 'use strict';
 import {model, Types, Schema} from "mongoose";
 import {IGroupGameDocument, IMember, IMemberDocument} from "../interfaces/IGroupGame";
-import * as mongoose from "mongoose";
+const mongoose = require("mongoose");
 import envVars from '../../global/environment';
 
 export const memberSchema = new Schema({

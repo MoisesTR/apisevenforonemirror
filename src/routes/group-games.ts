@@ -10,7 +10,7 @@ export const register = (server: Server) => {
     const router = Express.Router();
     /* GET home page. */
     router.get('/', function (req: Express.Request, res: Express.Response, next: Express.NextFunction) {
-        res.send('<h1>This is a API Rest</h1>');
+        res.send('<h1>API REST 7X1</h1>');
     });
 
     router
