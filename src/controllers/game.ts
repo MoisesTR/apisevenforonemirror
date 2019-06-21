@@ -1,8 +1,7 @@
 import Express, {NextFunction} from 'express';
-import { matchedData, resultOrNotFound} from '../utils/defaultImports';
+import {matchedData, resultOrNotFound} from '../utils/defaultImports';
 import Server from "../server";
 import {IModels} from "../db/core";
-import GroupGame from "../db/models/GroupGame";
 import {IGroupGameDocument} from "../db/interfaces/IGroupGame";
 import {Types} from "mongoose";
 import {ObjectID} from "bson";

@@ -12,11 +12,11 @@ import {OAuth2Client} from 'google-auth-library';
 import {IModels} from "../db/core";
 import Server from "../server";
 import {IUserDocument} from "../db/interfaces/User";
-import {ICustomError} from "../../typings/global";
 import {IActivityTypesDocument} from "../db/interfaces/ActivityTypes";
 import {Logger} from "winston";
 import envVars from '../global/environment';
 import {IjwtResponse} from "../services/jwt";
+
 
 const saltRounds = 10;
 const transporter = nodemailer.createTransport(sendgridTransport({
@@ -380,7 +380,7 @@ export class UserController {
             .then((result: any) => {
                 res.status(200)
                     .json(result);
-            }).catch((error: ICustomError) => {
+            }).catch((error: CNodeJs.Error) => {
             res.status(error.status | 500)
                 .json(error)
         })

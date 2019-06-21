@@ -78,8 +78,8 @@
     // "preserveSymlinks": true,              /* Do not resolve the real path of symlinks. */
 
     "typeRoots": [
-      "node_modules/@types",
-      "typings"
+      "node_modules/@types"
+      , "src/types"
     ]
     /* List of folders to include type definitions from. */
     /* Source Map Options */
@@ -96,8 +96,7 @@
     //    ]
   },
   "include": [
-    "src/**/*.ts",
-    "typings"
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules"
