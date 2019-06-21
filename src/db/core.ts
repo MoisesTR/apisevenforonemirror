@@ -15,6 +15,8 @@ import {IMenuModel} from "./interfaces/Menu";
 import {IGroupGameModel} from "./interfaces/IGroupGame";
 import {IActivityTypesModel} from "./interfaces/ActivityTypes";
 import ActivityTypes from "./models/ActivityTypes";
+import PurchaseHistory from "./models/PurchaseHistory";
+import {IPurchaseHistoryModel} from "./interfaces/PurchaseHistory";
 const basename = path.basename(__filename);
 
 export interface IModels {
@@ -23,7 +25,8 @@ export interface IModels {
     Role: IRoleModel,
     Menu: IMenuModel,
     GroupGame: IGroupGameModel,
-    ActivityTypes: IActivityTypesModel
+    ActivityTypes: IActivityTypesModel,
+    PurchaseHistory: IPurchaseHistoryModel
 }
 
 export class Core {
@@ -37,7 +40,8 @@ export class Core {
             Menu: MenuModel,
             Role: RoleModel,
             GroupGame: GroupGameModel,
-            ActivityTypes: ActivityTypes
+            ActivityTypes: ActivityTypes,
+            PurchaseHistory: PurchaseHistory
         }
     }
 
