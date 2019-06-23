@@ -19,7 +19,7 @@ export default class GameController {
 
         const groupGame = new this.models.GroupGame({...groupData});
         groupGame.save()
-            .then( group => res.json(201).json({message: 'Group created!!'}))
+            .then( group => res.status(201).json({message: 'Group created!!'}))
             .catch(next)
     };
 
