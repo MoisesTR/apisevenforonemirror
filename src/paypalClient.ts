@@ -27,7 +27,7 @@ export function client() {
  */
 function environment() {
 
-    console.log(environment)
+    console.log('Ambiente',envVars.ENVIRONMENT);
     if (envVars.ENVIRONMENT === 'production') {
         return new checkoutNodeJssdk.core.LiveEnvironment(
             envVars.PAYPAL_CLIENT_ID, envVars.PAYPAL_CLIENT_SECRET
