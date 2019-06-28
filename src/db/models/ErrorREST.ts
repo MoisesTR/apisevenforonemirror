@@ -1,4 +1,5 @@
 export class ErrorREST extends Error {
+    public status?: number;
     public response: { status: number; message: string; detail: string };
 
     constructor(error: { status: number, message: string }, detail: string = '', ...args: any) {

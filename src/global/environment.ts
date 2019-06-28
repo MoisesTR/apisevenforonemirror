@@ -12,6 +12,10 @@ interface IEnvironment {
     MONGO_DB_USERNAME: string;
     MONGO_DB_URL: string;
     MONGO_DB_QUERY_PARAMS: string;
+    SOCKETIO_PATH:  string;
+    REDIS_HOST: string;
+    REDIS_PORT: number;
+    REDIS_PASSWORD: string;
 }
 
 const EnvVar: IEnvironment = {
@@ -19,10 +23,10 @@ const EnvVar: IEnvironment = {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "380320064033-bs2uivmdsj2fs5v68h2kg57p5k9kgtv7.apps.googleusercontent.com",
     JWT_SECRET: process.env.JWT_SECRET || "NIC@R46U@",
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || "R3@CT_Cl13nt_7X0ne",
-    PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID || 'AfDe_RWKoxHwsgbPRCXsuvZDXnIys9hUN56brSbuxZVHdHWHXihW-0IbBeyiTJ7I1aSzYKE_NiRGKI01',
-    PAYPAL_CLIENT_SECRET: process.env.PAYPAL_CLIENT_SECRET || 'EEBR4UR-qPQZTX-jVjoFsQweU0ndzkan91Rx_dA0_DplomO_qaE-AJkjTCB2bS5tk0IVZykg7CL_XCOo',
-    ENVIRONMENT: process.env.ENVIRONMENT || 'development',
-    URL_HOST: process.env.URL_HOST || 'http://localhost:4200',
+    PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID || "AfDe_RWKoxHwsgbPRCXsuvZDXnIys9hUN56brSbuxZVHdHWHXihW-0IbBeyiTJ7I1aSzYKE_NiRGKI01",
+    PAYPAL_CLIENT_SECRET: process.env.PAYPAL_CLIENT_SECRET || "EEBR4UR-qPQZTX-jVjoFsQweU0ndzkan91Rx_dA0_DplomO_qaE-AJkjTCB2bS5tk0IVZykg7CL_XCOo",
+    ENVIRONMENT: process.env.ENVIRONMENT || "development",
+    URL_HOST: process.env.URL_HOST || "http://localhost:4200",
 
     // Mongodb connection
     MONGO_DB_USERNAME:  process.env.MONGO_DB_USERNAME || "appuser",
@@ -31,8 +35,13 @@ const EnvVar: IEnvironment = {
     MONGO_DB_QUERY_PARAMS: process.env.MONGO_DB_QUERY_PARAMS || "retryWrites=true",
 
     // RULE GAME 7X1
-    MAX_MEMBERS_PER_GROUP: !!process.env.MAX_MEMBERS_PER_GROUP ? +process.env.MAX_MEMBERS_PER_GROUP: 6,
-
+    MAX_MEMBERS_PER_GROUP: !!process.env.MAX_MEMBERS_PER_GROUP ? +process.env.MAX_MEMBERS_PER_GROUP : 6,
+    // Custom Path from sockets
+    SOCKETIO_PATH: process.env.SOCKETIO_PATH || "/noti_5ock",
+    // Redis host and Credentias
+    REDIS_HOST: process.env.REDIS_HOST || "localhost",
+    REDIS_PORT: !!process.env.REDIS_PORT ? +process.env.REDIS_PORT  : 6379,
+    REDIS_PASSWORD: process.env.REDIS_PASSWORD || "jose12"
 };
 
 export default EnvVar;

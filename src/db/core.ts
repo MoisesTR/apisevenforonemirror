@@ -1,6 +1,6 @@
-import mongoose, {Mongoose} from 'mongoose';
-import dbConfig from '../global/config/database';
-import path from 'path';
+import mongoose, {Mongoose} from "mongoose";
+import dbConfig from "../global/config/database";
+import path from "path";
 import {Logger} from "winston";
 // Models
 import UserModel  from "./models/User";
@@ -20,13 +20,13 @@ import {IPurchaseHistoryModel} from "./interfaces/PurchaseHistory";
 const basename = path.basename(__filename);
 
 export interface IModels {
-    User: IUserModel,
-    Card: ICardModel,
-    Role: IRoleModel,
-    Menu: IMenuModel,
-    GroupGame: IGroupGameModel,
-    ActivityTypes: IActivityTypesModel,
-    PurchaseHistory: IPurchaseHistoryModel
+    User: IUserModel;
+    Card: ICardModel;
+    Role: IRoleModel;
+    Menu: IMenuModel;
+    GroupGame: IGroupGameModel;
+    ActivityTypes: IActivityTypesModel;
+    PurchaseHistory: IPurchaseHistoryModel;
 }
 
 export class Core {
@@ -42,34 +42,35 @@ export class Core {
             GroupGame: GroupGameModel,
             ActivityTypes: ActivityTypes,
             PurchaseHistory: PurchaseHistory
-        }
+        };
     }
 
     private static _instance: Core;
 
     private static get instance() {
-        if (!this._instance)
+        if (!this._instance) {
             this._instance = new Core();
+        }
         return this._instance;
     }
 
     async connect(logger: Logger, successCB: Function) {
-        console.log(dbConfig.mongoURI)
+        console.log(dbConfig.mongoURI);
         mongoose.connect(dbConfig.mongoURI, {useNewUrlParser: true, useCreateIndex: true})
             .then((mongo) => {
                 this.mongoose = mongo;
-                logger.info('Mongo is Connected');
-                process.on('SIGINT', () => {
-                    logger.error('The signal has been interrupt!');
+                logger.info("Mongo is Connected");
+                process.on("SIGINT", () => {
+                    logger.error("The signal has been interrupt!");
                     mongoose.connection.close(() => {
-                        logger.info('Interrupt Signal, the mongo connection has been close!');
-                    })
+                        logger.info("Interrupt Signal, the mongo connection has been close!");
+                    });
                 });
                 successCB();
             })
             .catch((err) => {
-                console.log(err)
-                logger.error('Cannot be established a connection with the MongoDb server!', {metadata: {boot: true}});
+                console.log(err);
+                logger.error("Cannot be established a connection with the MongoDb server!", {metadata: {boot: true}});
                 process.exit();
             });
     }

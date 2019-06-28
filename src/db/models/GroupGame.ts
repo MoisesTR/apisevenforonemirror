@@ -1,13 +1,13 @@
-'use strict';
-import {model, Types, Schema} from "mongoose";
+"use strict";
+import mongoose, {model, Schema} from "mongoose";
 import {IGroupGameDocument, IMember, IMemberDocument} from "../interfaces/IGroupGame";
-const mongoose = require("mongoose");
-import envVars from '../../global/environment';
+import envVars from "../../global/environment";
+import {ObjectId} from "bson";
 
-export const memberSchema = new Schema({
+export const memberSchema: Schema = new Schema({
     userId: {
-        type: Types.ObjectId,
-        ref: 'User'
+        type: ObjectId,
+        ref: "User"
     },
     userName: {
         type: Schema.Types.String,
@@ -20,7 +20,7 @@ export const memberSchema = new Schema({
     timestamps: true
 });
 
-const groupSchema = new Schema({
+const groupSchema: Schema = new Schema({
     initialInvertion: {
         type: Schema.Types.Number,
         required: true,
@@ -58,16 +58,17 @@ const groupSchema = new Schema({
     timestamps: true
 });
 
-groupSchema.methods.removeMember = async function (memberId: string | Types.ObjectId) {
+groupSchema.methods.removeMember = async function (memberId: string | ObjectId) {
     console.log(this.members);
-    const memberIdObj =( typeof memberId === "string") ? Types.ObjectId( memberId) : memberId;
+    // const memberIdObj = ( typeof memberId === "string") ? new ObjectId( memberId) : memberId;
     // console.log(Types.ObjectId(memberId));
-    this.members.forEach((member: IMemberDocument) => {
-        console.log(member.userId.equals(memberIdObj))
-    });
+    // this.members.forEach((member: IMemberDocument) => {
+    //     console.log(member.userId.equals(memberIdObj));
+    // });
     const removeMember = this.members.find((member: IMemberDocument) => member.userId.equals(memberId));
-    if (!removeMember)
-        throw  {status: 404, message: 'This user is not a member of this group!'};
+    if (!removeMember) {
+        throw  {status: 404, message: "This user is not a member of this group!"};
+    }
     await removeMember.remove();
 
     return this.save();
@@ -78,14 +79,16 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
     try {
         session.startTransaction();
         const membersSize = this.members.length;
-        const alreadyIndex = this.members.find((member: IMemberDocument)=> member.userId.equals(memberData.userId));
+        const alreadyIndex = this.members.find((member: IMemberDocument) => member.userId.equals(memberData.userId));
 
-        if (alreadyIndex && !!this.uniqueChance)
-            throw {status: 409, message: 'This user is already member!'};
+        if (alreadyIndex && !!this.uniqueChance) {
+            throw {status: 409, message: "This user is already member!"};
+        }
 
-        const user = await this.model('User').findById(memberData.userId);
-        if (!user)
-            throw {status: 404, message: 'User not found!'};
+        const user = await this.model("User").findById(memberData.userId);
+        if (!user) {
+            throw {status: 404, message: "User not found!"};
+        }
 
         if (membersSize >= envVars.MAX_MEMBERS_PER_GROUP) {
             const winner = this.members.shift();
@@ -99,12 +102,12 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                 image: user.image
             };
 
-            const userHistory = this.model('PurchaseHistory')({
+            const userHistory = this.model("PurchaseHistory")({
                 userId: winner.userId,
-                action: 'win',
+                action: "win",
                 groupId: this._id,
                 quantity: this.initialInvertion * 6,
-                payReference: 'pay prize reference'
+                payReference: "pay prize reference"
             });
             this.winners++;
             await userHistory.save();
@@ -113,9 +116,9 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
 
         this.totalInvested += this.initialInvertion;
         await this.save();
-        const userHistory = this.model('PurchaseHistory')({
+        const userHistory = this.model("PurchaseHistory")({
             userId: memberData.userId,
-            action: 'invest',
+            action: "invest",
             groupId: this._id,
             quantity: this.initialInvertion,
             payReference: payReference
@@ -128,4 +131,4 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
     }
 };
 
-export default model<IGroupGameDocument>('GroupGame', groupSchema);
+export default model<IGroupGameDocument>("GroupGame", groupSchema);

@@ -1,12 +1,13 @@
-import envVars from '../global/environment';
-import {createLogger, format, config, transports, Logger} from 'winston';
+import path from "path";
+import envVars from "../global/environment";
+import {createLogger, format, config, transports, Logger} from "winston";
 const isDevelopment = (envVars.ENVIRONMENT === "development");
 
 export default class MyLogger {
     // private static _instance: MyLogger;
     public logger: Logger;
-    constructor( path: string) {
-        this.logger =createLogger({
+    constructor( baseDir: string) {
+        this.logger = createLogger({
             levels: config.syslog.levels,
             format: format.combine(
                 format.colorize()
@@ -17,16 +18,16 @@ export default class MyLogger {
                 new transports.File({
                     maxsize: 512000
                     , maxFiles: 5
-                    , filename: `${path}/logs/log_api_combined.log`
+                    , filename: path.join(baseDir, "/logs/log_api_combined.log")
                 }),
                 new transports.File({
-                    level: 'error',
-                    filename: `${path}/logs/errors.log`
+                    level: "error",
+                    filename: path.join(baseDir, "/logs/errors.log")
                 })
                 , new transports.Console({
-                    level: isDevelopment ? 'debug' : 'error'
+                    level: isDevelopment ? "debug" : "error"
                 })
             ]
-        })
+        });
     }
 }

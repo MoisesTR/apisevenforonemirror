@@ -1,5 +1,52 @@
-// import { Socket } from 'socket.io';
-// import socketIO from 'socket.io';
+import { Socket } from "socket.io";
+import Express from "express";
+import socketIO from "socket.io";
+import redisAdapter from "socket.io-redis";
+import Redis from "ioredis";
+import envVars from "../global/environment";
+import {GroupGameNamespace} from "../classes/GroupGameNamespace";
+import {IModels} from "../db/core";
+
+export interface ISocketManagerAttributes {
+    main: socketIO.Server;
+    groupNamespaces?: GroupGameNamespace[];
+}
+
+export class SocketManager implements ISocketManagerAttributes {
+    main: socketIO.Server;
+    groupNamespaces?: GroupGameNamespace[];
+
+    constructor(app: Express.Application, redis: Redis.Redis) {
+        this.main = socketIO(app, {
+            path: envVars.SOCKETIO_PATH
+        });
+        this.main.adapter(redisAdapter({ pubClient: redis, subClient: redis }));
+    }
+
+    public async listenSockets( models: IModels ) {
+        this.main.on("connection" , socket => {
+
+
+            socket.on("disconnect", () => {
+
+            });
+        });
+
+        this.main.emit("notification", () => {
+
+        });
+
+        this.main.on("read-notification", () => {
+
+        });
+
+        const groups = await models.GroupGame.find({});
+        // const GGNamespaces: GroupGameNamespace[] = [];
+        // groups.forEach(group => {
+        //     new GroupGameNamespace(group, this.main);
+        // });
+    }
+}
 // import { UsuariosLista } from '../classes/usuarios-lista';
 // import { Usuario } from '../classes/usuario';
 //
