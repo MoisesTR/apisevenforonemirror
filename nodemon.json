@@ -11,8 +11,9 @@
     "webpack"
   ],
   "env": {
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    "TS_NODE_PROJECT": "<tsconfig.json>"
   },
   "ext": "js json ts tsx",
-  "exec": "ts-node -- ./src/app.ts"
+  "exec": "ts-node --project tsconfig.json ./src/app.ts"
 }
