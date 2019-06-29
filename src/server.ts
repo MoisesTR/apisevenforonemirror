@@ -79,7 +79,7 @@ export default class Server {
      * Event listener for HTTP server "listening" event.
      */
 
-    onListening() {
+    onListening = () => {
         const addr = this.httpServer.address() || '';
         const bind = typeof addr === 'string'
             ? 'pipe ' + addr
