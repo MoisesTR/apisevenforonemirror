@@ -3,7 +3,7 @@ import Express from 'express';
 import redisAdapter from 'socket.io-redis';
 import envVars from '../global/environment';
 import {IModels} from '../db/core';
-import {redis} from '../services/redis';
+import {redisPub, redisSub} from '../services/redis';
 import Http from 'http';
 
 export interface ISocketManagerAttributes {
@@ -19,11 +19,12 @@ export class SocketManager implements ISocketManagerAttributes {
         this.main = socketIO(app, {
             path: envVars.SOCKETIO_PATH
         });
+        this.main.adapter(redisAdapter({pubClient: redisPub, subClient: redisSub}));
         this.gameGroups = this.main.of('groups');
-        this.main.adapter(redisAdapter({pubClient: redis, subClient: redis}));
+        console.log('socket creado')
     }
 
-    public async listenSockets(models: IModels) {
+    public listenSockets(models: IModels) {
         this.main.on('connection', socket => {
 
 
@@ -49,6 +50,7 @@ export class SocketManager implements ISocketManagerAttributes {
 
     public listenGroupSocket(models: IModels) {
         this.gameGroups = this.main.of('groupGames');
+        console.log('entre')
         this.gameGroups.on('connection', async (socketGame) => {
             const groups = await models.GroupGame.find({});
 
@@ -57,7 +59,24 @@ export class SocketManager implements ISocketManagerAttributes {
         this.gameGroups.on('joinGroup', () => {
 
         });
+        // Emitir siempre que el usuario gane sin importar el grupo
+        this.gameGroups.emit('update-purchase-history-user',);
 
+        // emitir ganadores en el momento
+        this.gameGroups.emit('top-winners-globals')
+
+
+        //cuando un usuario se registra en un grupo emitir un evento al cliente
+        //  con el recien ingresado
+        this.gameGroups.emit('')
+
+        //una solo pestana por user
+        this.gameGroups.emit('')
+
+
+        //marcar notifiaciones como leidas
+        //notificacion
+        // this.gameGroups.emit('confetti-celebration')
         // this.gameGroups.emit('winGame', () => {
         //     this.main.emit('notification', () => {
         //

@@ -37,7 +37,7 @@ const EnvVar: IEnvironment = {
     // RULE GAME 7X1
     MAX_MEMBERS_PER_GROUP: !!process.env.MAX_MEMBERS_PER_GROUP ? +process.env.MAX_MEMBERS_PER_GROUP : 6,
     // Custom Path from sockets
-    SOCKETIO_PATH: process.env.SOCKETIO_PATH || "/noti_5ock",
+    SOCKETIO_PATH: process.env.SOCKETIO_PATH || "/socket10",
     // Redis host and Credentias
     REDIS_HOST: process.env.REDIS_HOST || "localhost",
     REDIS_PORT: !!process.env.REDIS_PORT ? +process.env.REDIS_PORT  : 6379,

@@ -43,7 +43,6 @@ export default class Server {
     public logger: Logger;
     public port: number;
     public dbCore: Core;
-    public io: socketIO.Server;
     public jwt: IjwtResponse;
     public socketMng: SocketManager;
     private httpServer: http.Server;
@@ -58,9 +57,6 @@ export default class Server {
         this.httpServer.on('listening', this.onListening);
         this.httpServer.on('close', () => console.log('closing'));
 
-        this.io = socketIO(this.httpServer, {
-            path: '/not_sock3t5s'
-        });
         const myLogg = new MyLogger(__dirname);
         this.logger = myLogg.logger;
         this.dbCore = new Core();

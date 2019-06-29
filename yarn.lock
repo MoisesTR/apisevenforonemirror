@@ -1426,7 +1426,7 @@ extsprintf@^1.2.0:
   resolved "https://registry.yarnpkg.com/extsprintf/-/extsprintf-1.4.0.tgz#e2689f8f356fad62cca65a3a91c5df5f9551692f"
   integrity sha1-4mifjzVvrWLMplo6kcXfX5VRaS8=
 
-farmhash@^2.1.0:
+farmhash@2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/farmhash/-/farmhash-2.1.0.tgz#134adf04ce7e9910bc387596598223775c120b8b"
   integrity sha512-X2cdtc4AxiH3tVdJ/h87dOU22Ojt3JYruw3L0gAp/SJzHqUUoxMcYzX7wnVzSUeEj6CwzOwcY+v6vdfP0KVx2g==

@@ -64,6 +64,7 @@ export class Core {
                     logger.error("The signal has been interrupt!");
                     mongoose.connection.close(() => {
                         logger.info("Interrupt Signal, the mongo connection has been close!");
+                        process.exit(1);
                     });
                 });
                 successCB();

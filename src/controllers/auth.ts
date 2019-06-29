@@ -16,9 +16,10 @@ import {IActivityTypesDocument} from "../db/interfaces/IActivityTypes";
 import {Logger} from "winston";
 import envVars from '../global/environment';
 import {IjwtResponse} from "../services/jwt";
-import {redis} from '../services/redis';
+import {redisPub} from '../services/redis';
 import {token} from 'morgan';
-
+// @ts-ignore
+import farmhash from "farmhash";
 
 const saltRounds = 10;
 const transporter = nodemailer.createTransport(sendgridTransport({
@@ -337,8 +338,10 @@ export class UserController {
                     const saveResult = await user.save();
                     user.passwordHash = '';
 
+                    redisPub.setex(`refresh-${farmhash.hash32(user._id)}`, 32323, saveResult.secretToken);
+                    redisPub.setex(`token-${farmhash.hash32(user._id)}`, -9999, tokenGen);
                     //TODO: SAve token
-                    redis.set(user._id, tokenGen)
+                    redisPub.set(user._id, tokenGen)
                     res.status(200)
                         .json({
                             user: user,

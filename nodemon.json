@@ -3,7 +3,8 @@
   "verbose": true,
   "ignore": [
     "dist",
-    "build"
+    "build",
+    "src/logs"
   ],
   "watch": [
     "src/**/*.ts",
@@ -13,5 +14,5 @@
     "NODE_ENV": "development"
   },
   "ext": "js json ts",
-  "exec": "ts-node -- ./src/app.ts"
+  "exec": "ts-node --project ./tsconfig.json  --files ./src/app.ts"
 }
