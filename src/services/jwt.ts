@@ -4,7 +4,7 @@ import envVars from '../global/environment';
 import jwt from 'jsonwebtoken';
 import moment, {DurationInputArg1, DurationInputArg2} from 'moment';
 import Server from './../server';
-import {IUserDocument} from "../db/interfaces/User";
+import {IUserDocument} from "../db/interfaces/IUser";
 export interface IjwtResponse {
     ensureAuth: (req: Express.Request, res: Express.Response, next: NextFunction) => Promise<void>;
     createAccessToken: (user: IUserDocument, expiration?: number, unitOfTime?: any ) => Promise<({_token: string, expiration: any})>;

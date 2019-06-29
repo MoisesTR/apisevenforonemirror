@@ -1,7 +1,12 @@
 'use strict';
 
 import {model, Schema} from "mongoose";
-import {IRoleDocument} from "../interfaces/Role";
+import {IRoleDocument} from "../interfaces/IRole";
+
+export enum ERoles {
+    ADMIN =  "ADMIN",
+    USER = "USER"
+}
 
 const validRoles = {
     values: ['ADMIN', 'USER'],

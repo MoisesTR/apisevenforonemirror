@@ -1,52 +1,71 @@
-import { Socket } from "socket.io";
-import Express from "express";
-import socketIO from "socket.io";
-import redisAdapter from "socket.io-redis";
-import Redis from "ioredis";
-import envVars from "../global/environment";
-import {GroupGameNamespace} from "../classes/GroupGameNamespace";
-import {IModels} from "../db/core";
+import socketIO from 'socket.io';
+import Express from 'express';
+import redisAdapter from 'socket.io-redis';
+import envVars from '../global/environment';
+import {IModels} from '../db/core';
+import {redis} from '../services/redis';
+import Http from 'http';
 
 export interface ISocketManagerAttributes {
     main: socketIO.Server;
-    groupNamespaces?: GroupGameNamespace[];
+    gameGroups?: socketIO.Namespace;
 }
 
 export class SocketManager implements ISocketManagerAttributes {
     main: socketIO.Server;
-    groupNamespaces?: GroupGameNamespace[];
+    gameGroups?: socketIO.Namespace;
 
-    constructor(app: Express.Application, redis: Redis.Redis) {
+    constructor(app: Http.Server) {
         this.main = socketIO(app, {
             path: envVars.SOCKETIO_PATH
         });
-        this.main.adapter(redisAdapter({ pubClient: redis, subClient: redis }));
+        this.gameGroups = this.main.of('groups');
+        this.main.adapter(redisAdapter({pubClient: redis, subClient: redis}));
     }
 
-    public async listenSockets( models: IModels ) {
-        this.main.on("connection" , socket => {
+    public async listenSockets(models: IModels) {
+        this.main.on('connection', socket => {
 
 
-            socket.on("disconnect", () => {
+            socket.on('disconnect', () => {
 
             });
         });
 
-        this.main.emit("notification", () => {
+        // this.main.emit('notification', () => {
+        //
+        // });
+
+        this.main.on('read-notification', () => {
 
         });
 
-        this.main.on("read-notification", () => {
 
-        });
-
-        const groups = await models.GroupGame.find({});
         // const GGNamespaces: GroupGameNamespace[] = [];
         // groups.forEach(group => {
         //     new GroupGameNamespace(group, this.main);
         // });
     }
+
+    public listenGroupSocket(models: IModels) {
+        this.gameGroups = this.main.of('groupGames');
+        this.gameGroups.on('connection', async (socketGame) => {
+            const groups = await models.GroupGame.find({});
+
+        });
+
+        this.gameGroups.on('joinGroup', () => {
+
+        });
+
+        // this.gameGroups.emit('winGame', () => {
+        //     this.main.emit('notification', () => {
+        //
+        //     });
+        // });
+    }
 }
+
 // import { UsuariosLista } from '../classes/usuarios-lista';
 // import { Usuario } from '../classes/usuario';
 //

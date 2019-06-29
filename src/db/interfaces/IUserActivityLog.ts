@@ -1,6 +1,6 @@
 import {Document, Model, Types} from "mongoose";
-import {IUser, IUserDocument} from "./User";
-import {IActivityTypesDocument} from "./ActivityTypes";
+import {IUser, IUserDocument} from "./IUser";
+import {IActivityTypesDocument} from "./IActivityTypes";
 
 export interface IUserActivityLog {
     userId: Types.ObjectId | IUserDocument;

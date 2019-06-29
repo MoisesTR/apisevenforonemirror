@@ -1,7 +1,7 @@
 'use strict';
 
 import {model, Schema, Types} from "mongoose";
-import {IUser, IUserDocument, IUserModel} from "../interfaces/User";
+import {IUser, IUserDocument, IUserModel} from "../interfaces/IUser";
 
 const validGenders = {
     values: ['M', 'F'],

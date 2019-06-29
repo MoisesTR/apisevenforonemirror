@@ -1,7 +1,7 @@
 'use strict';
 
 import {model, Schema} from "mongoose";
-import {IActivityTypesDocument} from "../interfaces/ActivityTypes";
+import {IActivityTypesDocument} from "../interfaces/IActivityTypes";
 
 const activityTypesSchema = new Schema({
     activityName: {

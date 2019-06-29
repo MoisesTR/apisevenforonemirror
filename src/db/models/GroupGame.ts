@@ -3,6 +3,7 @@ import mongoose, {model, Schema} from "mongoose";
 import {IGroupGameDocument, IMember, IMemberDocument} from "../interfaces/IGroupGame";
 import envVars from "../../global/environment";
 import {ObjectId} from "bson";
+import Notification from './Notification';
 
 export const memberSchema: Schema = new Schema({
     userId: {
@@ -110,6 +111,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                 payReference: "pay prize reference"
             });
             this.winners++;
+
             await userHistory.save();
         }
         this.members.push({...memberData});
@@ -124,6 +126,10 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             payReference: payReference
         });
         await userHistory.save();
+        // TODO: Save notification user win
+        new Notification({
+
+        })
         session.commitTransaction();
     } catch (_err) {
         session.abortTransaction();

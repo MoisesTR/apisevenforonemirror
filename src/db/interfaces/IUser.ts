@@ -1,6 +1,6 @@
 import {ObjectId} from "bson";
 import {Document, Model, Types} from "mongoose";
-import {IPurchaseHistoryDocument} from "./PurchaseHistory";
+import {IPurchaseHistoryDocument} from "./IPurchaseHistory";
 
 export interface IUser {
     firstName: string;

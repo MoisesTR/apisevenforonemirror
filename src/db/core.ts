@@ -8,15 +8,15 @@ import CardModel  from "./models/Card";
 import RoleModel  from "./models/Role";
 import MenuModel  from "./models/Menu";
 import GroupGameModel  from "./models/GroupGame";
-import {ICardModel} from "./interfaces/Card";
-import {IUserModel} from "./interfaces/User";
-import {IRoleModel} from "./interfaces/Role";
-import {IMenuModel} from "./interfaces/Menu";
+import {ICardModel} from "./interfaces/ICard";
+import {IUserModel} from "./interfaces/IUser";
+import {IRoleModel} from "./interfaces/IRole";
+import {IMenuModel} from "./interfaces/IMenu";
 import {IGroupGameModel} from "./interfaces/IGroupGame";
-import {IActivityTypesModel} from "./interfaces/ActivityTypes";
+import {IActivityTypesModel} from "./interfaces/IActivityTypes";
 import ActivityTypes from "./models/ActivityTypes";
 import PurchaseHistory from "./models/PurchaseHistory";
-import {IPurchaseHistoryModel} from "./interfaces/PurchaseHistory";
+import {IPurchaseHistoryModel} from "./interfaces/IPurchaseHistory";
 const basename = path.basename(__filename);
 
 export interface IModels {

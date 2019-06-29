@@ -11,11 +11,13 @@ import {getHtml} from '../utils/verifyEmailUtil';
 import {OAuth2Client} from 'google-auth-library';
 import {IModels} from "../db/core";
 import Server from "../server";
-import {IUserDocument} from "../db/interfaces/User";
-import {IActivityTypesDocument} from "../db/interfaces/ActivityTypes";
+import {IUserDocument} from "../db/interfaces/IUser";
+import {IActivityTypesDocument} from "../db/interfaces/IActivityTypes";
 import {Logger} from "winston";
 import envVars from '../global/environment';
 import {IjwtResponse} from "../services/jwt";
+import {redis} from '../services/redis';
+import {token} from 'morgan';
 
 
 const saltRounds = 10;
@@ -202,8 +204,10 @@ export class UserController {
         });
 
         const payload = ticket.getPayload();
-        if (!payload)
+        if (!payload) {
             throw new Error('Payload is empty');
+
+        }
         const userid = payload['sub'];
         // If request specified a G Suite domain:
         //const domain = payload['hd'];
@@ -333,6 +337,8 @@ export class UserController {
                     const saveResult = await user.save();
                     user.passwordHash = '';
 
+                    //TODO: SAve token
+                    redis.set(user._id, tokenGen)
                     res.status(200)
                         .json({
                             user: user,
@@ -534,6 +540,10 @@ export class UserController {
             })
             .catch(err => next(err))
     };
+
+    recoverAccount = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+
+    }
 
     getActivityTypes = (req: Express.Request, res: Express.Response, next: NextFunction) => {
         this.models.ActivityTypes.find()

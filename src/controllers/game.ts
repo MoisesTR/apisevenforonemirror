@@ -5,7 +5,7 @@ import {IModels} from "../db/core";
 import {IGroupGameDocument} from "../db/interfaces/IGroupGame";
 import {Types} from "mongoose";
 import {ObjectID} from "bson";
-import {IPurchaseHistoryDocument} from "../db/interfaces/PurchaseHistory";
+import {IPurchaseHistoryDocument} from "../db/interfaces/IPurchaseHistory";
 import DocumentArray = Types.DocumentArray;
 
 export default class GameController {
@@ -14,6 +14,7 @@ export default class GameController {
     constructor(server: Server) {
         this.models = server.dbCore.models;
     }
+
     createGroup = ( req: Express.Request, res: Express.Response, next: (err: any) => void ) => {
         const groupData = matchedData(req, {locations: ['body']});
 
@@ -72,7 +73,11 @@ export default class GameController {
                     , image: req.user.image
                 } , relationData.payReference)
             })
-            .then(result => res.status(201).json({message: 'Succesful member added!'}))
+            .then(result => {
+                res.status(201)
+                    .json({message: 'Successful member added!'})
+                // TODO: validate group member moviment
+            })
             .catch(next)
     };
 

@@ -7,13 +7,11 @@
   ],
   "watch": [
     "src/**/*.ts",
-    "config",
-    "webpack"
+    "config"
   ],
   "env": {
-    "NODE_ENV": "development",
-    "TS_NODE_PROJECT": "<tsconfig.json>"
+    "NODE_ENV": "development"
   },
-  "ext": "js json ts tsx",
-  "exec": "ts-node --project tsconfig.json ./src/app.ts"
+  "ext": "js json ts",
+  "exec": "ts-node -- ./src/app.ts"
 }

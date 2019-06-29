@@ -1,5 +1,5 @@
 import {model, Schema} from "mongoose";
-import {IPurchaseHistoryDocument} from "../interfaces/PurchaseHistory";
+import {IPurchaseHistoryDocument} from "../interfaces/IPurchaseHistory";
 
 const purchaseHistory = new Schema({
     userId: {

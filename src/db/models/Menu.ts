@@ -1,7 +1,7 @@
 "use strict";
 
 import {model, Schema} from "mongoose";
-import {IMenuDocument} from "../interfaces/Menu";
+import {IMenuDocument} from "../interfaces/IMenu";
 
 const menuSchema: Schema = new Schema({
         path: {
