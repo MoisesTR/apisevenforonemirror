@@ -3,6 +3,7 @@ import {validsParams} from '../utils/genericsValidations';
 import * as groupValidations from '../services/validations/game';
 import Server from '../server';
 import GameController from '../controllers/game';
+import {app} from '../app';
 
 export const register = (server: Server) => {
     const gameController = new GameController(server);
@@ -23,6 +24,5 @@ export const register = (server: Server) => {
         .get('/purchase-history/:userId', ensureAuth, groupValidations.userIdParam, validsParams, gameController.getPurchaseHistory)
         .get('/me/game-groups', ensureAuth, gameController.getMyCurrentsGroups)
         .get('/game-groups/current/:userId', ensureAuth, groupValidations.userIdParam, validsParams, gameController.getCurrentGroups);
-
-    server.app.use('/api',router);
+    app.use('/api',router);
 };

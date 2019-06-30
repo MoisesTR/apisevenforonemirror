@@ -1,90 +1,106 @@
 import socketIO from 'socket.io';
-import Express from 'express';
 import redisAdapter from 'socket.io-redis';
-import envVars from '../global/environment';
 import {IModels} from '../db/core';
 import {redisPub, redisSub} from '../services/redis';
-import Http from 'http';
+import {ObjectId} from 'bson';
+import {ENotificationTypes} from '../db/models/Notification';
+import {httpServer} from '../app';
 
 export interface ISocketManagerAttributes {
     main: socketIO.Server;
     gameGroups?: socketIO.Namespace;
 }
 
-export class SocketManager implements ISocketManagerAttributes {
-    main: socketIO.Server;
-    gameGroups?: socketIO.Namespace;
+let main: socketIO.Server;
+let gameGroups: socketIO.Namespace;
 
-    constructor(app: Http.Server) {
-        this.main = socketIO(app, {
-            path: envVars.SOCKETIO_PATH
+main = socketIO(httpServer, {
+    // path: envVars.SOCKETIO_PATH
+});
+main.adapter(redisAdapter({pubClient: redisPub, subClient: redisSub}));
+gameGroups = main.of('groups');
+
+
+export const listenSockets = (models: IModels) => {
+    console.log('Listen sockets');
+    main.on('connection', socket => {
+        console.log('Socket connection', socket);
+        socket.on('disconnect', () => {
+            console.log('Sockect disconnect!');
         });
-        this.main.adapter(redisAdapter({pubClient: redisPub, subClient: redisSub}));
-        this.gameGroups = this.main.of('groups');
-        console.log('socket creado')
-    }
+    });
 
-    public listenSockets(models: IModels) {
-        this.main.on('connection', socket => {
+    // main.emit('notification', () => {
+    //
+    // });
 
+    main.on('read-notification', () => {
 
-            socket.on('disconnect', () => {
+    });
 
-            });
-        });
-
-        // this.main.emit('notification', () => {
-        //
-        // });
-
-        this.main.on('read-notification', () => {
-
-        });
-
-
-        // const GGNamespaces: GroupGameNamespace[] = [];
-        // groups.forEach(group => {
-        //     new GroupGameNamespace(group, this.main);
-        // });
-    }
-
-    public listenGroupSocket(models: IModels) {
-        this.gameGroups = this.main.of('groupGames');
-        console.log('entre')
-        this.gameGroups.on('connection', async (socketGame) => {
-            const groups = await models.GroupGame.find({});
-
+    models.Notification.watch({})
+        .on('change', newNotification => {
+            console.log('Notification change', newNotification);
         });
 
-        this.gameGroups.on('joinGroup', () => {
-
+    models.User.watch({})
+        .on('change', (user) => {
+            console.log('User update', user);
         });
-        // Emitir siempre que el usuario gane sin importar el grupo
-        this.gameGroups.emit('update-purchase-history-user',);
+    // const GGNamespaces: GroupGameNamespace[] = [];
+    // groups.forEach(group => {
+    //     new GroupGameNamespace(group , main);
+    // });
+    const newnoti = new models.Notification({
+        userId: new ObjectId(),
+        content: ' alo',
+        notificationType: ENotificationTypes.WIN
+    });
+    newnoti.save()
+        .then(() => console.log('Guardado'));
+};
 
-        // emitir ganadores en el momento
-        this.gameGroups.emit('top-winners-globals')
+export const listenGroupSocket = (models: IModels) => {
+    gameGroups = main.of('groupGames');
+    gameGroups.on('connection', async (socketGame) => {
+        const groups = await models.GroupGame.find({});
+        console.log('Sockect game connectado', socketGame);
+
+    });
+
+    gameGroups.on('joinGroup', () => {
+
+    });
+    // Emitir siempre que el usuario gane sin importar el grupo
+    gameGroups.emit('update-purchase-history-user',);
+
+    // emitir ganadores en el momento
+    gameGroups.emit('top-winners-globals');
 
 
-        //cuando un usuario se registra en un grupo emitir un evento al cliente
-        //  con el recien ingresado
-        this.gameGroups.emit('')
-
-        //una solo pestana por user
-        this.gameGroups.emit('')
+    //cuando un usuario se registra en un grupo emitir un evento al cliente
+    //  con el recien ingresado
 
 
-        //marcar notifiaciones como leidas
-        //notificacion
-        // this.gameGroups.emit('confetti-celebration')
-        // this.gameGroups.emit('winGame', () => {
-        //     this.main.emit('notification', () => {
-        //
-        //     });
-        // });
-    }
-}
+    //una solo pestana por user
+    gameGroups.emit('');
 
+
+    //marcar notifiaciones como leidas
+    //notificacion
+    // gameGroups.emit('confetti-celebration')
+    // this.gameGroups.emit('winGame', () => {
+    //     main.emit('notification', () => {
+    //
+    //     });
+    // });
+};
+
+
+export {
+    main,
+    gameGroups
+};
 // import { UsuariosLista } from '../classes/usuarios-lista';
 // import { Usuario } from '../classes/usuario';
 //

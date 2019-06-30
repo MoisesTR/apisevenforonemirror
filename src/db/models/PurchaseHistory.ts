@@ -37,4 +37,4 @@ const purchaseHistory = new Schema({
     timestamps: true
 });
 
-export default model<IPurchaseHistoryDocument>('PurchaseHistory', purchaseHistory);
+export default model<IPurchaseHistoryDocument>('purchaseHistory', purchaseHistory);

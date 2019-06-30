@@ -1,5 +1,7 @@
 import {body, param, query, sanitize} from '../../utils/defaultImports';
 import {isObjectId, isValidDate} from '../../utils/genericsValidations';
+import {oneOf} from 'express-validator/check';
+
 
 const commonPasswordAndConfirmation = [
     body('password', 'Must be a String, min length 5 max length 25').isLength({min: 5, max: 25}),
@@ -9,6 +11,12 @@ const commonPasswordAndConfirmation = [
         }
         return value;
     })
+];
+export const recoverAccount = [
+    oneOf([
+        body('userName', 'Must be a String, min length 3 max length 40').isLength({min: 4, max: 40}),
+        body('email', 'Must be a valid Email').isEmail()
+    ])
 ];
 
 export const signUp = [

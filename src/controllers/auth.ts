@@ -212,7 +212,8 @@ export class UserController {
         const userid = payload['sub'];
         // If request specified a G Suite domain:
         //const domain = payload['hd'];
-        this.logger.info('Payload google user: ' + payload);
+        // TODO: descomment
+        // this.logger.info('Payload google user: ' + payload);
         console.log(payload);
         return {
             name: payload.name
@@ -545,8 +546,20 @@ export class UserController {
     };
 
     recoverAccount = (req: Express.Request, res: Express.Response, next: NextFunction) => {
-
-    }
+        const data = req.body;
+        let condition:any = { };
+        if ( !!data.userName )
+            condition.userName = data.userName;
+        else
+            condition.email = data.email;
+        this.models.User.findOne({...condition})
+            .then(user => {
+                if ( !user  )
+                    return res.status(404).json({message:  'User not found!'});
+                //TODO: Regresar
+            })
+            .catch(next)
+    };
 
     getActivityTypes = (req: Express.Request, res: Express.Response, next: NextFunction) => {
         this.models.ActivityTypes.find()

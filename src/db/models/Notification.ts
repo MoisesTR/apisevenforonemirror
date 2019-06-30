@@ -1,25 +1,36 @@
 import mongoose, {model, Schema} from 'mongoose';
 import {INotification, INotificationDocument, INotificationModel} from '../interfaces/INotification';
+import {ObjectId} from 'bson';
 
-enum ENotificationTypes  {
-    DEFAULT,
-    POSITION_CHANGE,
-    WIN,
-    INACTIVITY
+export enum ENotificationTypes  {
+    DEFAULT = "DEFAULT",
+    POSITION_CHANGE = "POSITION_CHANGE",
+    WIN = "WIN",
+    INACTIVITY = "INACTIVITY"
 }
 
 const NotificationSchema = new Schema({
     userId: {
-
+        type: ObjectId,
+        required: true,
+        ref: 'User'
     },
     notificationType: {
-        type: Number,
-        enum: ENotificationTypes,
+        type: String,
+        enum: [ENotificationTypes.DEFAULT,ENotificationTypes.WIN,ENotificationTypes.POSITION_CHANGE,ENotificationTypes.POSITION_CHANGE, ENotificationTypes.INACTIVITY],
         required: true
     },
-
+    content: {
+        type: String,
+        required: true
+    },
+    groupId: {
+        type: ObjectId,
+        required: false,
+        ref:'GroupGame'
+    }
 },{
     timestamps: true
 });
 
-export default model<INotificationDocument, INotificationModel>('Notification', NotificationSchema);
+export default model<INotificationDocument, INotificationModel>('notification', NotificationSchema);

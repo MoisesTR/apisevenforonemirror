@@ -26,4 +26,4 @@ const menuSchema: Schema = new Schema({
         timestamps: true
     });
 
-export default model<IMenuDocument>("Menu", menuSchema);
+export default model<IMenuDocument>("menu", menuSchema);

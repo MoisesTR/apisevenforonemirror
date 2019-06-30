@@ -20,5 +20,5 @@ export const cardSchema = new Schema({
     timestamps: true
 });
 
-export default mongoose.model<ICardDocument, ICardModel>('Card', cardSchema);
+export default mongoose.model<ICardDocument, ICardModel>('card', cardSchema);
 

@@ -3,7 +3,7 @@ import mongoose, {model, Schema} from "mongoose";
 import {IGroupGameDocument, IMember, IMemberDocument} from "../interfaces/IGroupGame";
 import envVars from "../../global/environment";
 import {ObjectId} from "bson";
-import Notification from './Notification';
+import Notification, {ENotificationTypes} from './Notification';
 
 export const memberSchema: Schema = new Schema({
     userId: {
@@ -86,7 +86,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             throw {status: 409, message: "This user is already member!"};
         }
 
-        const user = await this.model("User").findById(memberData.userId);
+        const user = await this.model("user").findById(memberData.userId);
         if (!user) {
             throw {status: 404, message: "User not found!"};
         }
@@ -103,7 +103,13 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                 image: user.image
             };
 
-            const userHistory = this.model("PurchaseHistory")({
+            this.model('notification')({
+                notificationType: ENotificationTypes.WIN,
+                userId: winner.userId,
+                content: `Congratulations ${winner.userName} you has been winner of the $${this.initialInvertion} group!`,
+                groupId: this.groupId
+            });
+            const userHistory = this.model("purchaseHistory")({
                 userId: winner.userId,
                 action: "win",
                 groupId: this._id,
@@ -118,7 +124,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
 
         this.totalInvested += this.initialInvertion;
         await this.save();
-        const userHistory = this.model("PurchaseHistory")({
+        const userHistory = this.model("purchaseHistory")({
             userId: memberData.userId,
             action: "invest",
             groupId: this._id,

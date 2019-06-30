@@ -19,4 +19,4 @@ const activityTypesSchema = new Schema({
     }
 });
 
-export default model<IActivityTypesDocument>('ActivityTypes', activityTypesSchema);
+export default model<IActivityTypesDocument>('activityTypes', activityTypesSchema);

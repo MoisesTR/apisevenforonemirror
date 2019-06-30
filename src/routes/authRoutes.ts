@@ -7,6 +7,7 @@ import server from "../server";
 // Controllers
 import {UserController} from '../controllers/auth'
 import RoleController from '../controllers/roles'
+import {app} from '../app';
 //
 export const register = (server: server) => {
     const router = Express.Router();
@@ -30,6 +31,7 @@ export const register = (server: server) => {
         .delete('/users/:userId', validations.changeStateUser, validsParams, authController.changeStateUser)
         .post('/roles\$', validations.createRole, validsParams, roleController.createRole)
         .get('/roles\$', roleController.getRoles)
-        .get('/roles/:roleId', roleController.getRole);
-    server.app.use('/api/auth', router);
+        .get('/roles/:roleId', roleController.getRole)
+        .post('/recover',   validations.recoverAccount, authController.recoverAccount);
+    app.use('/api/auth', router);
 }

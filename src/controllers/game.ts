@@ -7,12 +7,15 @@ import {Types} from "mongoose";
 import {ObjectID} from "bson";
 import {IPurchaseHistoryDocument} from "../db/interfaces/IPurchaseHistory";
 import DocumentArray = Types.DocumentArray;
+import {Logger} from 'winston';
 
 export default class GameController {
     private models: IModels;
+    private logger: Logger;
 
     constructor(server: Server) {
         this.models = server.dbCore.models;
+        this.logger = server.logger;
     }
 
     createGroup = ( req: Express.Request, res: Express.Response, next: (err: any) => void ) => {
@@ -77,6 +80,7 @@ export default class GameController {
                 res.status(201)
                     .json({message: 'Successful member added!'})
                 // TODO: validate group member moviment
+                // this.socketMng.gameGroups.
             })
             .catch(next)
     };

@@ -90,13 +90,13 @@ userSchema.methods.updateUser = function ({ firstName, lastName, phones, birthDa
 };
 
 userSchema.methods.getPurchaseHistory = function () {
-    return this.model('PurchaseHistory').find()
+    return this.model('purchaseHistory').find()
 };
 
 userSchema.methods.getPurchaseHistoryById = function (userId: string | Types.ObjectId) {
-    return this.model('PurchaseHistory').find({userId: userId})
+    return this.model('purchaseHistory').find({userId: userId})
 };
 
-export default model<IUserDocument, IUserModel>('User', userSchema);
+export default model<IUserDocument, IUserModel>('user', userSchema);
 
 
