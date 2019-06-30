@@ -1,11 +1,13 @@
 import socketIO from 'socket.io';
 import redisAdapter from 'socket.io-redis';
 import {IModels} from '../db/core';
-import {redisPub, redisSub} from '../services/redis';
+import {redisPub, redisSub} from '../redis/redis';
 import {ObjectId} from 'bson';
 import {ENotificationTypes} from '../db/models/Notification';
 import {httpServer} from '../app';
 import {CLOSE_SESSION, PLAYERS_ONLINE} from './events/mainSocket';
+import {socketKey} from '../redis/keys/dynamics';
+import logger from '../services/logger';
 
 export interface ISocketManagerAttributes {
     main: socketIO.Server;
@@ -43,15 +45,22 @@ export const listenSockets = (models: IModels) => {
         });
 
         socket.on("REGISTER_USER", (username) => {
-            console.log('Registrando user')
-            redisPub.getset(`socket-${username}`, socket.id)
+            console.log('Registrando user', username)
+            redisPub.get(socketKey(username))
                 .then(socketID => {
                     if ( !!socketID ) {
                         // Esto es emitido solo a la ventana anterior
                         socket.to(socketID).emit(CLOSE_SESSION);
-                        if (!!mainSocket.sockets.connected[socketID] )
+                        if (!!mainSocket.sockets.connected[socketID] && socketID != socket.id )
                             !!mainSocket.sockets.connected[socketID].disconnect();
                     }
+                    redisPub.set(socketKey(username), socket.id)
+                        .then(()=>{
+                            console.log('Key is set')
+                        })
+                        .catch(() => {
+                            console.log('no se pudo asociar el user al socket')
+                        })
                     console.log('Socket id', socketID)
                 }).catch(err=> {
                     console.log('Error', err)

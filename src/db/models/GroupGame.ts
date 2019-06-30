@@ -5,6 +5,9 @@ import envVars from "../../global/environment";
 import {ObjectId} from "bson";
 import Notification, {ENotificationTypes} from './Notification';
 import {mainSocket} from '../../sockets/socket';
+import {TOP_WINNERS, WIN_EVENT} from '../../sockets/events/gameSocket';
+import {redisPub} from '../../redis/redis';
+import {socketKey} from '../../redis/keys/dynamics';
 
 export const memberSchema: Schema = new Schema({
     userId: {
@@ -119,11 +122,15 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             });
             this.winners++;
 
-            // TODO: extract the socket id and use
-            mainSocket.emit('win-event', {
-                content: `Congratulations you has been winner of the $${this.initialInvertion} group!`,
-                date: new Date()
-            });
+            const socketWinner = await redisPub.get(socketKey(winner.userName));
+            if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
+                mainSocket.to(socketWinner)
+                .emit(WIN_EVENT, {
+                    content: `Congratulations you has been winner of the $${this.initialInvertion} group!`,
+                    date: new Date()
+                });
+            }
+            mainSocket.emit(TOP_WINNERS, user);
             await newNotif.save();
             await userHistory.save();
         }
