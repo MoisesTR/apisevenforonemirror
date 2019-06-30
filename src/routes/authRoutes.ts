@@ -32,6 +32,7 @@ export const register = (server: server) => {
         .post('/roles\$', validations.createRole, validsParams, roleController.createRole)
         .get('/roles\$', roleController.getRoles)
         .get('/roles/:roleId', roleController.getRole)
-        .post('/recover',   validations.recoverAccount, authController.recoverAccount);
+        .post('/recover',   validations.recoverAccount, authController.recoverAccount)
+        .get('/email/:userName', validations.getEmail, authController.getEmailByUserName);
     app.use('/api/auth', router);
 }

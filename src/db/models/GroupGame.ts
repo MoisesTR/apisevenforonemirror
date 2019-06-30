@@ -4,6 +4,7 @@ import {IGroupGameDocument, IMember, IMemberDocument} from "../interfaces/IGroup
 import envVars from "../../global/environment";
 import {ObjectId} from "bson";
 import Notification, {ENotificationTypes} from './Notification';
+import {mainSocket} from '../../sockets/socket';
 
 export const memberSchema: Schema = new Schema({
     userId: {
@@ -103,7 +104,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                 image: user.image
             };
 
-            this.model('notification')({
+            const newNotif = this.model('notification')({
                 notificationType: ENotificationTypes.WIN,
                 userId: winner.userId,
                 content: `Congratulations ${winner.userName} you has been winner of the $${this.initialInvertion} group!`,
@@ -118,6 +119,12 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             });
             this.winners++;
 
+            // TODO: extract the socket id and use
+            mainSocket.emit('win-event', {
+                content: `Congratulations you has been winner of the $${this.initialInvertion} group!`,
+                date: new Date()
+            });
+            await newNotif.save();
             await userHistory.save();
         }
         this.members.push({...memberData});
@@ -133,9 +140,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
         });
         await userHistory.save();
         // TODO: Save notification user win
-        new Notification({
-
-        })
+        mainSocket.emit(`group-activity-${this.initialInvertion}`, memberData);
         session.commitTransaction();
     } catch (_err) {
         session.abortTransaction();

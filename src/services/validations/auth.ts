@@ -18,6 +18,9 @@ export const recoverAccount = [
         body('email', 'Must be a valid Email').isEmail()
     ])
 ];
+export const getEmail = [
+    body('userName', 'Must be a String, min length 3 max length 40').isLength({min: 4, max: 40})
+]
 
 export const signUp = [
     body('firstName', 'Must be a String, min length 3 max length 150').isLength({min: 3, max: 150}),

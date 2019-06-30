@@ -20,6 +20,9 @@ import {redisPub} from '../services/redis';
 import {token} from 'morgan';
 // @ts-ignore
 import farmhash from "farmhash";
+import {mainSocket} from '../sockets/socket';
+import {CLOSE_SESSION} from '../sockets/events/mainSocket';
+import {getRecoverHtml} from '../utils/recoverAccountEmail';
 
 const saltRounds = 10;
 const transporter = nodemailer.createTransport(sendgridTransport({
@@ -187,6 +190,8 @@ export class UserController {
         userInfo.passwordHash = '';
 
         this.logger.info('Token de usuario creado');
+        redisPub.setex(`refresh-${farmhash.hash32(user._id)}`, 32323, user.secretToken);
+        redisPub.setex(`token-${farmhash.hash32(user._id)}`, -9999, tokenGen);
 
         return {
             user: userInfo
@@ -482,6 +487,8 @@ export class UserController {
             const hashPassw = await bcrypt.hash(userData.password, saltRounds);
             user.passwordHash = hashPassw;
             await user.save();
+            // TODO: search if the user has logged
+            // mainSocket.to().emit(CLOSE_SESSION, )
             res.status(200)
                 .json({
                     message: 'Password changed.'
@@ -545,6 +552,33 @@ export class UserController {
             .catch(err => next(err))
     };
 
+    getEmailByUserName= (req: Express.Request, res: Express.Response, next: NextFunction) => {
+        const userName = req.params.userName;
+
+        this.models.User.findOne({userName: userName})
+            .then(user => {
+                if ( !user  )
+                    return res.status(404).json({message:  'User not found!'});
+                else if (!user.enabled)
+                    return res.status(500).json({message: "Your account has been disabled!"});
+                // TODO: manage  email
+                transporter.sendMail({
+                    to: user.email,
+                    from: 'no-reply@sevenforone.com',
+                    subject: "Dont Reply! Recover your Account",
+                    html: getRecoverHtml(user.userName, envVars.URL_HOST + '/confirm/' )
+                })
+                .then((result) => {
+                    console.log('Email envado', result);
+                }).catch((err) => {
+                console.log('Error enviando', err);
+
+                });
+                res.status(200)
+                    .json({userName: userName, email: user.email})
+            })
+            .catch(next)
+    }
     recoverAccount = (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const data = req.body;
         let condition:any = { };
@@ -557,6 +591,7 @@ export class UserController {
                 if ( !user  )
                     return res.status(404).json({message:  'User not found!'});
                 //TODO: Regresar
+
             })
             .catch(next)
     };

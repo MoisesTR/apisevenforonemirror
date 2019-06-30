@@ -5,36 +5,65 @@ import {redisPub, redisSub} from '../services/redis';
 import {ObjectId} from 'bson';
 import {ENotificationTypes} from '../db/models/Notification';
 import {httpServer} from '../app';
+import {CLOSE_SESSION, PLAYERS_ONLINE} from './events/mainSocket';
 
 export interface ISocketManagerAttributes {
     main: socketIO.Server;
     gameGroups?: socketIO.Namespace;
 }
 
-let main: socketIO.Server;
+let mainSocket: socketIO.Server;
 let gameGroups: socketIO.Namespace;
 
-main = socketIO(httpServer, {
+mainSocket = socketIO(httpServer, {
     // path: envVars.SOCKETIO_PATH
+    serveClient: true
 });
-main.adapter(redisAdapter({pubClient: redisPub, subClient: redisSub}));
-gameGroups = main.of('groups');
+mainSocket.adapter(redisAdapter({pubClient: redisPub, subClient: redisSub}));
+gameGroups = mainSocket.of('groups');
 
 
 export const listenSockets = (models: IModels) => {
     console.log('Listen sockets');
-    main.on('connection', socket => {
-        console.log('Socket connection', socket);
+    mainSocket.on('connection', socket => {
+        console.log('Socket connection', "socket.client");
         socket.on('disconnect', () => {
             console.log('Sockect disconnect!');
+            // @ts-ignore
+            mainSocket.of('/').adapter.clients((err, clients) => {
+                console.log('clients', clients)
+                mainSocket.emit(PLAYERS_ONLINE , {quantity: clients.length})
+            })
         });
+
+        // @ts-ignore
+        mainSocket.of('/').adapter.clients((err, clients) => {
+            console.log('clients', clients)
+            mainSocket.emit(PLAYERS_ONLINE , {quantity: clients.length})
+        })
+        socket.on("REGISTER_USER", (username) => {
+            console.log('Registrando user')
+            redisPub.getset(`socket-${username}`, socket.id)
+                .then(socketID => {
+                    if ( !!socketID ) {
+                        // Esto es emitido solo a la ventana anterior
+                        socket.to(socketID).emit(CLOSE_SESSION);
+                        if (!!mainSocket.sockets.connected[socketID] )
+                            !!mainSocket.sockets.connected[socketID].disconnect();
+                    }
+                    console.log('Socket id', socketID)
+                }).catch(err=> {
+                    console.log('Error', err)
+                })
+        })
     });
 
-    // main.emit('notification', () => {
+
+    // mainSocket.emit('notification', () => {
     //
     // });
 
-    main.on('read-notification', () => {
+    mainSocket.on('read-notification', () => {
 
     });
 
@@ -49,7 +78,7 @@ export const listenSockets = (models: IModels) => {
         });
     // const GGNamespaces: GroupGameNamespace[] = [];
     // groups.forEach(group => {
-    //     new GroupGameNamespace(group , main);
+    //     new GroupGameNamespace(group , mainSocket);
     // });
     const newnoti = new models.Notification({
         userId: new ObjectId(),
@@ -61,7 +90,7 @@ export const listenSockets = (models: IModels) => {
 };
 
 export const listenGroupSocket = (models: IModels) => {
-    gameGroups = main.of('groupGames');
+    gameGroups = mainSocket.of('groupGames');
     gameGroups.on('connection', async (socketGame) => {
         const groups = await models.GroupGame.find({});
         console.log('Sockect game connectado', socketGame);
@@ -90,7 +119,7 @@ export const listenGroupSocket = (models: IModels) => {
     //notificacion
     // gameGroups.emit('confetti-celebration')
     // this.gameGroups.emit('winGame', () => {
-    //     main.emit('notification', () => {
+    //     mainSocket.emit('notification', () => {
     //
     //     });
     // });
@@ -98,7 +127,7 @@ export const listenGroupSocket = (models: IModels) => {
 
 
 export {
-    main,
+    mainSocket,
     gameGroups
 };
 // import { UsuariosLista } from '../classes/usuarios-lista';
