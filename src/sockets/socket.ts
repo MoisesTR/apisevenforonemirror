@@ -40,7 +40,8 @@ export const listenSockets = (models: IModels) => {
         mainSocket.of('/').adapter.clients((err, clients) => {
             console.log('clients', clients)
             mainSocket.emit(PLAYERS_ONLINE , {quantity: clients.length})
-        })
+        });
+
         socket.on("REGISTER_USER", (username) => {
             console.log('Registrando user')
             redisPub.getset(`socket-${username}`, socket.id)
