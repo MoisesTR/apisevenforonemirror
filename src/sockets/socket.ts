@@ -28,9 +28,9 @@ gameGroups = mainSocket.of('groups');
 export const listenSockets = (models: IModels) => {
     console.log('Listen sockets');
     mainSocket.on('connection', socket => {
-        console.log('Socket connection', "socket.client");
+        console.log('Socket principal connection', "socket.client");
         socket.on('disconnect', () => {
-            console.log('Sockect disconnect!');
+            console.log('Sockect principal disconnect!');
             // @ts-ignore
             mainSocket.of('/').adapter.clients((err, clients) => {
                 console.log('clients', clients)
@@ -104,7 +104,9 @@ export const listenGroupSocket = (models: IModels) => {
     gameGroups.on('connection', async (socketGame) => {
         const groups = await models.GroupGame.find({});
         console.log('Sockect game connectado', socketGame);
-
+        socketGame.on("disconnect", () => {
+            console.log('Desconectado del socket de juegos')
+        })
     });
 
     gameGroups.on('joinGroup', () => {
