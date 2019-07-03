@@ -101,12 +101,10 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         try {
             server.logger.info('Verificando token: ' + token, {location: 'jwt'});
             const decode = await verifyToken(token, envVars.JWT_SECRET);
-            console.log(decode);
             const user = await models.User.findById(decode.sub);
             //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
             if (!!user) {
                 //Si encontramos el usuario
-                console.log('The user was found');
                 if (user.enabled === false) {
                     //si el usuario se encuentra deshabilitado
                     throw {

@@ -5,7 +5,7 @@ import envVars from "../../global/environment";
 import {ObjectId} from "bson";
 import Notification, {ENotificationTypes} from './Notification';
 import {mainSocket} from '../../sockets/socket';
-import {TOP_WINNERS, WIN_EVENT} from '../../sockets/events/gameSocket';
+import {GROUP_ACTIVITY, TOP_WINNERS, WIN_EVENT} from '../../sockets/events/gameSocket';
 import {redisPub} from '../../redis/redis';
 import {socketKey} from '../../redis/keys/dynamics';
 
@@ -84,18 +84,20 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
     try {
         session.startTransaction();
         const membersSize = this.members.length;
-        const alreadyIndex = this.members.find((member: IMemberDocument) => member.userId.equals(memberData.userId));
-
-        if (alreadyIndex && !!this.uniqueChance) {
-            throw {status: 409, message: "This user is already member!"};
+        if ( !!this.uniqueChance ) {
+            const alreadyIndex = this.members.find((member: IMemberDocument) => member.userId.equals(memberData.userId));
+            if ( !!alreadyIndex )
+                throw {status: 409, message: "This user is already member!"};
         }
 
-        const user = await this.model("user").findById(memberData.userId);
-        if (!user) {
+        const user = await this.model("user")
+                        .findById(memberData.userId);
+        // Check user existence
+        if ( !user ) {
             throw {status: 404, message: "User not found!"};
         }
 
-        if (membersSize >= envVars.MAX_MEMBERS_PER_GROUP) {
+        if ( membersSize >= envVars.MAX_MEMBERS_PER_GROUP ) {
             const winner = this.members.shift();
             /**
              * TODO: Create pay prize reference
@@ -107,7 +109,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                 image: user.image
             };
 
-            const newNotif = this.model('notification')({
+            const newNotification = this.model('notification')({
                 notificationType: ENotificationTypes.WIN,
                 userId: winner.userId,
                 content: `Congratulations ${winner.userName} you has been winner of the $${this.initialInvertion} group!`,
@@ -130,11 +132,12 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                     date: new Date()
                 });
             }
-            mainSocket.emit(TOP_WINNERS, user);
-            await newNotif.save();
+            await newNotification.save();
             await userHistory.save();
         }
+        console.log('Players', this.members);
         this.members.push({...memberData});
+        console.log('Players update', this.members);
 
         this.totalInvested += this.initialInvertion;
         await this.save();
@@ -147,11 +150,11 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
         });
         await userHistory.save();
         // TODO: Save notification user win
-        mainSocket.emit(`group-activity-${this.initialInvertion}`, memberData);
-        session.commitTransaction();
+        mainSocket.emit(TOP_WINNERS, user);
+        mainSocket.emit(`${GROUP_ACTIVITY}${this.initialInvertion}`, memberData);
+        await session.commitTransaction();
     } catch (_err) {
-        session.abortTransaction();
-        return Promise.reject(_err);
+        await session.abortTransaction();
     }
 };
 

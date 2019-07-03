@@ -14,7 +14,6 @@ export const isValidDate = (value: string, fieldName: any) => {
 };
 
 export const isObjectId = (value: any) => {
-    console.log(ObjectId.isValid(value));
     return new ObjectId(value);
 };
 
