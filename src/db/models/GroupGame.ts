@@ -4,10 +4,12 @@ import {IGroupGameDocument, IMember, IMemberDocument} from "../interfaces/IGroup
 import envVars from "../../global/environment";
 import {ObjectId} from "bson";
 import Notification, {ENotificationTypes} from './Notification';
-import {mainSocket} from '../../sockets/socket';
-import {GROUP_ACTIVITY, TOP_WINNERS, WIN_EVENT} from '../../sockets/events/gameSocket';
+import {mainSocket, gameGroups} from '../../sockets/socket';
 import {redisPub} from '../../redis/redis';
-import {socketKey} from '../../redis/keys/dynamics';
+import {IUserDocument} from '../interfaces/IUser';
+import {EGameEvents} from '../../sockets/constants/game';
+import {EMainEvents} from '../../sockets/constants/main';
+import DynamicKey from '../../redis/keys/dynamics';
 
 export const memberSchema: Schema = new Schema({
     userId: {
@@ -90,7 +92,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                 throw {status: 409, message: "This user is already member!"};
         }
 
-        const user = await this.model("user")
+        const user:IUserDocument = await this.model("user")
                         .findById(memberData.userId);
         // Check user existence
         if ( !user ) {
@@ -103,10 +105,10 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
              * TODO: Create pay prize reference
              */
             this.lastWinner = {
-                userId: user._id,
-                userName: user.userName,
-                firstName: user.firstName,
-                image: user.image
+                userId: winner._id,
+                userName: winner.userName,
+                firstName: winner.firstName,
+                image: winner.image
             };
 
             const newNotification = this.model('notification')({
@@ -124,10 +126,10 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             });
             this.winners++;
 
-            const socketWinner = await redisPub.get(socketKey(winner.userName));
+            const socketWinner = await redisPub.get(DynamicKey.set.socketKey(winner.userName));
             if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
                 mainSocket.to(socketWinner)
-                .emit(WIN_EVENT, {
+                .emit(EMainEvents.WIN_EVENT, {
                     content: `Congratulations you has been winner of the $${this.initialInvertion} group!`,
                     date: new Date()
                 });
@@ -150,8 +152,9 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
         });
         await userHistory.save();
         // TODO: Save notification user win
-        mainSocket.emit(TOP_WINNERS, user);
-        mainSocket.emit(`${GROUP_ACTIVITY}${this.initialInvertion}`, memberData);
+        // mainSocket.emit(EMainEvents.WIN_EVENT, {userName: user.userName,groupPrice:this.initialInvestment, image: user.image});
+        console.log(`${EGameEvents.GROUP_ACTIVITY}${this.initialInvertion}`, memberData);
+        gameGroups.emit(`${EGameEvents.GROUP_ACTIVITY}${this.initialInvertion}`, {image: memberData.image, userName: memberData.userName});
         await session.commitTransaction();
     } catch (_err) {
         await session.abortTransaction();

@@ -16,11 +16,11 @@ import {IActivityTypesDocument} from "../db/interfaces/IActivityTypes";
 import {Logger} from "winston";
 import envVars from '../global/environment';
 import {IjwtResponse} from "../services/jwt";
-import {redisPub} from '../redis/redis';
+import {redisPub, redisSub} from '../redis/redis';
 import {getRecoverHtml} from '../utils/recoverAccountEmail';
-import {refreshKey, tokenKey} from '../redis/keys/dynamics';
+// import {refreshKey, tokenKey} from '../redis/keys/dynamics';
+import DynamicKeys from '../redis/keys/dynamics';
 import moment = require('moment');
-
 const saltRounds = 10;
 const transporter = nodemailer.createTransport(sendgridTransport({
     auth: {
@@ -85,7 +85,7 @@ export class UserController {
                 };
 
                 console.log('Facebook credentials' + facebookCredentials);
-                this.verifyCredentialsFacebook(req, res, next, userData, facebookCredentials);
+                await this.verifyCredentialsFacebook(req, res, next, userData, facebookCredentials);
             }
         );
 
@@ -123,13 +123,16 @@ export class UserController {
 
                     let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
                     console.log('Creando token, expira', expiration, moment.unix(expiration).diff(moment(),'seconds'))
-                    if (user.secretToken === "") {
+                    const refreshKey = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
+                    if (!refreshKey ){
                         const _tokenRefres = await this.jwt.createRefreshToken(user);
                         user.secretToken = _tokenRefres._token;
                         this.logger.info('Create secret token');
-                        redisPub.setex(refreshKey(user.userName),moment.unix(_tokenRefres.expiration).diff(moment(),'seconds') , _tokenRefres._token);
+                        // redisPub.hset(user.userName, "refresh", _tokenRefres._token);
+                        await redisPub.setex(DynamicKeys.set.refreshKey(user.userName),moment.unix(_tokenRefres.expiration).diff(moment(),'seconds') , _tokenRefres._token);
                     }
-                    redisPub.setex(tokenKey(user.userName),  moment.unix(expiration).diff(moment(),'seconds'), tokenGen);
+                    //TODO: come back
+                    // redisPub.setex(tokenKey(user.userName),  moment.unix(expiration).diff(moment(),'seconds'), tokenGen);
                     const saveResult = await user.save();
                     user.passwordHash = '';
 
@@ -189,8 +192,10 @@ export class UserController {
         userInfo.passwordHash = '';
 
         this.logger.info('Token de usuario creado');
-        redisPub.setex(tokenKey(user.userName),  moment.unix(expiration).diff(moment(),'seconds'), user.secretToken);
-        redisPub.setex(refreshKey(user.userName),  moment.unix(expiration).diff(moment(),'seconds'), tokenGen);
+        // TODO: return
+        // redisPub.setex(tokenKey(user.userName),  moment.unix(expiration).diff(moment(),'seconds'), user.secretToken);
+
+        await redisPub.setex(DynamicKeys.set.refreshKey(user.userName),  moment.unix(expiration).diff(moment(),'seconds'), tokenGen);
 
         return {
             user: userInfo
@@ -312,7 +317,7 @@ export class UserController {
      * @param {*} res
      */
 
-    signIn = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    signInMiddleware = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req);
         this.logger.info('Login usuario');
 
@@ -335,17 +340,19 @@ export class UserController {
 
                     let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
 
+                    // Verify if the user has refresh token
                     if ( user.secretToken === "") {
                         this.logger.info('Create refresh token');
-                        const {expiration: expirationRefres, _token: _tokenRefresh} = await this.jwt.createRefreshToken(user);
-                        await redisPub.hmset(refreshKey(user.userName), ["_token", _tokenRefresh, "expiration", expirationRefres])
-                        redisPub.setex(refreshKey(user.userName), moment.unix(expirationRefres).diff(moment(),"seconds"), _tokenRefresh);
+                        const {expiration: expirationRefres, _token: _tokenRefresh} = await this.jwt.createRefreshToken(user, 5, 'hours');
+                        // TODO: come back
+                        // await redisPub.hmset(DynamicKeys.set.refreshKey(user.userName), ["_token", _tokenRefresh, "expiration", expirationRefres])
+                        await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), moment.unix(expirationRefres).diff(moment(),"seconds"), _tokenRefresh);
                     }
 
                     const saveResult = await user.save();
                     user.passwordHash = '';
 
-                    redisPub.setex(tokenKey(user.userName), moment.unix(expiration).diff(moment(), "seconds"), tokenGen);
+                    redisPub.setex(DynamicKeys.set.tokenKey(user.userName), moment.unix(expiration).diff(moment(), "seconds"), tokenGen);
                     //TODO: SAve token
                     redisPub.set(user._id, tokenGen)
                     res.status(200)
@@ -508,19 +515,28 @@ export class UserController {
         const {refreshToken, userName} = matchedData(req, {locations: ['body']});
 
         try {
-            const user = await this.models.User.findOne({secretToken: refreshToken, userName});
+
+            const user = req.user;
+            // get token username
+            const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName))
 
             if (!user) throw {
                 status: 401, code: 'DTOKEN',
                 message: 'The refresh token is not valid.'
             };
 
-            if (user._id.toString() !== req.user._id.toString()) {
-                throw {
-                    status: 401, code: 'ITOKEN',
-                    message: 'The sent token does not belong to your User.',
-                }
+            if ( redisRefreshToken !== refreshToken){
+                throw ({
+                    status: 401, code: "TRNOTVAL",
+                    message: "Refresh Token not valid, please login again!"
+                })
             }
+            // if (user._id.toString() !== req.user._id.toString()) {
+            //     throw {
+            //         status: 401, code: 'ITOKEN',
+            //         message: 'The sent token does not belong to your User.',
+            //     }
+            // }
             if (!user.enabled) {
                 throw {
                     status: 403, code: 'UDESH',
@@ -528,6 +544,8 @@ export class UserController {
                 };
             }
             const {_token: tokenGen, expiration} = await this.jwt.createRefreshToken(user);
+            //TODO; come back here
+
             res.status(200)
                 .json({
                     token: tokenGen,
@@ -621,7 +639,7 @@ export class UserController {
                     if (user.secretToken === "") {
                         const _tempToken = await this.jwt.createRefreshToken(user);
                         user.secretToken = _tempToken._token;
-                        await redisPub.hmset(refreshKey(user.userName), ["_token", _tempToken._token, "expiration", _tempToken.expiration])
+                        await redisPub.hmset(DynamicKeys.set.refreshKey(user.userName), ["_token", _tempToken._token, "expiration", _tempToken.expiration])
                         this.logger.info('Create secret token');
                     }
 

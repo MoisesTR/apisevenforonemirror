@@ -5,9 +5,9 @@ import {redisPub, redisSub} from '../redis/redis';
 import {ObjectId} from 'bson';
 import {ENotificationTypes} from '../db/models/Notification';
 import {httpServer} from '../app';
-import * as socketPrincipalEvents from './events/mainSocket';
-import {socketKey} from '../redis/keys/dynamics';
-import * as socketGamevents from './events/gameSocket';
+import {EMainEvents} from './constants/main';
+import {EGameEvents} from './constants/game';
+import DynamicKey from '../redis/keys/dynamics';
 
 export interface ISocketManagerAttributes {
     main: socketIO.Server;
@@ -33,29 +33,35 @@ export const listenSockets = (models: IModels) => {
             console.log('Sockect principal disconnect!');
             // @ts-ignore
             mainSocket.of('/').adapter.clients((err, clients) => {
-                console.log('clients', clients);
-                mainSocket.emit(socketPrincipalEvents.PLAYERS_ONLINE, {quantity: clients.length});
+                console.log('clients conectados', clients);
+                mainSocket.emit(EMainEvents.PLAYERS_ONLINE, {quantity: clients.length});
             });
+            socket.leave('ADMIN');
+        });
+
+        socket.on(EMainEvents.JOIN_ADMIN_ROOM, () => {
+            console.log('Se unio un administrador!');
+            socket.join('ADMIN');
         });
 
         // @ts-ignore
         mainSocket.of('/').adapter.clients((err, clients) => {
-            console.log('clients', clients);
-            mainSocket.emit(socketPrincipalEvents.PLAYERS_ONLINE, {quantity: clients.length});
+            console.log('clients conectados', clients);
+            mainSocket.emit(EMainEvents.PLAYERS_ONLINE, {quantity: clients.length});
         });
 
         socket.on('REGISTER_USER', (username) => {
             console.log('Registrando user', username);
-            redisPub.get(socketKey(username))
+            redisPub.get(DynamicKey.set.socketKey(username))
                 .then(socketID => {
                     if (!!socketID) {
                         // Esto es emitido solo a la ventana anterior
-                        socket.to(socketID).emit(socketPrincipalEvents.CLOSE_SESSION);
+                        socket.to(socketID).emit(EMainEvents.CLOSE_SESSION);
                         if (!!mainSocket.sockets.connected[socketID] && (socketID != socket.id)) {
                             !!mainSocket.sockets.connected[socketID].disconnect();
                         }
                     }
-                    redisPub.set(socketKey(username), socket.id)
+                    redisPub.set(DynamicKey.set.socketKey(username), socket.id)
                         .then(() => {
                             console.log('Key is set');
                         })
@@ -101,14 +107,25 @@ export const listenSockets = (models: IModels) => {
 export const listenGroupSocket = (models: IModels) => {
     gameGroups = mainSocket.of('groupGames');
     gameGroups.on('connection', async (socketGame) => {
-        const groups = await models.GroupGame.find({});
+        // const groups = await models.GroupGame.find({});
         console.log('Sockect game connectado', socketGame.id);
+        const gameSocketId = await redisPub.hget(DynamicKey.hash.socketsUser(socketGame.handshake.query.userName), 'game');
+        if (!!gameSocketId) {
+            // @ts-ignore
+            gameGroups.adapter.remoteDisconnect(gameSocketId, true, (err: any) => {
+                if (err) { /* unknown id */
+                }
+                // success
+                console.log('REmote disconnect', err);
+            });
+        }
+        await redisPub.hset(DynamicKey.hash.socketsUser(socketGame.handshake.query.userName), "game", socketGame.id);
         socketGame.on('disconnect', () => {
             console.log('Desconectado del socket de juegos');
         });
     });
 
-    gameGroups.on(socketGamevents.JOIN_GROUP, () => {
+    gameGroups.on(EGameEvents.JOIN_GROUP, () => {
 
     });
     // Emitir siempre que el usuario gane sin importar el grupo
@@ -141,58 +158,3 @@ export {
     mainSocket,
     gameGroups
 };
-// import { UsuariosLista } from '../classes/usuarios-lista';
-// import { Usuario } from '../classes/usuario';
-//
-//
-// export const usuariosConectados = new UsuariosLista();
-//
-//
-// export const conectarCliente = ( cliente: Socket ) => {
-//
-//     const usuario = new Usuario( cliente.id );
-//     usuariosConectados.agregar( usuario );
-//
-// }
-//
-//
-// export const desconectar = ( cliente: Socket ) => {
-//
-//     cliente.on('disconnect', () => {
-//         console.log('Cliente desconectado');
-//
-//         usuariosConectados.borrarUsuario( cliente.id );
-//
-//     });
-//
-// }
-//
-//
-// // Escuchar mensajes
-// export const mensaje = ( cliente: Socket, io: socketIO.Server ) => {
-//
-//     cliente.on('mensaje', (  payload: { de: string, cuerpo: string }  ) => {
-//
-//         console.log('Mensaje recibido', payload );
-//
-//         io.emit('mensaje-nuevo', payload );
-//
-//     });
-//
-// }
-//
-// // Configurar usuario
-// export const configurarUsuario = ( cliente: Socket, io: socketIO.Server ) => {
-//
-//     cliente.on('configurar-usuario', (  payload: { nombre: string }, callback: Function  ) => {
-//
-//         usuariosConectados.actualizarNombre( cliente.id, payload.nombre );
-//
-//         callback({
-//             ok: true,
-//             mensaje: `Usuario ${ payload.nombre }, configurado`
-//         });
-//     });
-//
-// }
-//

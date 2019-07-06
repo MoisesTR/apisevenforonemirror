@@ -1,3 +1,0 @@
-export const CLOSE_SESSION = "CLOSE_SESSION";
-export const REGISTER_USER = "REGISTER_USER";
-export const PLAYERS_ONLINE = "PLAYERS_ONLINE";

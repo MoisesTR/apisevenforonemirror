@@ -17,7 +17,7 @@ export const register = (server: server) => {
 
     router
         .post('/signup', validations.signUp, validsParams, authController.signUp)
-        .post('/login', validations.signIn, validsParams, authController.signIn)
+        .post('/login', validations.signIn, validsParams, authController.signInMiddleware)
         .post('/loginGoogle', validations.signInGoogle, validsParams, authController.signInGoogle)
         .post('/loginFacebook', validations.signInFacebook, validsParams, authController.signInFacebook)
         .get('/users', validations.getUsers, validsParams, authController.getUsers)
