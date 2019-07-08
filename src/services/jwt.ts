@@ -41,7 +41,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
     const createRefreshToken = async (user: IUserDocument, expiration: number = 1, unitOfTime: DurationInputArg2 = "hours") => {
         return createToken({
             sub: user._id
-        }, envVars.JWT_REFRESH_SECRET, expiration, unitOfTime)
+        }, envVars.JWT_SECRET, expiration, unitOfTime)
     };
 
     async function verifyToken(token: string, secret: string) {
