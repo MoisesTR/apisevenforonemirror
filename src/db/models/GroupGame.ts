@@ -156,7 +156,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
         // TODO: Save notification user win
         // mainSocket.emit(EMainEvents.WIN_EVENT, {userName: user.userName,groupPrice:this.initialInvestment, image: user.image});
         console.log(`${EGameEvents.GROUP_ACTIVITY}${this.initialInvertion}`, memberData);
-        gameGroups.emit(`${EGameEvents.GROUP_ACTIVITY}${this.initialInvertion}`, {image: memberData.image, userName: memberData.userName});
+        gameGroups.emit(`${EGameEvents.GROUP_ACTIVITY}${this.initialInvertion}`, {image: memberData.image, userName: memberData.userName, userId: memberData.userId});
         await session.commitTransaction();
     } catch (_err) {
         await session.abortTransaction();
