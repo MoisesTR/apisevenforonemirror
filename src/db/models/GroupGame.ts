@@ -10,6 +10,7 @@ import {IUserDocument} from '../interfaces/IUser';
 import {EGameEvents} from '../../sockets/constants/game';
 import {EMainEvents} from '../../sockets/constants/main';
 import DynamicKey from '../../redis/keys/dynamics';
+import {userIdParam} from '../../services/validations/game';
 
 export const memberSchema: Schema = new Schema({
     userId: {
@@ -130,6 +131,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
                 mainSocket.to(socketWinner)
                 .emit(EMainEvents.WIN_EVENT, {
+                    userId : winner.userId,
                     content: `Congratulations you has been winner of the $${this.initialInvertion} group!`,
                     date: new Date()
                 });
