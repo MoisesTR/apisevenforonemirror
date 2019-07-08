@@ -69,7 +69,7 @@ export const verifyUser = [
 
 export const refreshToken = [
     body('refreshToken').isLength({min: 15}),
-    body('userName').isLength({min: 4, max: 40})
+    body('user').exists()
 ];
 
 export const changeStateUser = [

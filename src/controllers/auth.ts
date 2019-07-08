@@ -41,9 +41,9 @@ const generateRandomUserName = (email: string) => {
         , integer: true
     };
 
-    const number = randomNumber(options);
+    const numberGenerate = randomNumber(options);
     const arrays = email.split('@');
-    return arrays[0] + number;
+    return arrays[0] + numberGenerate;
 };
 
 export class UserController {
@@ -512,11 +512,11 @@ export class UserController {
     };
 
     refreshToken = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-        const {refreshToken, userName} = matchedData(req, {locations: ['body']});
+        const {refreshToken, user} = matchedData(req, {locations: ['body']});
 
         try {
 
-            const user = req.user;
+            // const user = req.user;
             // get token username
             const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName))
 
