@@ -45,6 +45,7 @@ export class SocketManager implements ISocketManagerAttributes {
 
         models.Notification.watch({})
             .on("change", newNotification => {
+                if (
                 console.log('Notification change', newNotification);
             })
 

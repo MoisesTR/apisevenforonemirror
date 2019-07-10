@@ -22,6 +22,7 @@ export default class GameController {
         const groupData = matchedData(req, {locations: ['body']});
 
         const groupGame = new this.models.GroupGame({...groupData});
+
         groupGame.save()
             .then( group => res.status(201).json({message: 'Group created!!'}))
             .catch(next)
@@ -97,6 +98,7 @@ export default class GameController {
             .then( group => res.status(200).json({message: 'Member was removed from group!'}) )
             .catch(next)
     };
+
     getOwnPurchaseHistory = ( req: Express.Request, res: Express.Response, next: NextFunction ) => {
         console.log(req.user);
         req.user.getPurchaseHistory()

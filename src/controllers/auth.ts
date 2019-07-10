@@ -6,25 +6,26 @@ import randomNumber from 'random-number';
 import nodemailer from 'nodemailer';
 // @ts-ignore
 import sendgridTransport from 'nodemailer-sendgrid-transport';
-import {matchedData, resultOrNotFound} from '../utils/defaultImports';
+import {matchedData, remainigTimeInSeconds, resultOrNotFound} from '../utils/defaultImports';
 import {getHtml} from '../utils/verifyEmailUtil';
 import {OAuth2Client} from 'google-auth-library';
-import {IModels} from "../db/core";
-import Server from "../server";
-import {IUserDocument} from "../db/interfaces/IUser";
-import {IActivityTypesDocument} from "../db/interfaces/IActivityTypes";
-import {Logger} from "winston";
+import {IModels} from '../db/core';
+import Server from '../server';
+import {IUserDocument} from '../db/interfaces/IUser';
+import {IActivityTypesDocument} from '../db/interfaces/IActivityTypes';
+import {Logger} from 'winston';
 import envVars from '../global/environment';
-import {IjwtResponse} from "../services/jwt";
-import {redisPub, redisSub} from '../redis/redis';
+import {IjwtResponse} from '../services/jwt';
+import {redisPub} from '../redis/redis';
 import {getRecoverHtml} from '../utils/recoverAccountEmail';
 // import {refreshKey, tokenKey} from '../redis/keys/dynamics';
 import DynamicKeys from '../redis/keys/dynamics';
 import moment = require('moment');
+
 const saltRounds = 10;
 const transporter = nodemailer.createTransport(sendgridTransport({
     auth: {
-        api_key: "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"
+        api_key: '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'
     }
 }));
 
@@ -50,6 +51,7 @@ export class UserController {
     private models: IModels;
     private logger: Logger;
     private jwt: IjwtResponse;
+
     constructor(server: Server) {
         this.models = server.dbCore.models;
         this.logger = server.logger;
@@ -64,7 +66,7 @@ export class UserController {
         FB.api(
             '/me',
             'GET',
-            {"fields": "id,name,email,first_name,last_name,picture.width(300).height(300){url}"},
+            {'fields': 'id,name,email,first_name,last_name,picture.width(300).height(300){url}'},
             async (response?: any) => {
 
                 if (!response || response.error) {
@@ -96,40 +98,43 @@ export class UserController {
         const accessToken = userData.accessToken;
         this.logger.info('Token google: ' + accessToken);
 
-        const googleUser: any = await this.verify(accessToken).catch(() => {
-            return res.status(403).json({
-                ok: false
-                , message: 'Token not valid!'
+        const googleUser: any = await this.verify(accessToken)
+            .catch(() => {
+                return res.status(403).json({
+                    ok: false
+                    , message: 'Token not valid!'
+                });
             });
-        });
 
-        if (!googleUser) return;
+        if (!googleUser) {
+            return;
+        }
 
         try {
 
             const user = await this.models.User
-                            .findOne({email: googleUser.email}).populate('role');
+                .findOne({email: googleUser.email}).populate('role');
 
             if (user) {
                 if (user.provider === 'none') {
-                    throw {status: 400, code: "AUTHNOR", message: "You must use your normal authentication!"};
+                    throw {status: 400, code: 'AUTHNOR', message: 'You must use your normal authentication!'};
                 } else if (user.provider === 'facebook') {
                     throw {
                         status: 400,
-                        code: "AUTHNOR",
-                        message: "This email already has a Registered Facebook account!"
+                        code: 'AUTHNOR',
+                        message: 'This email already has a Registered Facebook account!'
                     };
                 } else {
 
                     let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
-                    console.log('Creando token, expira', expiration, moment.unix(expiration).diff(moment(),'seconds'))
+                    console.log('Creando token, expira', expiration, moment.unix(expiration).diff(moment(), 'seconds'));
                     const refreshKey = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
-                    if (!refreshKey ){
+                    if (!refreshKey) {
                         const _tokenRefres = await this.jwt.createRefreshToken(user);
                         user.secretToken = _tokenRefres._token;
                         this.logger.info('Create secret token');
                         // redisPub.hset(user.userName, "refresh", _tokenRefres._token);
-                        await redisPub.setex(DynamicKeys.set.refreshKey(user.userName),moment.unix(_tokenRefres.expiration).diff(moment(),'seconds') , _tokenRefres._token);
+                        await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), moment.unix(_tokenRefres.expiration).diff(moment(), 'seconds'), _tokenRefres._token);
                     }
                     //TODO: come back
                     // redisPub.setex(tokenKey(user.userName),  moment.unix(expiration).diff(moment(),'seconds'), tokenGen);
@@ -139,7 +144,7 @@ export class UserController {
                     this.logger.info('Sending info to login');
                     res.status(200)
                         .json({
-                            user: user
+                            user: {_id: user._id, userName: user.userName, role: user.role}
                             , token: tokenGen
                             , refreshToken: saveResult.secretToken
                             , expiration
@@ -160,11 +165,9 @@ export class UserController {
     };
 
     //funcion registro
-
     async createUserWithSocialLogin(userData: any, socialUser: any) {
 
         userData.password = randomstring.generate(4);
-        const secretToken = randomstring.generate(20);
         const hashPassw = await bcrypt.hash(userData.password, saltRounds);
         const randomUserName = generateRandomUserName(socialUser.email);
 
@@ -178,30 +181,29 @@ export class UserController {
             passwordHash: hashPassw,
             role: userData.roleId,
             isVerified: true,
-            secretToken: secretToken,
             enabled: true
         });
 
         const insertInfo = await user.save();
 
-        let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
+        let {_token: accessTokenGen, expiration} = await this.jwt.createAccessToken(user);
+        let {_token: refreshTokenGen, expiration: expirationRefresh} = await this.jwt.createRefreshToken(user);
 
-        const userInfo = await this.models.User.findOne({email: socialUser.email}).populate('role');
-        if (!userInfo)
+        let userInfo = await this.models.User.findOne({email: socialUser.email}).populate('role');
+        if (!userInfo) {
             throw new Error('Error usuario no encontrado');
-        userInfo.passwordHash = '';
+        }
+        delete userInfo.passwordHash;
 
         this.logger.info('Token de usuario creado');
-        // TODO: return
-        // redisPub.setex(tokenKey(user.userName),  moment.unix(expiration).diff(moment(),'seconds'), user.secretToken);
 
-        await redisPub.setex(DynamicKeys.set.refreshKey(user.userName),  moment.unix(expiration).diff(moment(),'seconds'), tokenGen);
-
+        await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), accessTokenGen);
+        await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefresh), refreshTokenGen);
         return {
             user: userInfo
-            , token: tokenGen
-            , refreshToken: user.secretToken
-            , expiration
+            , token: accessTokenGen
+            , refreshToken: refreshTokenGen
+            , expiration: expirationRefresh
         };
     }
 
@@ -231,7 +233,7 @@ export class UserController {
             , email: payload.email
             , img: payload.picture
             , provider: 'google'
-        }
+        };
     }
 
     signUp = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -245,24 +247,25 @@ export class UserController {
                 // console.log(usersfind.recordset[0])
                 throw {
                     status: 401,
-                    code: "UEEXIST",
-                    message: "Not registered user, email and username are already registered!"
+                    code: 'UEEXIST',
+                    message: 'Not registered user, email and username are already registered!'
                 };
                 //res.status(401).json({code:"UEXIST",message:"No se registro el usuario, email o username ya registrados!"})
             } else if (users.length === 1) {
                 // if(usersfind[0].username == userData.username || usersfind[1].username== userData.username)
-                if (users[0].userName === userData.Username)
+                if (users[0].userName === userData.Username) {
                     throw {
                         status: 401,
-                        code: "UEXIST",
+                        code: 'UEXIST',
                         message: 'The userName:' + userData.userName + ' already exists!'
                     };
-                else
+                } else {
                     throw {
                         status: 401,
-                        code: "EEXIST",
+                        code: 'EEXIST',
                         message: 'The user was not registered with email:' + userData.email + ', already registered!'
                     };
+                }
             } else {
                 const token = randomstring.generate(20);
                 const user = new this.models.User({
@@ -290,8 +293,8 @@ export class UserController {
                 transporter.sendMail({
                     to: userData.email,
                     from: 'no-reply@sevenforone.com',
-                    subject: "Welcome to Seven for One! Confirm Your Email",
-                    html: getHtml(insertInfo.userName, envVars.URL_HOST + '/confirm/' + insertInfo.secretToken + "/" + insertInfo.userName)
+                    subject: 'Welcome to Seven for One! Confirm Your Email',
+                    html: getHtml(insertInfo.userName, envVars.URL_HOST + '/confirm/' + insertInfo.secretToken + '/' + insertInfo.userName)
                 })
                     .then((result) => {
                         console.log('Email envado', result);
@@ -305,11 +308,9 @@ export class UserController {
         } catch (_err) {
             // res.status( _err.status || 500)
             //     .json( _err )
-            next(_err)
+            next(_err);
         }
     };
-
-    //funcion registro
 
     /**
      * @name signIn
@@ -329,42 +330,34 @@ export class UserController {
 
                 if (isequal) {
 
-                    if (!user.isVerified)
+                    if (!user.isVerified) {
                         throw {
                             status: 401,
                             code: 'NVERIF',
                             message: 'You need to verify your email address in order to login'
                         };
-                    if (!user.enabled)
+                    }
+                    if (!user.enabled) {
                         throw {status: 403, code: 'UDISH', message: 'Your user has been disabled!'};
-
-                    let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
-
-                    // Verify if the user has refresh token
-                    if ( user.secretToken === "") {
-                        this.logger.info('Create refresh token');
-                        const {expiration: expirationRefres, _token: _tokenRefresh} = await this.jwt.createRefreshToken(user, 5, 'hours');
-                        // TODO: come back
-                        // await redisPub.hmset(DynamicKeys.set.refreshKey(user.userName), ["_token", _tokenRefresh, "expiration", expirationRefres])
-                        await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), moment.unix(expirationRefres).diff(moment(),"seconds"), _tokenRefresh);
                     }
 
-                    const saveResult = await user.save();
-                    user.passwordHash = '';
+                    let {expiration: expirationRefres, _token: _tokenRefresh} = await this.jwt.createRefreshToken(user, 5, 'hours');
+                    let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
 
-                    redisPub.setex(DynamicKeys.set.tokenKey(user.userName), moment.unix(expiration).diff(moment(), "seconds"), tokenGen);
-                    //TODO: SAve token
-                    redisPub.set(user._id, tokenGen)
+                    // TODO: come back implement the browser agent store
+                    await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefres), _tokenRefresh);
+                    await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
                     res.status(200)
                         .json({
-                            user: user,
+                            user: {_id: user._id, userName: user.userName, email: user.email},
                             token: tokenGen,
-                            refreshToken: saveResult.secretToken,
+                            refreshToken: _tokenRefresh,
                             expiration
                         });
                     // saveLog(saveResult._id, {userName: saveResult.userName},`${saveResult.userName} joined us.`)
-                } else
+                } else {
                     throw {status: 401, code: 'EPASSW', message: 'Wrong Password.'};
+                }
             } else {
                 console.log('User not found!');
                 throw {status: '401', code: 'NEXIST', message: 'User not found!'};
@@ -404,8 +397,8 @@ export class UserController {
                     .json(result);
             }).catch((error: Error) => {
             res.status(error.status || 500)
-                .json(error)
-        })
+                .json(error);
+        });
     };
 
     verifyEmail = (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -415,17 +408,18 @@ export class UserController {
             .then((user: IUserDocument | null) => {
                 console.log(user);
 
-                if (!user)
+                if (!user) {
                     throw ({
                         status: 400,
                         code: 'EVERIF',
-                        message: "The verify token is not valid."
+                        message: 'The verify token is not valid.'
                     });
-                return user.verifyToken()
+                }
+                return user.verifyToken();
             })
             .then((result) => {
                 res.status(200)
-                    .json({success: "Welcome to Seven for One, your email is verified!"})
+                    .json({success: 'Welcome to Seven for One, your email is verified!'});
             }).catch((err) => {
             next(err);
         });
@@ -444,9 +438,10 @@ export class UserController {
         }
         this.models.User.findById(userData.userId)
             .then((user: IUserDocument | null) => {
-                if (user == null)
+                if (user == null) {
                     throw {status: 404, message: 'User not found!'};
-                return user.updateUser(userData)
+                }
+                return user.updateUser(userData);
             })
             .then((userUpdate: IUserDocument) => res.status(200)
                 .json({
@@ -455,8 +450,8 @@ export class UserController {
                 })
             )
             .catch((err: any) => {
-                next(err)
-            })
+                next(err);
+            });
     };
 
     changeStateUser = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -466,15 +461,15 @@ export class UserController {
             const user = await this.models.User.findById(data.userId);
             if (!user) {
                 res.status(400)
-                    .json({failed: "User not found!"});
+                    .json({failed: 'User not found!'});
                 return;
             }
             const action = data.enabled ? 'Enable' : 'Disable';
-            user.secretToken = "";
+            user.secretToken = '';
             user.enabled = data.enabled;
             await user.save();
             res.status(200)
-                .json({success: 'User has been ' + action})
+                .json({success: 'User has been ' + action});
         } catch (_err) {
             next(_err);
         }
@@ -489,7 +484,7 @@ export class UserController {
                 throw {
                     status: 404,
                     message: 'User not found!'
-                }
+                };
             }
             const hashPassw = await bcrypt.hash(userData.password, saltRounds);
             user.passwordHash = hashPassw;
@@ -499,7 +494,7 @@ export class UserController {
             res.status(200)
                 .json({
                     message: 'Password changed.'
-                })
+                });
         } catch (_er) {
             next(_er);
         }
@@ -508,28 +503,35 @@ export class UserController {
     getAuthenticateUserInfo = (req: Express.Request, res: Express.Response) => {
         delete req.user.passwordHash;
         res.status(200)
-            .json(req.user)
+            .json(req.user);
     };
 
-    refreshToken = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-        const {refreshToken, user} = matchedData(req, {locations: ['body']});
+    refreshTokenMiddleware = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+        const {refreshToken, userName} = matchedData(req, {locations: ['body']});
 
         try {
 
-            // const user = req.user;
+            const user = req.user;
             // get token username
-            const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName))
+            const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
+            if( !redisRefreshToken )
+                throw {
+                    status: 401, code: 'ETOKEN',
+                    message: 'Your refresh token was expired!'
+                }
 
-            if (!user) throw {
-                status: 401, code: 'DTOKEN',
-                message: 'The refresh token is not valid.'
-            };
+            if (!user) {
+                throw {
+                    status: 401, code: 'DTOKEN',
+                    message: 'The refresh token is not valid.'
+                };
+            }
 
-            if ( redisRefreshToken !== refreshToken){
+            if (redisRefreshToken !== refreshToken) {
                 throw ({
-                    status: 401, code: "TRNOTVAL",
-                    message: "Refresh Token not valid, please login again!"
-                })
+                    status: 401, code: 'TRNOTVAL',
+                    message: 'Refresh Token not valid, please login again!'
+                });
             }
             // if (user._id.toString() !== req.user._id.toString()) {
             //     throw {
@@ -543,8 +545,8 @@ export class UserController {
                     message: 'Tu usuario se encuentra deshabilitado!'
                 };
             }
-            const {_token: tokenGen, expiration} = await this.jwt.createRefreshToken(user);
-            //TODO; come back here
+            const {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
+            await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
 
             res.status(200)
                 .json({
@@ -567,57 +569,60 @@ export class UserController {
             .then(user => {
                 resultOrNotFound(res, user, 'User');
             })
-            .catch(err => next(err))
+            .catch(err => next(err));
     };
 
-    getEmailByUserName= (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    getEmailByUserName = (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userName = req.params.userName;
 
         this.models.User.findOne({userName: userName})
             .then(user => {
-                if ( !user  )
-                    return res.status(404).json({message:  'User not found!'});
-                else if (!user.enabled)
-                    return res.status(500).json({message: "Your account has been disabled!"});
+                if (!user) {
+                    return res.status(404).json({message: 'User not found!'});
+                } else if (!user.enabled) {
+                    return res.status(500).json({message: 'Your account has been disabled!'});
+                }
                 // TODO: manage  email
                 transporter.sendMail({
                     to: user.email,
                     from: 'no-reply@sevenforone.com',
-                    subject: "Dont Reply! Recover your Account",
-                    html: getRecoverHtml(user.userName, envVars.URL_HOST + '/confirm/' )
+                    subject: 'Dont Reply! Recover your Account',
+                    html: getRecoverHtml(user.userName, envVars.URL_HOST + '/confirm/')
                 })
-                .then((result) => {
-                    console.log('Email envado', result);
-                }).catch((err) => {
-                console.log('Error enviando', err);
+                    .then((result) => {
+                        console.log('Email envado', result);
+                    }).catch((err) => {
+                    console.log('Error enviando', err);
 
                 });
                 res.status(200)
-                    .json({userName: userName, email: user.email})
+                    .json({userName: userName, email: user.email});
             })
-            .catch(next)
-    }
+            .catch(next);
+    };
     recoverAccount = (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const data = req.body;
-        let condition:any = { };
-        if ( !!data.userName )
+        let condition: any = {};
+        if (!!data.userName) {
             condition.userName = data.userName;
-        else
+        } else {
             condition.email = data.email;
+        }
         this.models.User.findOne({...condition})
             .then(user => {
-                if ( !user  )
-                    return res.status(404).json({message:  'User not found!'});
+                if (!user) {
+                    return res.status(404).json({message: 'User not found!'});
+                }
                 //TODO: Regresar
 
             })
-            .catch(next)
+            .catch(next);
     };
 
     getActivityTypes = (req: Express.Request, res: Express.Response, next: NextFunction) => {
         this.models.ActivityTypes.find()
             .then((activities: IActivityTypesDocument[]) => res.status(200).json(activities))
-            .catch(next)
+            .catch(next);
     };
 
     private verifyCredentialsFacebook = async (req: Express.Request, res: Express.Response, next: NextFunction, userData: any, facebookCredentials: any) => {
@@ -630,16 +635,16 @@ export class UserController {
 
             if (user) {
                 if (user.provider === 'none') {
-                    throw {status: 400, code: "AUTHNOR", message: "You must use your normal authentication!"};
+                    throw {status: 400, code: 'AUTHNOR', message: 'You must use your normal authentication!'};
                 } else if (user.provider === 'google') {
-                    throw {status: 400, code: "AUTHNOR", message: "This email already has a Registered Gmail account!"};
+                    throw {status: 400, code: 'AUTHNOR', message: 'This email already has a Registered Gmail account!'};
                 } else {
 
                     let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
-                    if (user.secretToken === "") {
+                    if (user.secretToken === '') {
                         const _tempToken = await this.jwt.createRefreshToken(user);
                         user.secretToken = _tempToken._token;
-                        await redisPub.hmset(DynamicKeys.set.refreshKey(user.userName), ["_token", _tempToken._token, "expiration", _tempToken.expiration])
+                        await redisPub.hmset(DynamicKeys.set.refreshKey(user.userName), ['_token', _tempToken._token, 'expiration', _tempToken.expiration]);
                         this.logger.info('Create secret token');
                     }
 

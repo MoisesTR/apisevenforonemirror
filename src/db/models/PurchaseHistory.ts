@@ -21,8 +21,6 @@ const purchaseHistory = new Schema({
         type: Schema.Types.Boolean,
         required: true,
         default: function () {
-            console.log('valor', this, this);
-            // return ((this.get("action") !==  undefined) && (this.get("action") !== 'win'));
             return false
         },
     },

@@ -1,10 +1,10 @@
-"use strict";
-import mongoose, {model, Schema} from "mongoose";
-import {IGroupGameDocument, IMember, IMemberDocument} from "../interfaces/IGroupGame";
-import envVars from "../../global/environment";
-import {ObjectId} from "bson";
-import Notification, {ENotificationTypes} from './Notification';
-import {mainSocket, gameGroups} from '../../sockets/socket';
+'use strict';
+import mongoose, {model, Schema} from 'mongoose';
+import {IGroupGameDocument, IMember, IMemberDocument} from '../interfaces/IGroupGame';
+import envVars from '../../global/environment';
+import {ObjectId} from 'bson';
+import {ENotificationTypes} from './Notification';
+import {gameGroups, mainSocket} from '../../sockets/socket';
 import {redisPub} from '../../redis/redis';
 import {IUserDocument} from '../interfaces/IUser';
 import {EGameEvents} from '../../sockets/constants/game';
@@ -15,7 +15,7 @@ import {userIdParam} from '../../services/validations/game';
 export const memberSchema: Schema = new Schema({
     userId: {
         type: ObjectId,
-        ref: "User"
+        ref: 'User'
     },
     userName: {
         type: Schema.Types.String,
@@ -75,7 +75,7 @@ groupSchema.methods.removeMember = async function (memberId: string | ObjectId) 
     // });
     const removeMember = this.members.find((member: IMemberDocument) => member.userId.equals(memberId));
     if (!removeMember) {
-        throw  {status: 404, message: "This user is not a member of this group!"};
+        throw  {status: 404, message: 'This user is not a member of this group!'};
     }
     await removeMember.remove();
 
@@ -87,20 +87,21 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
     try {
         session.startTransaction();
         const membersSize = this.members.length;
-        if ( !!this.uniqueChance ) {
+        if (!!this.uniqueChance) {
             const alreadyIndex = this.members.find((member: IMemberDocument) => member.userId.equals(memberData.userId));
-            if ( !!alreadyIndex )
-                throw {status: 409, message: "This user is already member!"};
+            if (!!alreadyIndex) {
+                throw {status: 409, message: 'This user is already member!'};
+            }
         }
 
-        const user:IUserDocument = await this.model("user")
-                        .findById(memberData.userId);
+        const user: IUserDocument = await this.model('user')
+            .findById(memberData.userId);
         // Check user existence
-        if ( !user ) {
-            throw {status: 404, message: "User not found!"};
+        if (!user) {
+            throw {status: 404, message: 'User not found!'};
         }
 
-        if ( membersSize >= envVars.MAX_MEMBERS_PER_GROUP ) {
+        if (membersSize >= envVars.MAX_MEMBERS_PER_GROUP) {
             const winner = this.members.shift();
             /**
              * TODO: Create pay prize reference
@@ -118,17 +119,24 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                 content: `Congratulations ${winner.userName} you has been winner of the $${this.initialInvertion} group!`,
                 groupId: this.groupId
             });
-            const userHistory = this.model("purchaseHistory")({
+            const userHistory = this.model('purchaseHistory')({
                 userId: winner.userId,
-                action: "win",
+                action: 'win',
                 groupId: this._id,
                 quantity: this.initialInvertion * 6,
-                payReference: "pay prize reference"
+                payReference: 'pay prize reference'
             });
             this.winners++;
 
-            const socketWinner = await redisPub.get(DynamicKey.set.socketKey(winner.userName));
+            const socketWinner = await redisPub.hget(DynamicKey.hash.socketsUser(winner.userName), 'main');
             if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
+
+                mainSocket.to('admins')
+                    .emit(EMainEvents.SOMEONE_WIN, {
+                        message: 'Someone user has won!',
+                        groupId: this._id,
+                        userId: winner._id
+                    });
                 mainSocket.to(socketWinner)
                 .emit(EMainEvents.WIN_EVENT, {
                     userId : winner.userId,
@@ -139,15 +147,13 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             await newNotification.save();
             await userHistory.save();
         }
-        console.log('Players', this.members);
         this.members.push({...memberData});
-        console.log('Players update', this.members);
 
         this.totalInvested += this.initialInvertion;
         await this.save();
-        const userHistory = this.model("purchaseHistory")({
+        const userHistory = this.model('purchaseHistory')({
             userId: memberData.userId,
-            action: "invest",
+            action: 'invest',
             groupId: this._id,
             quantity: this.initialInvertion,
             payReference: payReference
@@ -156,7 +162,10 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
         // TODO: Save notification user win
         // mainSocket.emit(EMainEvents.WIN_EVENT, {userName: user.userName,groupPrice:this.initialInvestment, image: user.image});
         console.log(`${EGameEvents.GROUP_ACTIVITY}${this.initialInvertion}`, memberData);
-        gameGroups.emit(`${EGameEvents.GROUP_ACTIVITY}${this.initialInvertion}`, {image: memberData.image, userName: memberData.userName, userId: memberData.userId});
+        gameGroups.emit(`${EGameEvents.GROUP_ACTIVITY}${this.initialInvertion}`, {
+            image: memberData.image,
+            userName: memberData.userName
+        });
         await session.commitTransaction();
     } catch (_err) {
         await session.abortTransaction();

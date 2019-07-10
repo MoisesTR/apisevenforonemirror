@@ -1,6 +1,5 @@
-const socketKey = (username: string) => `socket-${username}`;
 const refreshKey = (username: string) => `refresh-${username}`;
-const tokenKey = (username: string) => `token-${username}`;
+const accessTokenKey = (username: string) => `acc_token-${username}`;
 const socketsUser = (username: string) => `sockets-${username}`;
 
 export default class DynamicKey {
@@ -16,9 +15,8 @@ export default class DynamicKey {
 
     public static get set() {
         return {
-            socketKey,
             refreshKey,
-            tokenKey
+            accessTokenKey
         }
     }
 

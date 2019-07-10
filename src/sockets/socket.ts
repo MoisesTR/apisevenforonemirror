@@ -8,6 +8,7 @@ import {httpServer} from '../app';
 import {EMainEvents} from './constants/main';
 import {EGameEvents} from './constants/game';
 import DynamicKey from '../redis/keys/dynamics';
+import game from '../controllers/game';
 
 export interface ISocketManagerAttributes {
     main: socketIO.Server;
@@ -52,7 +53,7 @@ export const listenSockets = (models: IModels) => {
 
         socket.on('REGISTER_USER', (username) => {
             console.log('Registrando user', username);
-            redisPub.get(DynamicKey.set.socketKey(username))
+            redisPub.hget(DynamicKey.hash.socketsUser(username), "main")
                 .then(socketID => {
                     if (!!socketID) {
                         // Esto es emitido solo a la ventana anterior
@@ -61,7 +62,7 @@ export const listenSockets = (models: IModels) => {
                             !!mainSocket.sockets.connected[socketID].disconnect();
                         }
                     }
-                    redisPub.set(DynamicKey.set.socketKey(username), socket.id)
+                    redisPub.hset(DynamicKey.hash.socketsUser(username), "main",socket.id)
                         .then(() => {
                             console.log('Key is set');
                         })
@@ -82,8 +83,22 @@ export const listenSockets = (models: IModels) => {
 
     // Watch changes on notification collection
     models.Notification.watch({})
-        .on('change', newNotification => {
-            console.log('Notification change', newNotification);
+        .on('change', async (newNotification) => {
+            if (newNotification.operationType === 'insert') {
+                console.log('Notifiacion insert', newNotification);
+                const user = await models.User.findById(newNotification.fullDocument.userId);
+                if (!user)
+                    return;
+                const socketWinner = await redisPub.hget(DynamicKey.hash.socketsUser(user.userName),"main");
+                if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
+                    mainSocket.to(socketWinner)
+                    .emit(EMainEvents.NOTIFICATION,{ notificationId: newNotification.fullDocument._id})
+
+                }
+            } else {
+
+                console.log('Notification change', newNotification);
+            }
         });
 
     // Watch changes on Users collection
@@ -110,16 +125,12 @@ export const listenGroupSocket = (models: IModels) => {
         // const groups = await models.GroupGame.find({});
         console.log('Sockect game connectado', socketGame.id);
         const gameSocketId = await redisPub.hget(DynamicKey.hash.socketsUser(socketGame.handshake.query.userName), 'game');
-        if (!!gameSocketId) {
-            // @ts-ignore
-            gameGroups.adapter.remoteDisconnect(gameSocketId, true, (err: any) => {
-                if (err) { /* unknown id */
-                }
-                // success
-                console.log('REmote disconnect', err);
-            });
+        if (!!gameSocketId && !!gameGroups.sockets[gameSocketId]) {
+            gameGroups.sockets[gameSocketId].disconnect(true);
+            console.log('Ya tenes una sesion abierta', gameSocketId,
+                gameGroups.sockets);
         }
-        await redisPub.hset(DynamicKey.hash.socketsUser(socketGame.handshake.query.userName), "game", socketGame.id);
+        await redisPub.hset(DynamicKey.hash.socketsUser(socketGame.handshake.query.userName), 'game', socketGame.id);
         socketGame.on('disconnect', () => {
             console.log('Desconectado del socket de juegos');
         });

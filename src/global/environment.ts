@@ -23,8 +23,8 @@ const EnvVar: IEnvironment = {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "380320064033-bs2uivmdsj2fs5v68h2kg57p5k9kgtv7.apps.googleusercontent.com",
     JWT_SECRET: process.env.JWT_SECRET || "NIC@R46U@",
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || "R3@CT_Cl13nt_7X0ne",
-    PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID || "AfDe_RWKoxHwsgbPRCXsuvZDXnIys9hUN56brSbuxZVHdHWHXihW-0IbBeyiTJ7I1aSzYKE_NiRGKI01",
-    PAYPAL_CLIENT_SECRET: process.env.PAYPAL_CLIENT_SECRET || "EEBR4UR-qPQZTX-jVjoFsQweU0ndzkan91Rx_dA0_DplomO_qaE-AJkjTCB2bS5tk0IVZykg7CL_XCOo",
+    PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID || "AZhi6Hy8TF46gXXeLiUZmtFIPhQRQx1-x9M4T1jDMUtHqHNO5iahzV6kzL6SBJxHgudgYafDeBoSECs8",
+    PAYPAL_CLIENT_SECRET: process.env.PAYPAL_CLIENT_SECRET || "EIIUo6JixXN5Oc0Bs07Ap0OYE_CSFWz_ur7xjqDfH8a24QO3y_nm4SzxV0F1abvXq8-le6Zy1sbQIAA2",
     ENVIRONMENT: process.env.ENVIRONMENT || "development",
     URL_HOST: process.env.URL_HOST || "http://localhost:4200",
 

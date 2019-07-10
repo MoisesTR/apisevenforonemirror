@@ -24,9 +24,9 @@ export default class MyLogger {
                     level: "error",
                     filename: path.join(baseDir, "/logs/errors.log")
                 })
-                , new transports.Console({
-                    level: isDevelopment ? "debug" : "error"
-                })
+                // , new transports.Console({
+                //     level: isDevelopment ? "debug" : "error"
+                // })
             ]
         });
     }
