@@ -22,7 +22,7 @@ export const register = (server: server) => {
         .post('/loginFacebook', validations.signInFacebook, validsParams, authController.signInFacebook)
         .get('/users', validations.getUsers, validsParams, authController.getUsers)
         .get('/users/:userId', validations.getUser, validsParams, authController.getUser)
-        .post('/refreshtoken', ensureAuth, validations.refreshToken, validsParams, authController.refreshTokenMiddleware)
+        .post('/refreshtoken', validations.refreshToken, validsParams, authController.refreshTokenMiddleware)
         .get('/activities', ensureAuth, authController.getActivityTypes)
         .put('/users/:userId', ensureAuth, validations.updateUser, validsParams, authController.updateUser)
         .put('/users/pwd/:userId', ensureAuth, validations.changePassword, validsParams, authController.changePassword)
