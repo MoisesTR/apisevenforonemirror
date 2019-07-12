@@ -160,7 +160,7 @@ export class UserController {
             }
 
         } catch (_err) {
-            next(_err)
+            next(_err);
         }
     };
 
