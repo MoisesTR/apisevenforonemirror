@@ -183,11 +183,55 @@ export default class GameController {
             .then((result: any) => {
                 res.status(200)
                     .json(result);
-                console.log(result);
             })
             .catch((err: Error) => {
                 res.status(500).json(err);
             });
+    };
+
+    getTopWinners = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+        const {quantity, groupId, times} = matchedData(req, {locations: ['query', 'params']});
+        let sortOrder:any = {};
+        let match: any = {action: "win"};
+        if ( !!groupId )
+            match.groupId = new ObjectId(groupId);
+        if ( !!times )
+            sortOrder.wonTimes = -1;
+        else
+            sortOrder.totalWon = -1;
+        console.log('starting the query', sortOrder, match)
+        this.models.PurchaseHistory.aggregate([
+            {$match: {...match}},
+            {$lookup: {from:'users' , localField: 'userId', foreignField: '_id', as: 'userInfo'}},
+            {$unwind: { path: "$userInfo", preserveNullAndEmptyArrays: true}},
+            {$lookup: {
+                    from: 'groupgames',
+                    localField: 'groupId',
+                    foreignField: '_id',
+                    as: 'groupInfo'
+                }},
+            {$unwind: { path: "$groupInfo", preserveNullAndEmptyArrays: true}},
+            {$project: {"groupInfo.members": 0 }},
+            {
+                $group:
+                    {
+                        _id: "$userInfo._id",
+                        totalWon: { $sum:  "$quantity" },
+                        userName: { $first: "$userInfo.userName" },
+                        image: { $first: "$userInfo.image"},
+                        lastWonDate: {$last: "$createdAt"},
+                        wonTimes: { $sum: 1 }
+                    }
+            },
+            {$sort: {...sortOrder}},
+            {$limit: +quantity},
+        ])
+        .exec()
+        .then((result: any)=> {
+            res.status(200)
+                .json(result);
+        })
+        .catch(next)
     };
 
     private getGroupsByUser(userId: string | ObjectID, res: Express.Response, next: NextFunction) {

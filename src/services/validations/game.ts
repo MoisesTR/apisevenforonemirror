@@ -1,4 +1,4 @@
-import {body, param, sanitize} from '../../utils/defaultImports';
+import {body, param, query, sanitize} from '../../utils/defaultImports';
 import {isObjectId} from '../../utils/genericsValidations';
 
 export const getGroup = [
@@ -22,4 +22,13 @@ export const userIdParam = [
 export const removeMemberFromGroup = [
     param('groupId').custom(isObjectId),
     param('userId').isLength({min: 10}).custom(isObjectId)
+];
+export const getLastWinners = [
+    param('quantity').isInt(),
+    param('groupId').optional({nullable: true}).custom(isObjectId),
+];
+
+export const getTopWinners = [
+    ...getLastWinners,
+    query('times').optional({nullable: true}).isBoolean(),
 ];

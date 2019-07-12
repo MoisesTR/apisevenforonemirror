@@ -24,7 +24,7 @@ export const register = (server: Server) => {
         .get('/purchase-history/:userId', ensureAuth, groupValidations.userIdParam, validsParams, gameController.getPurchaseHistory)
         .get('/me/game-groups', ensureAuth, gameController.getMyCurrentsGroups)
         .get('/game-groups/current/:userId', ensureAuth, groupValidations.userIdParam, validsParams, gameController.getCurrentGroups)
-        .get('/winners/top/:quantity(\\d+)/:groupId(\\w+)', gameController.getGroupWinnersTop)
-        .get('/winners/top/:quantity(\\d+)', gameController.getGroupWinnersTop)
+        .get('/winners/last/:quantity(\\d+)/:groupId(\\w+)', ensureAuth, groupValidations.getLastWinners, validsParams, gameController.getGroupWinnersTop)
+        .get('/winners/top/:quantity(\\d+)/:groupId?', ensureAuth, groupValidations.getTopWinners, validsParams, gameController.getTopWinners)
     app.use('/api',router);
 };
