@@ -144,7 +144,7 @@ export class UserController {
                     this.logger.info('Sending info to login');
                     res.status(200)
                         .json({
-                            user: {_id: user._id, userName: user.userName, role: user.role}
+                            user: {_id: user._id, userName: user.userName, role: user.role, email: user.email}
                             , token: tokenGen
                             , refreshToken: saveResult.secretToken
                             , expiration
@@ -349,7 +349,7 @@ export class UserController {
                     await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
                     res.status(200)
                         .json({
-                            user: {_id: user._id, userName: user.userName, email: user.email},
+                            user: {_id: user._id, userName: user.userName, role: user.role, email: user.email},
                             token: tokenGen,
                             refreshToken: _tokenRefresh,
                             expiration
@@ -654,7 +654,7 @@ export class UserController {
                     this.logger.info('Sending info to login');
                     res.status(200)
                         .json({
-                            user: user
+                            user: {_id: user._id, userName: user.userName, role: user.role, email: user.email}
                             , token: tokenGen
                             , refreshToken: saveResult.secretToken
                             , expiration
