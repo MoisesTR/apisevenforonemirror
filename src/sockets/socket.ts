@@ -20,8 +20,10 @@ let gameGroups: socketIO.Namespace;
 
 mainSocket = socketIO(httpServer, {
     // path: envVars.SOCKETIO_PATH
-    serveClient: true
+    serveClient: true,
+    path: '/seven/socket.io'
 });
+
 mainSocket.adapter(redisAdapter({pubClient: redisPub, subClient: redisSub}));
 gameGroups = mainSocket.of('groups');
 
