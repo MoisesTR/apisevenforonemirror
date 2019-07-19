@@ -2,6 +2,7 @@
 
 import {model, Schema, Types} from "mongoose";
 import {IUser, IUserDocument, IUserModel} from "../interfaces/IUser";
+import {ObjectId} from 'bson';
 
 const validGenders = {
     values: ['M', 'F'],
@@ -94,7 +95,23 @@ userSchema.methods.getPurchaseHistory = function () {
 };
 
 userSchema.methods.getPurchaseHistoryById = function (userId: string | Types.ObjectId) {
-    return this.model('purchaseHistory').find({userId: userId})
+    return this.model('purchaseHistory')
+        .aggregate([
+            {$match: {userId: new ObjectId(userId)}},
+            {$lookup: {from: 'groupgames', localField: 'groupId', foreignField: '_id', as: 'groupInfo'}},
+            {$unwind: {path: '$groupInfo', preserveNullAndEmptyArrays: true}},
+            {
+                $project: {
+                    userId: 1,
+                    action: 1,
+                    "groupInfo._id": 1,
+                    "groupInfo.initialInvertion": 1,
+                    quantity: 1,
+                    moneyDirection: 1, createdAt: 1, updatedAt: 1
+                }
+            }
+        ])
+        .exec()
 };
 
 export default model<IUserDocument, IUserModel>('user', userSchema);
