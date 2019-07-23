@@ -16,6 +16,8 @@ interface IEnvironment {
     REDIS_HOST: string;
     REDIS_PORT: number;
     REDIS_PASSWORD: string;
+    SENDGRID_KEY: string;
+    ADMON_EMAIL: string;
 }
 
 const EnvVar: IEnvironment = {
@@ -41,7 +43,9 @@ const EnvVar: IEnvironment = {
     // Redis host and Credentias
     REDIS_HOST: process.env.REDIS_HOST || "localhost",
     REDIS_PORT: !!process.env.REDIS_PORT ? +process.env.REDIS_PORT  : 6379,
-    REDIS_PASSWORD: process.env.REDIS_PASSWORD || "jose12"
+    REDIS_PASSWORD: process.env.REDIS_PASSWORD || "jose12",
+    SENDGRID_KEY: process.env.SENDGRID_KEY || "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",
+    ADMON_EMAIL: process.env.ADMON_EMAIL || "atomicdevelopersnic@gmail.com"
 };
 
 export default EnvVar;

@@ -2,12 +2,7 @@ import Express, {NextFunction} from 'express';
 import bcrypt from 'bcryptjs';
 import randomstring from 'randomstring';
 import randomNumber from 'random-number';
-// To send Mails
-import nodemailer from 'nodemailer';
-// @ts-ignore
-import sendgridTransport from 'nodemailer-sendgrid-transport';
 import {matchedData, remainigTimeInSeconds, resultOrNotFound} from '../utils/defaultImports';
-import {getHtml} from '../utils/verifyEmailUtil';
 import {OAuth2Client} from 'google-auth-library';
 import {IModels} from '../db/core';
 import Server from '../server';
@@ -17,17 +12,11 @@ import {Logger} from 'winston';
 import envVars from '../global/environment';
 import {IjwtResponse} from '../services/jwt';
 import {redisPub} from '../redis/redis';
-import {getRecoverHtml} from '../utils/recoverAccountEmail';
-// import {refreshKey, tokenKey} from '../redis/keys/dynamics';
 import DynamicKeys from '../redis/keys/dynamics';
-import moment = require('moment');
+import moment from 'moment';
+import {recoverAccountEmail, sendConfirmationEmail} from '../services/email';
 
 const saltRounds = 10;
-const transporter = nodemailer.createTransport(sendgridTransport({
-    auth: {
-        api_key: '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'
-    }
-}));
 
 // Using require() in ES5
 const FB = require('fb').default;
@@ -290,21 +279,11 @@ export class UserController {
                     });
 
                 this.logger.info(`You're successfully registered, we're Sending the verification email`);
-                transporter.sendMail({
-                    to: userData.email,
-                    from: 'no-reply@sevenforone.com',
-                    subject: 'Welcome to Seven for One! Confirm Your Email',
-                    html: getHtml(insertInfo.userName, envVars.URL_HOST + '/confirm/' + insertInfo.secretToken + '/' + insertInfo.userName)
-                })
-                    .then((result) => {
-                        console.log('Email envado', result);
 
-                    }).catch((err) => {
-                    console.log('Error enviando', err);
+                const msResp = await sendConfirmationEmail(userData.email, user);
 
-                });
+                console.log('Email envado', msResp);
             }
-            // next();
         } catch (_err) {
             // res.status( _err.status || 500)
             //     .json( _err )
@@ -572,33 +551,26 @@ export class UserController {
             .catch(err => next(err));
     };
 
-    getEmailByUserName = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    getEmailByUserName =  async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userName = req.params.userName;
 
-        this.models.User.findOne({userName: userName})
-            .then(user => {
-                if (!user) {
-                    return res.status(404).json({message: 'User not found!'});
-                } else if (!user.enabled) {
-                    return res.status(500).json({message: 'Your account has been disabled!'});
-                }
-                // TODO: manage  email
-                transporter.sendMail({
-                    to: user.email,
-                    from: 'no-reply@sevenforone.com',
-                    subject: 'Dont Reply! Recover your Account',
-                    html: getRecoverHtml(user.userName, envVars.URL_HOST + '/confirm/')
-                })
-                    .then((result) => {
-                        console.log('Email envado', result);
-                    }).catch((err) => {
-                    console.log('Error enviando', err);
+        try {
+            const user = await this.models.User.findOne({userName: userName});
+            if (!user) {
+                return res.status(404).json({message: 'User not found!'});
+            } else if (!user.enabled) {
+                return res.status(500).json({message: 'Your account has been disabled!'});
+            }
 
-                });
-                res.status(200)
-                    .json({userName: userName, email: user.email});
-            })
-            .catch(next);
+            // TODO: update that config
+            const emailResp = await recoverAccountEmail(user.email, user);
+
+            console.log('Email envado', emailResp);
+            res.status(200)
+                .json({userName: userName, email: user.email});
+        } catch( _err ) {
+            next(_err);
+        }
     };
     recoverAccount = (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const data = req.body;
