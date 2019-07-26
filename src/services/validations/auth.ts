@@ -22,6 +22,7 @@ export const getEmail = [
     body('userName', 'Must be a String, min length 3 max length 40').isLength({min: 4, max: 40})
 ]
 const commonUserVal = [
+    ...commonPasswordAndConfirmation,
     body('firstName', 'Must be a String, min length 3 max length 150').isLength({min: 3, max: 150}),
     body('lastName', 'Must be a String, min length 3 max length 150').isLength({min: 3, max: 150}),
     body('userName', 'Must be a String, min length 3 max length 40').isLength({min: 4, max: 40}),
@@ -37,7 +38,6 @@ export const createAdmin = commonUserVal;
 export const signUp = [
     // body('password', 'Must be a String, min length 5 max length 25').isLength({min: 5, max: 25}),
     // body('phones', 'Must be a Array of Strings').isArray().optional({ nullable: true }),
-    ...commonPasswordAndConfirmation,
     body('phones.*').isLength({min: 7, max: 25}).optional({nullable: true}),
     ...commonUserVal
 ];
