@@ -33,6 +33,7 @@ export const register = (server: server) => {
         .get('/roles\$', roleController.getRoles)
         .get('/roles/:roleId', roleController.getRole)
         .post('/recover',   validations.recoverAccount, authController.recoverAccount)
-        .get('/email/:userName', validations.getEmail, authController.getEmailByUserName);
+        .get('/email/:userName', validations.getEmail, authController.getEmailByUserName)
+        .post('/admin', ensureAuth, validations.createAdmin, validsParams, authController.createAdminUser);
     app.use('/api/auth', router);
 }

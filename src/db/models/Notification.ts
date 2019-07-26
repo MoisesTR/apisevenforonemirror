@@ -24,6 +24,11 @@ const NotificationSchema = new Schema({
         type: String,
         required: true
     },
+    readed: {
+      type: Boolean,
+      required: true,
+      default: false
+    },
     groupId: {
         type: ObjectId,
         required: false,

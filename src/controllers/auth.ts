@@ -15,6 +15,8 @@ import {redisPub} from '../redis/redis';
 import DynamicKeys from '../redis/keys/dynamics';
 import moment from 'moment';
 import {recoverAccountEmail, sendConfirmationEmail} from '../services/email';
+import {ERoles} from '../db/models/Role';
+import {IRoleDocument} from '../db/interfaces/IRole';
 
 const saltRounds = 10;
 
@@ -231,31 +233,8 @@ export class UserController {
             const hashPassw = await bcrypt.hash(userData.password, saltRounds);
 
             const users = await this.models.User.find({userName: userData.userName, email: userData.email});
-            //Si se encontro mas de un usuario
-            if (users.length > 1) {
-                // console.log(usersfind.recordset[0])
-                throw {
-                    status: 401,
-                    code: 'UEEXIST',
-                    message: 'Not registered user, email and username are already registered!'
-                };
-                //res.status(401).json({code:"UEXIST",message:"No se registro el usuario, email o username ya registrados!"})
-            } else if (users.length === 1) {
-                // if(usersfind[0].username == userData.username || usersfind[1].username== userData.username)
-                if (users[0].userName === userData.Username) {
-                    throw {
-                        status: 401,
-                        code: 'UEXIST',
-                        message: 'The userName:' + userData.userName + ' already exists!'
-                    };
-                } else {
-                    throw {
-                        status: 401,
-                        code: 'EEXIST',
-                        message: 'The user was not registered with email:' + userData.email + ', already registered!'
-                    };
-                }
-            } else {
+
+            if ( !users || users.length === 0 ) {
                 const token = randomstring.generate(20);
                 const user = new this.models.User({
                     firstName: userData.firstName,
@@ -284,6 +263,7 @@ export class UserController {
 
                 console.log('Email envado', msResp);
             }
+            alreadyExist(users, userData);
         } catch (_err) {
             // res.status( _err.status || 500)
             //     .json( _err )
@@ -454,6 +434,51 @@ export class UserController {
         }
     };
 
+    createAdminUser = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+        const userData = matchedData(req);
+        const user:IUserDocument = req.user;
+        try {
+            const adminRole: IRoleDocument |null = await this.models.Role.findOne({name: ERoles.ADMIN});
+            if (!adminRole)
+                throw {
+                    status: 500,
+                    message: 'An error has ocurred!'
+                };
+            if (user.role.equals(adminRole._id)) {
+                return next({
+                    status: 401,
+                    message: 'Unauthorized to use this endpoint'
+                })
+            }
+            const users = await this.models.User.find({userName: userData.userName, email: userData.email});
+
+            if ( !users || users.length === 0 ) {
+                const hashPassw = await bcrypt.hash(userData.password, saltRounds);
+                const newAdmin = new this.models.User({
+                    firstName: userData.firstName,
+                    lastName: userData.lastName,
+                    userName: userData.userName,
+                    email: userData.email,
+                    passwordHash: hashPassw,
+                    role: userData.roleId,
+                    birthDate: userData.birthDate,
+                    gender: userData.gender,
+                    isVerified: true,
+                    enabled: true
+                });
+
+                await newAdmin.save();
+                res.status(201)
+                    .json({
+                        userId: newAdmin._id,
+                        message: 'New admin ' + userData.userName
+                    })
+            }
+            alreadyExist(users, userData);
+        }catch( _err ) {
+            next(_err)
+        }
+    };
     changePassword = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req, {locations: ['body', 'params']});
 
@@ -647,5 +672,33 @@ export class UserController {
 
     dataUserForLogin(user: any) {
         return {_id: user._id, userName: user.userName, firstName: user.firstName,  lastName: user.lastName, provider: user.provider, role: user.role, email: user.email};
+    }
+}
+
+const alreadyExist = (users: IUserDocument[], userData: any) => {
+    //Si se encontro mas de un usuario
+    if (users.length > 1) {
+        // console.log(usersfind.recordset[0])
+        throw {
+            status: 401,
+            code: 'UEEXIST',
+            message: 'Not registered user, email and username are already registered!'
+        };
+        //res.status(401).json({code:"UEXIST",message:"No se registro el usuario, email o username ya registrados!"})
+    } else if (users.length === 1) {
+        // if(usersfind[0].username == userData.username || usersfind[1].username== userData.username)
+        if (users[0].userName === userData.Username) {
+            throw {
+                status: 401,
+                code: 'UEXIST',
+                message: 'The userName:' + userData.userName + ' already exists!'
+            };
+        } else {
+            throw {
+                status: 401,
+                code: 'EEXIST',
+                message: 'The user was not registered with email:' + userData.email + ', already registered!'
+            };
+        }
     }
 }

@@ -4,12 +4,12 @@ import {model, Schema} from "mongoose";
 import {IRoleDocument} from "../interfaces/IRole";
 
 export enum ERoles {
-    ADMIN =  "ADMIN",
-    USER = "USER"
+    ADMIN =  'ADMIN',
+    USER = 'USER'
 }
 
 const validRoles = {
-    values: ['ADMIN', 'USER'],
+    values: [ERoles.ADMIN, ERoles.USER],
     message: '{VALUE} it is not a permitted role'
 };
 
