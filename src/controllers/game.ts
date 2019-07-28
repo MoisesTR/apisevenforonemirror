@@ -68,7 +68,7 @@ export default class GameController {
         this.models.GroupGame.findById(relationData.groupId)
             .then(group => {
                 if (!group) {
-                    throw ({status: 404, message: 'Group not found!'});
+                    throw ({status: 404, message: 'Grupo no encontrado!'});
                 }
                 console.log(group);
                 return group.addMember({
@@ -79,7 +79,7 @@ export default class GameController {
             })
             .then(result => {
                 res.status(201)
-                    .json({message: 'Successful member added!'});
+                    .json({message: 'Miembro añadido exitosamente!'});
                 // TODO: validate group member moviment
                 // this.socketMng.gameGroups.
             })
@@ -92,11 +92,11 @@ export default class GameController {
         this.models.GroupGame.findById(relationData.groupId)
             .then(group => {
                 if (!group) {
-                    throw ({status: 404, message: 'Group not found!'});
+                    throw ({status: 404, message: 'Grupo no encontrado!'});
                 }
                 return group.removeMember(relationData.userId);
             })
-            .then(group => res.status(200).json({message: 'Member was removed from group!'}))
+            .then(group => res.status(200).json({message: 'Miembro fue removido del grupo!'}))
             .catch(next);
     };
 

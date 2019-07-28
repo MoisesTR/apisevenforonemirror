@@ -10,7 +10,7 @@ export enum ERoles {
 
 const validRoles = {
     values: [ERoles.ADMIN, ERoles.USER],
-    message: '{VALUE} it is not a permitted role'
+    message: '{VALUE} no es un rol permitido'
 };
 
 const roleModel = new Schema({

@@ -75,7 +75,7 @@ groupSchema.methods.removeMember = async function (memberId: string | ObjectId) 
     // });
     const removeMember = this.members.find((member: IMemberDocument) => member.userId.equals(memberId));
     if (!removeMember) {
-        throw  {status: 404, message: 'This user is not a member of this group!'};
+        throw  {status: 404, message: 'Este usuario no es miembro de este grupo!'};
     }
     await removeMember.remove();
 
@@ -90,7 +90,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
         if (!!this.uniqueChance) {
             const alreadyIndex = this.members.find((member: IMemberDocument) => member.userId.equals(memberData.userId));
             if (!!alreadyIndex) {
-                throw {status: 409, message: 'This user is already member!'};
+                throw {status: 409, message: 'Este usuario ya es miembro!'};
             }
         }
 
@@ -98,7 +98,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             .findById(memberData.userId);
         // Check user existence
         if (!user) {
-            throw {status: 404, message: 'User not found!'};
+            throw {status: 404, message: 'Usuario no encontrado!'};
         }
 
         if (membersSize >= envVars.MAX_MEMBERS_PER_GROUP) {
@@ -116,7 +116,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             const newNotification = this.model('notification')({
                 notificationType: ENotificationTypes.WIN,
                 userId: winner.userId,
-                content: `Congratulations ${winner.userName} you has been winner of the $${this.initialInvertion} group!`,
+                content: `Felicitaciones ${winner.userName} usted ha sido el ganador en el grupo de $${this.initialInvertion}!`,
                 groupId: this.groupId
             });
             const userHistory = this.model('purchaseHistory')({
@@ -140,7 +140,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                 mainSocket.to(socketWinner)
                 .emit(EMainEvents.WIN_EVENT, {
                     userId : winner.userId,
-                    content: `Congratulations you has been winner of the $${this.initialInvertion} group!`,
+                    content: `Felicitaciones has sido ganador en el grupo de $${this.initialInvertion}!`,
                     date: new Date()
                 });
             }

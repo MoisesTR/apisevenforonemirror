@@ -6,7 +6,7 @@ import {ObjectId} from 'bson';
 
 const validGenders = {
     values: ['M', 'F'],
-    message: '{VALUE} is an invalid gender'
+    message: '{VALUE} es un genero incorrecto!'
 };
 
 const userSchema = new Schema({

@@ -8,7 +8,7 @@ export const isValidDate = (value: string, fieldName: any) => {
 
     // @ts-ignore
     if(isNaN(date)) {
-        throw new Error(`The field ${fieldName.path} must be a valid Date.`);
+        throw new Error(`El campo ${fieldName.path} debe ser una fecha válida!.`);
     }
     return date.toISOString();
 };

@@ -30,7 +30,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         return {_token, expiration: payload.exp}
     }
 
-    const createAccessToken = async (user: IUserDocument, expiration: number = 10, unitOfTime: any = "minutes") => {
+    const createAccessToken = async (user: IUserDocument, expiration: number = 1, unitOfTime: any = "minutes") => {
         return createToken({
             sub: user._id,
             email: user.email,
@@ -109,7 +109,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
                     //si el usuario se encuentra deshabilitado
                     throw {
                         status: 401, code: 'EPUSER',
-                        message: 'User disabled, please contact support AtomicDev.'
+                        message: 'Usuario deshabilitado, contacte con el soporte de 7x1!.'
                     };
                 }
                 //Si el usuario esta habilitado se procede a actualizar el username y el email
@@ -129,7 +129,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
             } else {
                 throw {
                     status: 404, code: 'NFUSER',
-                    message: 'User not found, contact to the admin.'
+                    message: 'Usuario no encontrado, contacte al administrador!'
                 };
             }
         } catch (error) {
@@ -148,7 +148,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
             return next({
                 status: 403,
                 code: 'NOTPER',
-                message: 'You dont have permission!'
+                message: 'No tienes permisos!'
             });
         next();
     };
