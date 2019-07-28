@@ -30,7 +30,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         return {_token, expiration: payload.exp}
     }
 
-    const createAccessToken = async (user: IUserDocument, expiration: number = 1, unitOfTime: any = "minutes") => {
+    const createAccessToken = async (user: IUserDocument, expiration: number = 20, unitOfTime: any = "minutes") => {
         return createToken({
             sub: user._id,
             email: user.email,
