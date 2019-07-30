@@ -260,9 +260,7 @@ export class UserController {
 
                 this.logger.info(`You're successfully registered, we're Sending the verification email`);
 
-                const msResp = await sendConfirmationEmail(userData.email, user);
-
-                console.log('Email envado', msResp);
+                await sendConfirmationEmail(userData.email, user);
             }
             alreadyExist(users, userData);
         } catch (_err) {

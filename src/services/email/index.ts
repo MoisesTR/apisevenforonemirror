@@ -10,21 +10,38 @@ templateIds = {
 };
 
 sgMail.setApiKey(envVars.SENDGRID_KEY);
+sgMail.setSubstitutionWrappers('{{', '}}');
 
 export const sendConfirmationEmail = async (from: string, user: IUserDocument) => {
-    const msg: MailData = {
+    const msg = {
         to: user.email,
         from: envVars.ADMON_EMAIL,
-        subject: 'Welcome to Seven for One! Confirm Your Email',
         // Custom Template
         templateId: templateIds.confirmAccount,
-        substitutionWrappers: ['{{', '}}'],
-        substitutions: {
+        // substitutionWrappers: ['{{', '}}'],
+        dynamic_template_data: {
+            subject: 'Bievenido a Seven For One! confirma tu correo!',
             userName: user.userName,
             url: envVars.URL_HOST + '/confirm/' + user.secretToken + '/' + user.userName
         }
     };
-    const resp = await sgMail.send(msg);
+
+    sgMail
+        .send(msg)
+        .then(() => {
+            console.log('El correo se ha enviado correctamente!')
+        })
+        .catch(error => {
+
+            //Log friendly error
+            console.error(error.toString());
+
+            //Extract error msg
+            const {message, code, response} = error;
+
+            //Extract response msg
+            const {headers, body} = response;
+        });
 };
 
 export const recoverAccountEmail = async (from: string, user: IUserDocument) => {
