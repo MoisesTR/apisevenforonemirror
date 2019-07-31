@@ -437,7 +437,7 @@ export class UserController {
 
     createAdminUser = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req);
-        const user:IUserDocument = req.user;
+        const user: IUserDocument = req.user;
         try {
             const adminRole: IRoleDocument |null = await this.models.Role.findOne({name: ERoles.ADMIN});
             if (!adminRole)
@@ -445,7 +445,8 @@ export class UserController {
                     status: 500,
                     message: 'Ha ocurrido un error!'
                 };
-            if (user.role.equals(adminRole._id)) {
+
+            if (!user.role.equals(adminRole._id)) {
                 return next({
                     status: 401,
                     message: 'No esta autorizado para utilizar este endpoint!'
@@ -462,8 +463,6 @@ export class UserController {
                     email: userData.email,
                     passwordHash: hashPassw,
                     role: userData.roleId,
-                    birthDate: userData.birthDate,
-                    gender: userData.gender,
                     isVerified: true,
                     enabled: true
                 });

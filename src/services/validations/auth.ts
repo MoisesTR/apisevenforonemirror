@@ -45,23 +45,23 @@ const commonUserVal = [
   }),
   body("email", "Debe ser un correo válido!").isEmail(),
   body("roleId").custom(isObjectId),
-  body("birthDate", "Debe ser una fecha válida!")
-    .custom(isValidDate)
-    .optional({ nullable: true }),
-  body("gender", "El genero debe ser femenino o masculino!")
-    .isIn(["M", "F"])
-    .optional({ nullable: true }),
-  sanitize("birthDate").toDate()
 ];
 
 export const createAdmin = commonUserVal;
 
 export const signUp = [
-  // body('password', 'Must be a String, min length 5 max length 25').isLength({min: 5, max: 25}),
+  // body('password', 'Must be a String, min lengtrouteh 5 max length 25').isLength({min: 5, max: 25}),
   // body('phones', 'Must be a Array of Strings').isArray().optional({ nullable: true }),
   body("phones.*")
     .isLength({ min: 7, max: 25 })
     .optional({ nullable: true }),
+  body("birthDate", "Debe ser una fecha válida!")
+      .custom(isValidDate)
+      .optional({ nullable: true }),
+  body("gender", "El genero debe ser femenino o masculino!")
+      .isIn(["M", "F"])
+      .optional({ nullable: true }),
+  sanitize("birthDate").toDate(),
   ...commonUserVal
 ];
 
@@ -135,7 +135,7 @@ function getMessageMinMaxChar(obj: string, min: number, max: number) {
     obj +
     " contener un minimo de " +
     min +
-    "y máximo de " +
+    " y máximo de " +
     max +
     " caracteres!"
   );
