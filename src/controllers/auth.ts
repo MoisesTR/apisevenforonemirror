@@ -671,7 +671,7 @@ export class UserController {
     }
 
     dataUserForLogin(user: any) {
-        return {_id: user._id, userName: user.userName, firstName: user.firstName,  lastName: user.lastName, provider: user.provider, role: user.role, email: user.email};
+        return {_id: user._id, userName: user.userName, firstName: user.firstName,  lastName: user.lastName, provider: user.provider, role: user.role, email: user.email, image: user.image};
     }
 }
 
