@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node build/app.js",
     "start:dev": "nodemon --config  ./nodemon.json -L",
-    "start-watch": "nodemon ./src/app.js"
+    "start-watch": "nodemon ./src/app.js",
+    "debug": "ndb yarn ts-node --project ./tsconfig.json  --files ./src/index.ts"
   },
   "dependencies": {
     "@paypal/checkout-server-sdk": "^1.0.1",

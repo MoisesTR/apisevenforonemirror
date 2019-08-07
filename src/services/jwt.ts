@@ -7,8 +7,8 @@ import Server from './../server';
 import {IUserDocument} from "../db/interfaces/IUser";
 export interface IjwtResponse {
     ensureAuth: (req: Express.Request, res: Express.Response, next: NextFunction) => Promise<void>;
-    createAccessToken: (user: IUserDocument, expiration?: number, unitOfTime?: any ) => Promise<({_token: string, expiration: any})>;
-    createRefreshToken: (user: IUserDocument, expiration?: number, unitOfTime?: DurationInputArg2) => Promise<({_token: string, expiration: any})>;
+    createAccessToken: (user: IUserDocument, expiration?: number, unitOfTime?: any ) => Promise<({_token: string, expiration: number})>;
+    createRefreshToken: (user: IUserDocument, expiration?: number, unitOfTime?: DurationInputArg2) => Promise<({_token: string, expiration: number})>;
 }
 
 export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
@@ -30,7 +30,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         return {_token, expiration: payload.exp}
     }
 
-    const createAccessToken = async (user: IUserDocument, expiration: number = 20, unitOfTime: any = "minutes") => {
+    const createAccessToken = async (user: IUserDocument, expiration: number = 2, unitOfTime: DurationInputArg2 = "minutes") => {
         return createToken({
             sub: user._id,
             email: user.email,
@@ -38,7 +38,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         }, envVars.JWT_SECRET, expiration, unitOfTime)
     };
 
-    const createRefreshToken = async (user: IUserDocument, expiration: number = 1, unitOfTime: DurationInputArg2 = "hours") => {
+    const createRefreshToken = async (user: IUserDocument, expiration: number = 5, unitOfTime: DurationInputArg2 = "minutes") => {
         return createToken({
             sub: user._id
         }, envVars.JWT_SECRET, expiration, unitOfTime)
@@ -108,9 +108,15 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
                 if (user.enabled === false) {
                     //si el usuario se encuentra deshabilitado
                     throw {
-                        status: 401, code: 'EPUSER',
+                        status: 403, code: 'EPUSER',
                         message: 'Usuario deshabilitado, contacte con el soporte de 7x1!.'
                     };
+                }
+                if( decode.isExpired ) {
+                    throw {
+                        status: 401, code: 'TOKENEXPIRED',
+                        message: 'Access token expired, refresh please!'
+                    }
                 }
                 //Si el usuario esta habilitado se procede a actualizar el username y el email
                 //por si ha habido un cambio en estos

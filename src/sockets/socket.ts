@@ -112,13 +112,6 @@ export const listenSockets = (models: IModels) => {
     // groups.forEach(group => {
     //     new GroupGameNamespace(group , mainSocket);
     // });
-    const newnoti = new models.Notification({
-        userId: new ObjectId(),
-        content: ' alo',
-        notificationType: ENotificationTypes.WIN
-    });
-    newnoti.save()
-        .then(() => console.log('Guardado'));
 };
 
 export const listenGroupSocket = (models: IModels) => {

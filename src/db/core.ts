@@ -77,7 +77,8 @@ export class Core {
                     .then(admins => {
                         if (admins) {
                             admins.forEach(admon => {
-                                redisPub.lpush('admins', admon);
+                                // console.log(admon);
+                                // redisPub.lpush('admins', admon);
                             });
                         }
                     })

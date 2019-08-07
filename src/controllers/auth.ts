@@ -17,6 +17,8 @@ import moment from 'moment';
 import {recoverAccountEmail, sendConfirmationEmail} from '../services/email';
 import {ERoles} from '../db/models/Role';
 import {IRoleDocument} from '../db/interfaces/IRole';
+import {UserForLoginType} from './interfaces/UserForLoginType';
+import {ILoginResponse} from './interfaces/LoginResponse';
 
 const saltRounds = 10;
 
@@ -157,8 +159,7 @@ export class UserController {
     };
 
     //funcion registro
-    async createUserWithSocialLogin(userData: any, socialUser: any) {
-
+    createUserWithSocialLogin: (userData: any, socialUser: any)=> Promise<ILoginResponse> = async (userData, socialUser)  => {
         userData.password = randomstring.generate(4);
         const hashPassw = await bcrypt.hash(userData.password, saltRounds);
         const randomUserName = generateRandomUserName(socialUser.email);
@@ -192,12 +193,12 @@ export class UserController {
         await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), accessTokenGen);
         await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefresh), refreshTokenGen);
         return {
-            user: userInfo
-            , token: accessTokenGen
-            , refreshToken: refreshTokenGen
-            , expiration: expirationRefresh
+            user: userInfo,
+            token: accessTokenGen,
+            refreshToken: refreshTokenGen,
+            expiration: expiration
         };
-    }
+    };
 
     async verify(token: string) {
         const ticket = await client.verifyIdToken({
@@ -299,20 +300,21 @@ export class UserController {
                         throw {status: 403, code: 'UDISH', message: 'Tu usuario ha sido deshabilitado!'};
                     }
 
-                    let {expiration: expirationRefres, _token: _tokenRefresh} = await this.jwt.createRefreshToken(user, 5, 'hours');
+                    let {expiration: expirationRefres, _token: _tokenRefresh} = await this.jwt.createRefreshToken(user, 5, 'minutes');
                     let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
 
                     // TODO: come back implement the browser agent store
                     await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefres), _tokenRefresh);
                     await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
+                    const response:ILoginResponse = {
+                        user: this.dataUserForLogin(user),
+                        token: tokenGen,
+                        refreshToken: _tokenRefresh,
+                        expiration
+                    };
                     res.status(200)
-                        .json({
-                            user: this.dataUserForLogin(user),
-                            token: tokenGen,
-                            refreshToken: _tokenRefresh,
-                            expiration
-                        });
-                    // saveLog(saveResult._id, {userName: saveResult.userName},`${saveResult.userName} joined us.`)
+                        .json(response);
+                    this.logger.info(`User ${user.userName} logged`, {access: tokenGen, refresh: _tokenRefresh});
                 } else {
                     throw {status: 401, code: 'EPASSW', message: 'Contrasenia erronea.'};
                 }
@@ -345,7 +347,6 @@ export class UserController {
     getUsers = (req: Express.Request, res: Express.Response) => {
         // const filters = matchedData(req, {locations: ['query']});
 
-        // console.log(app.db);
         this.models.User
             .find({}, 'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
             .populate('role')
@@ -516,20 +517,25 @@ export class UserController {
         try {
 
             const user = req.user;
-            // get token username
-            const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
-            if( !redisRefreshToken )
-                throw {
-                    status: 401, code: 'ETOKEN',
-                    message: 'Tu token de actualización ha expirado!'
-                }
-
             if (!user) {
                 throw {
                     status: 401, code: 'DTOKEN',
                     message: 'El token de actualización no es valido!.'
                 };
             }
+            if (!user.enabled) {
+                throw {
+                    status: 403, code: 'UDESH',
+                    message: 'Tu usuario se encuentra deshabilitado!'
+                };
+            }
+            // get token username
+            const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
+            if( !redisRefreshToken )
+                throw {
+                    status: 401, code: 'ETOKEN',
+                    message: 'Tu token de actualización ha expirado!'
+                };
 
             if (redisRefreshToken !== refreshToken) {
                 throw ({
@@ -537,26 +543,15 @@ export class UserController {
                     message: 'El token de actualización no es valido, vuelva a iniciar sesion!'
                 });
             }
-            // if (user._id.toString() !== req.user._id.toString()) {
-            //     throw {
-            //         status: 401, code: 'ITOKEN',
-            //         message: 'The sent token does not belong to your User.',
-            //     }
-            // }
-            if (!user.enabled) {
-                throw {
-                    status: 403, code: 'UDESH',
-                    message: 'Tu usuario se encuentra deshabilitado!'
-                };
-            }
             const {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
             await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
 
+            this.logger.info('New access token for '+ user.userName,{token: tokenGen, refreshToken})
             res.status(200)
                 .json({
                     token: tokenGen,
-                    refreshToken,
-                    expiration
+                    expiration,
+                    refreshToken
                 });
             // saveLog(user._id, {userName: user.userName},`${userName} refresh token.`)
         } catch (_err) {
@@ -567,7 +562,7 @@ export class UserController {
     getUser = (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userId = req.params.userId;
 
-        this.models.User.findById(userId, 'firstName lastName userName email role birthDate isVerified secretToken phones enabledcreatedAt updatedAt')
+        this.models.User.findById(userId, 'firstName lastName userName email role birthDate isVerified phones enabledcreatedAt updatedAt')
             .populate('role')
             .exec()
             .then(user => {
@@ -632,30 +627,27 @@ export class UserController {
 
             if (user) {
                 if (user.provider === 'none') {
-                    throw {status: 400, code: 'AUTHNOR', message: 'Debes usar la autenticacion normal(sin redes sociales)!'};
+                    throw {status: 400, code: 'AUTHNOR', message: 'Ya tienes una cuenta con este correo, intenta utilizar la autenticacion por email (sin redes sociales)!'};
                 } else if (user.provider === 'google') {
                     throw {status: 400, code: 'AUTHNOR', message: 'Este correo ya se encuentra asociado a una cuenta de GMAIL'};
                 } else {
-
-                    let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
-                    if (user.secretToken === '') {
-                        const _tempToken = await this.jwt.createRefreshToken(user);
-                        user.secretToken = _tempToken._token;
-                        await redisPub.hmset(DynamicKeys.set.refreshKey(user.userName), ['_token', _tempToken._token, 'expiration', _tempToken.expiration]);
-                        this.logger.info('Create secret token');
+                    if ( !user.enabled ) {
+                        throw  { status: 403, code: 'UDISHABLE', message: 'Usuario deshabilitado!' };
                     }
-
-                    const saveResult = await user.save();
-                    user.passwordHash = '';
+                    const _refreshToken = await this.jwt.createRefreshToken(user);
+                    await redisPub.hmset(DynamicKeys.set.refreshKey(user.userName), ['_token', _refreshToken._token, 'expiration', _refreshToken.expiration]);
+                    this.logger.info('Create secret token for user '+ user.userName);
+                    let {_token: tokenAcces, expiration} = await this.jwt.createAccessToken(user);
 
                     this.logger.info('Sending info to login');
+                    const response:ILoginResponse = {
+                        user: this.dataUserForLogin(user),
+                        token: tokenAcces,
+                        refreshToken: _refreshToken._token,
+                        expiration
+                    };
                     res.status(200)
-                        .json({
-                            user: this.dataUserForLogin(user)
-                            , token: tokenGen
-                            , refreshToken: saveResult.secretToken
-                            , expiration
-                        });
+                        .json(response);
                 }
             } else {
 
@@ -668,9 +660,9 @@ export class UserController {
         } catch (_err) {
             next(_err)
         }
-    }
+    };
 
-    dataUserForLogin(user: any) {
+    dataUserForLogin:(user:IUserDocument) => UserForLoginType = (user) => {
         return {_id: user._id, userName: user.userName, firstName: user.firstName,  lastName: user.lastName, provider: user.provider, role: user.role, email: user.email, image: user.image};
     }
 }
