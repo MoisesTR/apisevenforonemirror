@@ -91,7 +91,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
     const ensureAuth = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         if (!req.headers.authorization) {
             return next({
-                status: 401,
+                status: 402,
                 code: 'NAUTH',
                 message: 'The request has no authentication header'
             });

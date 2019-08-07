@@ -19,7 +19,6 @@ import PurchaseHistory from './models/PurchaseHistory';
 import {IPurchaseHistoryModel} from './interfaces/IPurchaseHistory';
 import {INotificationModel} from './interfaces/INotification';
 import Notification from './models/Notification';
-import {redisPub} from '../redis/redis';
 
 const basename = path.basename(__filename);
 
