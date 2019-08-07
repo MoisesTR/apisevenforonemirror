@@ -13,12 +13,12 @@ import envVars from '../global/environment';
 import {IjwtResponse} from '../services/jwt';
 import {redisPub} from '../redis/redis';
 import DynamicKeys from '../redis/keys/dynamics';
-import moment from 'moment';
 import {recoverAccountEmail, sendConfirmationEmail} from '../services/email';
 import {ERoles} from '../db/models/Role';
 import {IRoleDocument} from '../db/interfaces/IRole';
 import {UserForLoginType} from './interfaces/UserForLoginType';
 import {ILoginResponse} from './interfaces/LoginResponse';
+import User from '../db/models/User';
 
 const saltRounds = 10;
 
@@ -120,29 +120,9 @@ export class UserController {
                     };
                 } else {
 
-                    let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
-                    console.log('Creando token, expira', expiration, moment.unix(expiration).diff(moment(), 'seconds'));
-                    const refreshKey = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
-                    if (!refreshKey) {
-                        const _tokenRefres = await this.jwt.createRefreshToken(user);
-                        user.secretToken = _tokenRefres._token;
-                        this.logger.info('Create secret token');
-                        // redisPub.hset(user.userName, "refresh", _tokenRefres._token);
-                        await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), moment.unix(_tokenRefres.expiration).diff(moment(), 'seconds'), _tokenRefres._token);
-                    }
-                    //TODO: come back
-                    // redisPub.setex(tokenKey(user.userName),  moment.unix(expiration).diff(moment(),'seconds'), tokenGen);
-                    const saveResult = await user.save();
-                    user.passwordHash = '';
-
-                    this.logger.info('Sending info to login');
                     res.status(200)
-                        .json({
-                            user: this.dataUserForLogin(user)
-                            , token: tokenGen
-                            , refreshToken: saveResult.secretToken
-                            , expiration
-                        });
+                        .json(await this.getResponseToSendToLogin(user));
+
                 }
 
             } else {
@@ -179,13 +159,14 @@ export class UserController {
 
         const insertInfo = await user.save();
 
-        let {_token: accessTokenGen, expiration} = await this.jwt.createAccessToken(user);
-        let {_token: refreshTokenGen, expiration: expirationRefresh} = await this.jwt.createRefreshToken(user);
+        const {_token: accessTokenGen, expiration} = await this.jwt.createAccessToken(user);
+        const {_token: refreshTokenGen, expiration: expirationRefresh} = await this.jwt.createRefreshToken(user);
 
-        let userInfo = await this.models.User.findOne({email: socialUser.email}).populate('role');
+        const userInfo = await this.models.User.findOne({email: socialUser.email}).populate('role');
         if (!userInfo) {
             throw new Error('Error usuario no encontrado');
         }
+
         delete userInfo.passwordHash;
 
         this.logger.info('Token de usuario creado');
@@ -300,21 +281,9 @@ export class UserController {
                         throw {status: 403, code: 'UDISH', message: 'Tu usuario ha sido deshabilitado!'};
                     }
 
-                    let {expiration: expirationRefres, _token: _tokenRefresh} = await this.jwt.createRefreshToken(user, 5, 'minutes');
-                    let {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
-
-                    // TODO: come back implement the browser agent store
-                    await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefres), _tokenRefresh);
-                    await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
-                    const response:ILoginResponse = {
-                        user: this.dataUserForLogin(user),
-                        token: tokenGen,
-                        refreshToken: _tokenRefresh,
-                        expiration
-                    };
                     res.status(200)
-                        .json(response);
-                    this.logger.info(`User ${user.userName} logged`, {access: tokenGen, refresh: _tokenRefresh});
+                        .json(await this.getResponseToSendToLogin(user));
+
                 } else {
                     throw {status: 401, code: 'EPASSW', message: 'Contrasenia erronea.'};
                 }
@@ -326,6 +295,26 @@ export class UserController {
             next(err);
         }
     };
+
+
+    // GENERAL METHOD FOR GENERATE TOKEN AND REFRESH TOKEN, AND BUILD RESPONSE TO RETURN TO LOGIN
+    async getResponseToSendToLogin(user: any) {
+        const {expiration: expirationRefres, _token: _tokenRefresh} = await this.jwt.createRefreshToken(user, 10, 'minutes');
+        const {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
+
+        // TODO: come back implement the browser agent store
+        await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefres), _tokenRefresh);
+        await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
+        const response: ILoginResponse = {
+            user: this.dataUserForLogin(user),
+            token: tokenGen,
+            refreshToken: _tokenRefresh,
+            expiration
+        };
+        this.logger.info(`User ${user.userName} logged`, {access: tokenGen, refresh: _tokenRefresh});
+        return response;
+    }
+
 
     //TODO: manage the tokens in the database
     // saveLog = (userId, {userName, firstName, lastName, email, role}, activity) => {
@@ -515,8 +504,9 @@ export class UserController {
         const {refreshToken, userName} = matchedData(req, {locations: ['body']});
 
         try {
+            // const user = req.user;
+            const user = await this.models.User.findOne({userName: userName});
 
-            const user = req.user;
             if (!user) {
                 throw {
                     status: 401, code: 'DTOKEN',
@@ -634,20 +624,9 @@ export class UserController {
                     if ( !user.enabled ) {
                         throw  { status: 403, code: 'UDISHABLE', message: 'Usuario deshabilitado!' };
                     }
-                    const _refreshToken = await this.jwt.createRefreshToken(user);
-                    await redisPub.hmset(DynamicKeys.set.refreshKey(user.userName), ['_token', _refreshToken._token, 'expiration', _refreshToken.expiration]);
-                    this.logger.info('Create secret token for user '+ user.userName);
-                    let {_token: tokenAcces, expiration} = await this.jwt.createAccessToken(user);
 
-                    this.logger.info('Sending info to login');
-                    const response:ILoginResponse = {
-                        user: this.dataUserForLogin(user),
-                        token: tokenAcces,
-                        refreshToken: _refreshToken._token,
-                        expiration
-                    };
                     res.status(200)
-                        .json(response);
+                        .json(await this.getResponseToSendToLogin(user));
                 }
             } else {
 
@@ -662,7 +641,7 @@ export class UserController {
         }
     };
 
-    dataUserForLogin:(user:IUserDocument) => UserForLoginType = (user) => {
+    dataUserForLogin:(user: IUserDocument) => UserForLoginType = (user) => {
         return {_id: user._id, userName: user.userName, firstName: user.firstName,  lastName: user.lastName, provider: user.provider, role: user.role, email: user.email, image: user.image};
     }
 }
