@@ -109,7 +109,9 @@ export class UserController {
             message: 'Este correo ya se encuentra asociado a una cuenta de facebook!!!',
           };
         } else {
-          res.status(200).json(await this.getResponseToSendToLogin(user));
+          const response = await this.getResponseToSendToLogin(user);
+          res.status(200)
+              .json(response);
         }
       } else {
         const dataLogin = await this.createUserWithSocialLogin(userData, googleUser);
@@ -261,8 +263,9 @@ export class UserController {
           if (!user.enabled) {
             throw {status: 403, code: 'UDISH', message: 'Tu usuario ha sido deshabilitado!'};
           }
-
-          res.status(200).json(await this.getResponseToSendToLogin(user));
+          const response = await this.getResponseToSendToLogin(user);
+          res.status(200)
+              .json(response);
         } else {
           throw {status: 401, code: 'EPASSW', message: 'Contrasenia erronea.'};
         }
@@ -601,8 +604,9 @@ export class UserController {
           if (!user.enabled) {
             throw {status: 403, code: 'UDISHABLE', message: 'Usuario deshabilitado!'};
           }
-
-          res.status(200).json(await this.getResponseToSendToLogin(user));
+          const response = await this.getResponseToSendToLogin(user);
+          res.status(200)
+              .json(response);
         }
       } else {
         const dataLogin = await this.createUserWithSocialLogin(userData, facebookUser);

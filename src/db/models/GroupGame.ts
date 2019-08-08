@@ -129,14 +129,14 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             this.winners++;
 
             const socketWinner = await redisPub.hget(DynamicKey.hash.socketsUser(winner.userName), 'main');
+            mainSocket.to('admins')
+                .emit(EMainEvents.SOMEONE_WIN, {
+                    message: 'Someone user has won!',
+                    groupId: this._id,
+                    userId: winner._id
+                });
             if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
 
-                mainSocket.to('admins')
-                    .emit(EMainEvents.SOMEONE_WIN, {
-                        message: 'Someone user has won!',
-                        groupId: this._id,
-                        userId: winner._id
-                    });
                 mainSocket.to(socketWinner)
                 .emit(EMainEvents.WIN_EVENT, {
                     userId : winner.userId,
