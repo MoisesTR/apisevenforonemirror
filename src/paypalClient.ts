@@ -29,12 +29,10 @@ function environment() {
 
     console.log('Ambiente',envVars.ENVIRONMENT);
     if (envVars.ENVIRONMENT === 'production') {
-        console.log('Utilizando modo de produccion');
         return new checkoutNodeJssdk.core.LiveEnvironment(
             envVars.PAYPAL_CLIENT_ID, envVars.PAYPAL_CLIENT_SECRET
         );
     } else {
-        console.log('Utilizando modo de desarrollo');
         return new checkoutNodeJssdk.core.SandboxEnvironment(
             envVars.PAYPAL_CLIENT_ID, envVars.PAYPAL_CLIENT_SECRET
         );

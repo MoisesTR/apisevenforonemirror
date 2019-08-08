@@ -3,16 +3,16 @@
   "verbose": true,
   "ignore": [
     "dist",
-    "build"
+    "build",
+    "src/logs"
   ],
   "watch": [
     "src/**/*.ts",
-    "config",
-    "webpack"
+    "config"
   ],
   "env": {
     "NODE_ENV": "development"
   },
-  "ext": "js json ts tsx",
-  "exec": "ts-node -- ./src/app.ts"
+  "ext": "js json ts",
+  "exec": "ts-node --project ./tsconfig.json  --files ./src/index.ts"
 }

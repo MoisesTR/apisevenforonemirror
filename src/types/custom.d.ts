@@ -1,9 +1,25 @@
-import {IUserDocument} from "../db/interfaces/User";
+import {IUserDocument} from '../db/interfaces/IUser';
 
 declare global {
-    export namespace Express {
-        export interface Request {
+    namespace Express {
+        interface Request {
             user: IUserDocument
         }
     }
+}
+declare namespace Express {
+    interface Request {
+        user: IUserDocument;
+    }
+}
+declare namespace NodeJS {
+    interface Error {
+        status: number;
+    }
+}
+declare global {
+
+interface Error {
+    status?: number
+}
 }

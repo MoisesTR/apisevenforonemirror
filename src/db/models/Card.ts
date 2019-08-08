@@ -2,7 +2,7 @@
 
 import * as mongoose from "mongoose";
 import {Schema} from "mongoose";
-import { ICardDocument, ICardModel} from "../interfaces/Card";
+import { ICardDocument, ICardModel} from "../interfaces/ICard";
 
 export const cardSchema = new Schema({
     user: {type: Schema.Types.ObjectId, ref: 'User'},
@@ -20,5 +20,5 @@ export const cardSchema = new Schema({
     timestamps: true
 });
 
-export default mongoose.model<ICardDocument, ICardModel>('Card', cardSchema);
+export default mongoose.model<ICardDocument, ICardModel>('card', cardSchema);
 

@@ -3,6 +3,7 @@ import {validsParams} from '../utils/genericsValidations';
 import * as paypalValidations from '../services/validations/paypal';
 import * as paypalController from '../controllers/paypal';
 import Server from "../server";
+import {app} from '../app';
 
 
 export const register = (server: Server) => {
@@ -17,5 +18,5 @@ export const register = (server: Server) => {
         .post('/create-paypal-transaction', ensureAuth, paypalValidations.createPaypalTransaction, validsParams, paypalController.createPaypalTransaction)
         .post('/authorize-paypal-transaction', ensureAuth, paypalController.createAuthorizationTransaction)
         .post('/capture-authorization', ensureAuth, paypalController.captureAuthorization);
-    server.app.use('/api', router);
+    app.use('/api', router);
 }

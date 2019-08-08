@@ -1,0 +1,5 @@
+export enum EGameEvents {
+    JOIN_GROUP = 'JOIN_GROUP',
+    GROUP_ACTIVITY = 'GROUP_ACTIVITY-',
+    TOP_WINNERS = 'TOP_WINNER'
+}

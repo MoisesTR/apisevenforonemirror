@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-    import {model, Schema} from "mongoose";
-import {IMenuDocument} from "../interfaces/Menu";
+import {model, Schema} from "mongoose";
+import {IMenuDocument} from "../interfaces/IMenu";
 
-const menuSchema = new Schema({
+const menuSchema: Schema = new Schema({
         path: {
             type: String,
             required: true,
@@ -22,8 +22,8 @@ const menuSchema = new Schema({
             required: true,
             default: true
         }
-    },{
+    }, {
         timestamps: true
     });
 
-export default model<IMenuDocument>('Menu', menuSchema);
+export default model<IMenuDocument>("menu", menuSchema);

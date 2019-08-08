@@ -1,5 +1,9 @@
 import {model, Schema} from "mongoose";
-import {IPurchaseHistoryDocument} from "../interfaces/PurchaseHistory";
+import {IPurchaseHistory, IPurchaseHistoryDocument, IPurchaseHistoryModel} from '../interfaces/IPurchaseHistory';
+export enum EPurchaseHistoryAction {
+    WIN = "win",
+    INVEST = "invest"
+}
 
 const purchaseHistory = new Schema({
     userId: {
@@ -14,16 +18,15 @@ const purchaseHistory = new Schema({
     },
     action: {
         type: String,
-        enum: ['win', 'invest'],
+        enum: [EPurchaseHistoryAction.WIN, EPurchaseHistoryAction.INVEST],
         required: true,
     },
     moneyDirection: {
         type: Schema.Types.Boolean,
         required: true,
         default: function () {
-            console.log('valor', this, this);
-            // return ((this.get("action") !==  undefined) && (this.get("action") !== 'win'));
-            return false
+            // @ts-ignore
+            return this.action === EPurchaseHistoryAction.WIN
         },
     },
     payReference: {
@@ -37,4 +40,4 @@ const purchaseHistory = new Schema({
     timestamps: true
 });
 
-export default model<IPurchaseHistoryDocument>('PurchaseHistory', purchaseHistory);
+export default model<IPurchaseHistoryDocument>('purchaseHistory', purchaseHistory);

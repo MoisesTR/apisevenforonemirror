@@ -1,7 +1,7 @@
 'use strict';
 
 import {model, Schema} from "mongoose";
-import {IActivityTypesDocument} from "../interfaces/ActivityTypes";
+import {IActivityTypesDocument} from "../interfaces/IActivityTypes";
 
 const activityTypesSchema = new Schema({
     activityName: {
@@ -19,4 +19,4 @@ const activityTypesSchema = new Schema({
     }
 });
 
-export default model<IActivityTypesDocument>('ActivityTypes', activityTypesSchema);
+export default model<IActivityTypesDocument>('activityTypes', activityTypesSchema);

@@ -1,6 +1,6 @@
 'use strict';
 import {model, Schema} from "mongoose";
-import {IUserActivityLogDocument} from "../interfaces/UserActivityLog";
+import {IUserActivityLogDocument} from "../interfaces/IUserActivityLog";
 
 const userActivitySchema = new Schema({
     userId: {

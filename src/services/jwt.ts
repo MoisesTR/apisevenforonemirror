@@ -4,11 +4,11 @@ import envVars from '../global/environment';
 import jwt from 'jsonwebtoken';
 import moment, {DurationInputArg1, DurationInputArg2} from 'moment';
 import Server from './../server';
-import {IUserDocument} from "../db/interfaces/User";
+import {IUserDocument} from "../db/interfaces/IUser";
 export interface IjwtResponse {
     ensureAuth: (req: Express.Request, res: Express.Response, next: NextFunction) => Promise<void>;
-    createAccessToken: (user: IUserDocument, expiration?: number, unitOfTime?: any ) => Promise<({_token: string, expiration: any})>;
-    createRefreshToken: (user: IUserDocument, expiration?: number, unitOfTime?: DurationInputArg2) => Promise<({_token: string, expiration: any})>;
+    createAccessToken: (user: IUserDocument, expiration?: number, unitOfTime?: any ) => Promise<({_token: string, expiration: number})>;
+    createRefreshToken: (user: IUserDocument, expiration?: number, unitOfTime?: DurationInputArg2) => Promise<({_token: string, expiration: number})>;
 }
 
 export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
@@ -30,7 +30,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         return {_token, expiration: payload.exp}
     }
 
-    const createAccessToken = async (user: IUserDocument, expiration: number = 10, unitOfTime: any = "minutes") => {
+    const createAccessToken = async (user: IUserDocument, expiration: number = 5, unitOfTime: DurationInputArg2 = "minutes") => {
         return createToken({
             sub: user._id,
             email: user.email,
@@ -38,10 +38,10 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         }, envVars.JWT_SECRET, expiration, unitOfTime)
     };
 
-    const createRefreshToken = async (user: IUserDocument, expiration: number = 1, unitOfTime: DurationInputArg2 = "hours") => {
+    const createRefreshToken = async (user: IUserDocument, expiration: number = 10, unitOfTime: DurationInputArg2 = "minutes") => {
         return createToken({
             sub: user._id
-        }, envVars.JWT_REFRESH_SECRET, expiration, unitOfTime)
+        }, envVars.JWT_SECRET, expiration, unitOfTime)
     };
 
     async function verifyToken(token: string, secret: string) {
@@ -91,7 +91,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
     const ensureAuth = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         if (!req.headers.authorization) {
             return next({
-                status: 401,
+                status: 402,
                 code: 'NAUTH',
                 message: 'The request has no authentication header'
             });
@@ -101,18 +101,22 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         try {
             server.logger.info('Verificando token: ' + token, {location: 'jwt'});
             const decode = await verifyToken(token, envVars.JWT_SECRET);
-            console.log(decode);
             const user = await models.User.findById(decode.sub);
             //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
             if (!!user) {
                 //Si encontramos el usuario
-                console.log('The user was found');
                 if (user.enabled === false) {
                     //si el usuario se encuentra deshabilitado
                     throw {
-                        status: 401, code: 'EPUSER',
-                        message: 'User disabled, please contact support AtomicDev.'
+                        status: 403, code: 'EPUSER',
+                        message: 'Usuario deshabilitado, contacte con el soporte de 7x1!.'
                     };
+                }
+                if( decode.isExpired ) {
+                    throw {
+                        status: 401, code: 'TOKENEXPIRED',
+                        message: 'Access token expired, refresh please!'
+                    }
                 }
                 //Si el usuario esta habilitado se procede a actualizar el username y el email
                 //por si ha habido un cambio en estos
@@ -131,7 +135,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
             } else {
                 throw {
                     status: 404, code: 'NFUSER',
-                    message: 'User not found, contact to the admin.'
+                    message: 'Usuario no encontrado, contacte al administrador!'
                 };
             }
         } catch (error) {
@@ -150,7 +154,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
             return next({
                 status: 403,
                 code: 'NOTPER',
-                message: 'You dont have permission!'
+                message: 'No tienes permisos!'
             });
         next();
     };

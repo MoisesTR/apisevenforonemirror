@@ -1,4 +1,5 @@
 export class ErrorREST extends Error {
+    public status?: number;
     public response: { status: number; message: string; detail: string };
 
     constructor(error: { status: number, message: string }, detail: string = '', ...args: any) {
@@ -10,11 +11,11 @@ export class ErrorREST extends Error {
 export const Errors = {
     BadRequest: {
         status: 400,
-        message: "Request has wrong format."
+        message: "La solicitud tiene formato incorrecto!"
     },
     Unauthorized: {
         status: 401,
-        message: "Authentication credentials not valid."
+        message: "Credenciales de autenticación no validas!"
     },
     Forbidden: {
         status: 403,
