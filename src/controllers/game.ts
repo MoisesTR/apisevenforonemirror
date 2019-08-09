@@ -8,6 +8,7 @@ import {ObjectId, ObjectID} from 'bson';
 import {IPurchaseHistoryDocument} from '../db/interfaces/IPurchaseHistory';
 import {Logger} from 'winston';
 import DocumentArray = Types.DocumentArray;
+import catchAsync from '../utils/catchAsync';
 
 export default class GameController {
     private models: IModels;
@@ -18,19 +19,19 @@ export default class GameController {
         this.logger = server.logger;
     }
 
-    createGroup = (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
+    createGroup = catchAsync( async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
         const groupData = matchedData(req, {locations: ['body']});
 
         const groupGame = new this.models.GroupGame({...groupData});
 
-        groupGame.save()
-            .then(group => res.status(201).json({message: 'Group created!!'}))
-            .catch(next);
-    };
+        const group = await groupGame.save()
 
-    getGameGroups = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+        res.status(201).json({message: 'Group created!!'});
+    });
 
-        this.models.GroupGame.aggregate([
+    getGameGroups = catchAsync( async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+
+        const groups:Types.DocumentArray<IGroupGameDocument> = await this.models.GroupGame.aggregate([
             {
                 $project: {
                     initialInvertion: 1,
@@ -41,15 +42,15 @@ export default class GameController {
                 }
             }
         ]).sort({initialInvertion: 1})
-            .exec()
-            .then((groups: Types.DocumentArray<IGroupGameDocument>) => res.status(200).json(groups))
-            .catch(next);
-    };
+            .exec();
 
-    getGroupMembers = (req: Express.Request, res: Express.Response, next: (err?: any) => void) => {
+        res.status(200).json(groups)
+    });
+
+    getGroupMembers = catchAsync( async (req: Express.Request, res: Express.Response, next: (err?: any) => void) => {
         const groupId = req.params.groupId;
 
-        this.models.GroupGame
+        const group = await this.models.GroupGame
         // .aggregate([
         //     {$unwind: "$members"},
         //     {$sort: {"members.createdAt": 1}},
@@ -57,70 +58,59 @@ export default class GameController {
         //     // {$addFields: {"members.$[].position": {$sum: 1}}},
         //     // {$group:{_id:{age: "$age"}, allHobbies: {$push: "$hobbies"}}},
         // ])
-            .findById(groupId)
-            .then(group => resultOrNotFound(res, group, 'Group'))
-            .catch(next);
-    };
+            .findById(groupId);
 
-    addMemberToGroup = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+         resultOrNotFound(res, group, 'Group');
+    });
+
+    addMemberToGroup = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const relationData = matchedData(req);
 
-        this.models.GroupGame.findById(relationData.groupId)
-            .then(group => {
-                if (!group) {
-                    throw ({status: 404, message: 'Grupo no encontrado!'});
-                }
-                console.log(group);
-                return group.addMember({
-                    userId: req.user._id
-                    , userName: req.user.userName
-                    , image: req.user.image
-                }, relationData.payReference);
-            })
-            .then(result => {
-                res.status(201)
-                    .json({message: 'Miembro añadido exitosamente!'});
+        const group = await this.models.GroupGame.findById(relationData.groupId)
+        if (!group) {
+            throw ({status: 404, message: 'Grupo no encontrado!'});
+        }
+        console.log(group);
+        const result = await group.addMember({
+            userId: req.user._id
+            , userName: req.user.userName
+            , image: req.user.image
+        }, relationData.payReference);
+
+        res.status(201)
+            .json({message: 'Miembro añadido exitosamente!'});
                 // TODO: validate group member moviment
-                // this.socketMng.gameGroups.
-            })
-            .catch(next);
-    };
+    });
 
-    removeMemberFromGroup = (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
+    removeMemberFromGroup = catchAsync( async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
         const relationData = matchedData(req);
 
-        this.models.GroupGame.findById(relationData.groupId)
-            .then(group => {
-                if (!group) {
-                    throw ({status: 404, message: 'Grupo no encontrado!'});
-                }
-                return group.removeMember(relationData.userId);
-            })
-            .then(group => res.status(200).json({message: 'Miembro fue removido del grupo!'}))
-            .catch(next);
-    };
+        let group = await this.models.GroupGame.findById(relationData.groupId)
+        if (!group) {
+            throw ({status: 404, message: 'Grupo no encontrado!'});
+        }
+        await group.removeMember(relationData.userId);
+        res.status(200).json({message: 'Miembro fue removido del grupo!'})
+    });
 
-    getOwnPurchaseHistory = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    getOwnPurchaseHistory = catchAsync( async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         console.log(req.user);
-        req.user.getPurchaseHistory()
-            .then((history: DocumentArray<IPurchaseHistoryDocument>) => res.status(200).json(history))
-            .catch(next);
-    };
+        const history:DocumentArray<IPurchaseHistoryDocument> = await req.user.getPurchaseHistory()
+            res.status(200).json(history);
+    });
 
-    getPurchaseHistory = (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
+    getPurchaseHistory = catchAsync(async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
         const userId = req.params.userId;
-        this.models.User.findById(userId)
-            .then(user => {
+        const user = await this.models.User.findById(userId)
 
-                if (!user) {
-                    throw {status: 404, message: 'User not found!'};
-                }
+        if (!user) {
+            throw {status: 404, message: 'User not found!'};
+        }
 
-                return user.getPurchaseHistoryById(userId);
-            })
-            .then(history => res.status(200).json(history))
-            .catch(next);
-    };
+        const history = await user.getPurchaseHistoryById(userId);
+        res.status(200)
+            .json(history)
+    });
     getMyCurrentsGroups = (req: Express.Request, res: Express.Response, next: NextFunction) => {
         this.getGroupsByUser(req.user._id, res, next);
     };
@@ -129,10 +119,10 @@ export default class GameController {
         this.getGroupsByUser(userId, res, next);
     };
 
-    getGroupWinnersTop = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    getGroupWinnersTop = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const {quantity, groupId} = req.params;
         console.log(req.params)
-        this.models.PurchaseHistory
+        let result = await this.models.PurchaseHistory
             .aggregate([
                 {$match: {action: 'win', groupId: new ObjectId(groupId)}}, // agregale el id del grupo si queres para mas seguridad y me confirmas o me decis que cambiar
                 {$limit: +quantity},
@@ -179,17 +169,13 @@ export default class GameController {
                     }
                 },
             ])
-            .exec()
-            .then((result: any) => {
-                res.status(200)
-                    .json(result);
-            })
-            .catch((err: Error) => {
-                res.status(500).json(err);
-            });
-    };
+            .exec();
 
-    getTopWinners = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+        res.status(200)
+            .json(result);
+    });
+
+    getTopWinners = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const {quantity, groupId, times} = matchedData(req, {locations: ['query', 'params']});
         let sortOrder:any = {};
         let match: any = {action: "win"};
@@ -200,7 +186,7 @@ export default class GameController {
         else
             sortOrder.totalWon = -1;
         console.log('starting the query', sortOrder, match)
-        this.models.PurchaseHistory.aggregate([
+        let result = await this.models.PurchaseHistory.aggregate([
             {$match: {...match}},
             {$lookup: {from:'users' , localField: 'userId', foreignField: '_id', as: 'userInfo'}},
             {$unwind: { path: "$userInfo", preserveNullAndEmptyArrays: true}},
@@ -226,21 +212,16 @@ export default class GameController {
             {$sort: {...sortOrder}},
             {$limit: +quantity},
         ])
-        .exec()
-        .then((result: any)=> {
-            res.status(200)
-                .json(result);
-        })
-        .catch(next)
-    };
+        .exec();
 
-    private getGroupsByUser(userId: string | ObjectID, res: Express.Response, next: NextFunction) {
+        res.status(200)
+                .json(result);
+    });
+
+    private getGroupsByUser= async (userId: string | ObjectID, res: Express.Response, next: NextFunction) => {
         console.log('Searching by userID: ' + userId);
-        this.models.GroupGame.find({'members.userId': new ObjectID(userId)})
-            .then(groups => {
+        const groups = await this.models.GroupGame.find({'members.userId': new ObjectID(userId)})
                 res.status(200)
                     .json(groups);
-            })
-            .catch(next);
     }
 }

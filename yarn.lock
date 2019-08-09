@@ -127,6 +127,11 @@
     "@types/express-serve-static-core" "*"
     "@types/serve-static" "*"
 
+"@types/fb@^0.0.23":
+  version "0.0.23"
+  resolved "https://registry.yarnpkg.com/@types/fb/-/fb-0.0.23.tgz#8f601579bf41f968c5a55150f578e66dac37dcf8"
+  integrity sha512-hbJdzpyEOHHB1CZwnDkFGkODdqtgDNNiU3JKFWdKXzaGTEQArzHTX8IRlI9WphULMbKue1soxvnVZVnSal92lA==
+
 "@types/helmet@^0.0.43":
   version "0.0.43"
   resolved "https://registry.yarnpkg.com/@types/helmet/-/helmet-0.0.43.tgz#2a3f7da435088501f2901f68c3e402f79e5b2a9b"

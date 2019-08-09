@@ -19,11 +19,12 @@ import {IRoleDocument} from '../db/interfaces/IRole';
 import {UserForLoginType} from './interfaces/UserForLoginType';
 import {ILoginResponse} from './interfaces/LoginResponse';
 import User from '../db/models/User';
+import catchAsync from '../utils/catchAsync';
+import FB from 'fb';
 
 const saltRounds = 10;
 
 // Using require() in ES5
-const FB = require('fb').default;
 
 // GOOGLE AUTHENTICATION
 const client = new OAuth2Client(envVars.GOOGLE_CLIENT_ID);
@@ -51,12 +52,11 @@ export class UserController {
     this.jwt = server.jwt;
   }
 
-  signInFacebook = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  signInFacebook = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req);
     console.log(userData);
 
-    FB.setAccessToken(userData.accessToken);
-    FB.api('/me', 'GET', {fields: 'id,name,email,first_name,last_name,picture.width(300).height(300){url}'}, async (response?: any) => {
+    FB.api('/me', {fields: 'id,name,email,first_name,last_name,picture.width(300).height(300){url}', access_token: userData.accessToken}, async (response?: any) => {
       if (!response || response.error) {
         this.logger.info(!response ? 'error occurred' : response.error);
         res.status(403).json({
@@ -77,25 +77,22 @@ export class UserController {
       console.log('Facebook credentials' + facebookCredentials);
       await this.verifyCredentialsFacebook(req, res, next, userData, facebookCredentials);
     });
-  };
+  });
 
-  signInGoogle = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  signInGoogle = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req);
     const accessToken = userData.accessToken;
     this.logger.info('Token google: ' + accessToken);
 
-    const googleUser: any = await this.verify(accessToken).catch(() => {
-      return res.status(403).json({
-        ok: false,
-        message: 'El token no es valido!',
-      });
-    });
+    const googleUser: any = await this.verify(accessToken);
 
     if (!googleUser) {
-      return;
+        res.status(403).json({
+            ok: false,
+            message: 'El token no es valido!',
+        });
     }
 
-    try {
       const user = await this.models.User.findOne({email: googleUser.email}).populate('role');
 
       if (user) {
@@ -119,10 +116,7 @@ export class UserController {
         this.logger.info('Sending info to login');
         res.status(200).json(dataLogin);
       }
-    } catch (_err) {
-      next(_err);
-    }
-  };
+  });
 
   //funcion registro
   createUserWithSocialLogin: (userData: any, socialUser: any) => Promise<ILoginResponse> = async (userData, socialUser) => {
@@ -195,9 +189,8 @@ export class UserController {
     };
   }
 
-  signUp = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  signUp = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req);
-    try {
       const hashPassw = await bcrypt.hash(userData.password, saltRounds);
 
       const users = await this.models.User.find({userName: userData.userName, email: userData.email});
@@ -229,12 +222,7 @@ export class UserController {
         await sendConfirmationEmail(userData.email, user);
       }
       alreadyExist(users, userData);
-    } catch (_err) {
-      // res.status( _err.status || 500)
-      //     .json( _err )
-      next(_err);
-    }
-  };
+  });
 
   /**
    * @name signIn
@@ -242,11 +230,10 @@ export class UserController {
    * @param {*} res
    */
 
-  signInMiddleware = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  signInMiddleware = catchAsync( async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req);
     this.logger.info('Login usuario');
 
-    try {
       // find user by username or email
       const user = await this.models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]}).populate('role');
       if (user) {
@@ -273,10 +260,7 @@ export class UserController {
         console.log('User not found!');
         throw {status: '401', code: 'NEXIST', message: 'Usuario no encontrado!'};
       }
-    } catch (err) {
-      next(err);
-    }
-  };
+  });
 
   // GENERAL METHOD FOR GENERATE TOKEN AND REFRESH TOKEN, AND BUILD RESPONSE TO RETURN TO LOGIN
   async getResponseToSendToLogin(user: any) {
@@ -313,25 +297,19 @@ export class UserController {
   //         .catch(err => console.log('Error Saving Log', err))
   // }
 
-  getUsers = (req: Express.Request, res: Express.Response) => {
+  getUsers = catchAsync(async (req: Express.Request, res: Express.Response) => {
     // const filters = matchedData(req, {locations: ['query']});
 
-    this.models.User.find({}, 'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
+    const result = await this.models.User.find({}, 'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
       .populate('role')
-      .exec()
-      .then((result: any) => {
+      .exec();
         res.status(200).json(result);
-      })
-      .catch((error: Error) => {
-        res.status(error.status || 500).json(error);
-      });
-  };
+  });
 
-  verifyEmail = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  verifyEmail = catchAsync( async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const data = req.params;
 
-    this.models.User.findOne({secretToken: data.token})
-      .then((user: IUserDocument | null) => {
+    const user: IUserDocument | null =  await this.models.User.findOne({secretToken: data.token})
         console.log(user);
 
         if (!user) {
@@ -341,17 +319,11 @@ export class UserController {
             message: 'El token de verificacion no es valido!',
           };
         }
-        return user.verifyToken();
-      })
-      .then(result => {
+        const result = await user.verifyToken();
         res.status(200).json({success: 'Bienvenido a Seven For One, su correo electrónico está verificado!'});
-      })
-      .catch(err => {
-        next(err);
-      });
-  };
+  });
 
-  updateUser = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  updateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req, {locations: ['body', 'query']});
     if (userData.userId !== req.user._id) {
       return res.status(403).json({
@@ -360,30 +332,23 @@ export class UserController {
         message: 'No puedes editar este usuario',
       });
     }
-    this.models.User.findById(userData.userId)
-      .then((user: IUserDocument | null) => {
+    const user: IUserDocument | null = await this.models.User.findById(userData.userId);
         if (user == null) {
           throw {status: 404, message: 'User no encontrado!'};
         }
-        return user.updateUser(userData);
-      })
-      .then((userUpdate: IUserDocument) =>
+      const userUpdate: IUserDocument = await user.updateUser(userData);
         res.status(200).json({
-          status: 200,
-          message: 'Usuario actualizado',
-        }),
-      )
-      .catch((err: any) => {
-        next(err);
-      });
-  };
+        status: 200,
+        message: 'Usuario actualizado',
+      })
 
-  changeStateUser = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  });
+
+  changeStateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const data = matchedData(req, {locations: ['query', 'params']});
 
     console.log('Change state user');
     console.log(data);
-    try {
       const user = await this.models.User.findById(data.userId);
       if (!user) {
         res.status(400).json({failed: 'Usuario no encontrado!'});
@@ -394,16 +359,12 @@ export class UserController {
       user.enabled = data.enabled;
       await user.save();
       res.status(200).json({success: 'El usuario ha sido' + action});
-    } catch (_err) {
-      next(_err);
-    }
-  };
+  });
 
-  createAdminUser = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  createAdminUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req);
     const user: IUserDocument = req.user;
-    try {
-      const adminRole: IRoleDocument | null = await this.models.Role.findOne({name: ERoles.ADMIN});
+    const adminRole: IRoleDocument | null = await this.models.Role.findOne({name: ERoles.ADMIN});
       if (!adminRole)
         throw {
           status: 500,
@@ -438,10 +399,8 @@ export class UserController {
         });
       }
       alreadyExist(users, userData);
-    } catch (_err) {
-      next(_err);
-    }
-  };
+  });
+
   changePassword = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req, {locations: ['body', 'params']});
 
@@ -471,11 +430,9 @@ export class UserController {
     res.status(200).json(req.user);
   };
 
-  refreshTokenMiddleware = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  refreshTokenMiddleware = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const {refreshToken, userName} = matchedData(req, {locations: ['body']});
 
-    try {
-      // const user = req.user;
       const user = await this.models.User.findOne({userName: userName});
 
       if (!user) {
@@ -518,27 +475,20 @@ export class UserController {
         refreshToken,
       });
       // saveLog(user._id, {userName: user.userName},`${userName} refresh token.`)
-    } catch (_err) {
-      next(_err);
-    }
-  };
+  });
 
-  getUser = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  getUser = catchAsync( async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userId = req.params.userId;
 
-    this.models.User.findById(userId, 'firstName lastName userName email role birthDate isVerified phones enabledcreatedAt updatedAt')
+    const user = await this.models.User.findById(userId, 'firstName lastName userName email role birthDate isVerified phones enabledcreatedAt updatedAt')
       .populate('role')
-      .exec()
-      .then(user => {
+      .exec();
         resultOrNotFound(res, user, 'User');
-      })
-      .catch(err => next(err));
-  };
+  });
 
-  getEmailByUserName = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  getEmailByUserName = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userName = req.params.userName;
 
-    try {
       const user = await this.models.User.findOne({userName: userName});
       if (!user) {
         return res.status(404).json({message: 'Usuario no encontrado!'});
@@ -551,11 +501,9 @@ export class UserController {
 
       console.log('Email envado', emailResp);
       res.status(200).json({userName: userName, email: user.email});
-    } catch (_err) {
-      next(_err);
-    }
-  };
-  recoverAccount = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+  });
+
+  recoverAccount = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const data = req.body;
     const condition: any = {};
     if (!!data.userName) {
@@ -563,21 +511,17 @@ export class UserController {
     } else {
       condition.email = data.email;
     }
-    this.models.User.findOne({...condition})
-      .then(user => {
+    const user = await this.models.User.findOne({...condition})
         if (!user) {
           return res.status(404).json({message: 'Usuario no encontrado!'});
         }
         //TODO: Regresar
-      })
-      .catch(next);
-  };
+  });
 
-  getActivityTypes = (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    this.models.ActivityTypes.find()
-      .then((activities: IActivityTypesDocument[]) => res.status(200).json(activities))
-      .catch(next);
-  };
+  getActivityTypes = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    const activities: IActivityTypesDocument[] = await this.models.ActivityTypes.find();
+          res.status(200).json(activities);
+  });
 
   private verifyCredentialsFacebook = async (
     req: Express.Request,

@@ -3,6 +3,7 @@ import {matchedData} from 'express-validator/filter';
 import {IModels} from "../db/core";
 import Server from "../server";
 import {resultOrNotFound} from "../utils/defaultImports";
+import catchAsync from '../utils/catchAsync';
 
 export default class RoleController {
     private models: IModels;
@@ -11,36 +12,30 @@ export default class RoleController {
         this.models = server.dbCore.models;
     }
 
-    createRole = (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
+    createRole = catchAsync(async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
         const roleData = matchedData(req, {locations: ['body']});
 
         const role = new this.models.Role({...roleData});
-        role
-            .save()
-            .then(() => res.status(201).json({message: 'Role added successful!'}))
-            .catch(next)
-    };
+        const result = await role.save();
 
-    getRoles = (req: Express.Request, res: Express.Response, next: NextFunction) => {
-        this.models.Role
-            .find()
-            .then(roles => {
-                res.status(200)
-                    .json(roles)
-            })
-            .catch(err => next(err))
-    };
+        res.status(201)
+            .json({message: 'Role added successful!'});
+    });
 
-    getRole = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    getRoles = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+        const roles = await this.models.Role.find();
+
+        res.status(200)
+                .json(roles)
+    });
+
+    getRole = catchAsync( async(req: Express.Request, res: Express.Response, next: NextFunction) => {
         const roleId = req.params.roleId;
         console.log(roleId);
-        this.models.Role
-            .findById(roleId)
-            .then(role => {
-                resultOrNotFound(res, role, 'Role');
-            })
-            .catch(err => next(err))
-    };
+        let role = this.models.Role
+                    .findById(roleId)
+        resultOrNotFound(res, role, 'Role');
+    });
 
 }
 
