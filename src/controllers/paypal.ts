@@ -2,8 +2,8 @@ import Express from 'express';
 // 1a. Import the SDK package
 // @ts-ignore
 // @ts-ignore
-import paypal from '@paypal/checkout-server-sdk';
-import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
+import {paypal , checkoutNodeJssdk} from '@paypal/checkout-server-sdk';
+// import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
 // 1b. Import the PayPal SDK client that was created in `Set up Server-Side SDK`.
 /**
  *
