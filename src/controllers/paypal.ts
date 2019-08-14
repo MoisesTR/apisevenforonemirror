@@ -11,10 +11,11 @@ import {paypal , checkoutNodeJssdk} from '@paypal/checkout-server-sdk';
  */
 import {client} from '../paypalClient';
 import server from '../server';
+import AppError from '../classes/AppError';
 // 1. Set up your server to make calls to PayPal
 
 // 2. Set up your server to receive a call from the client
-export const createPaypalTransaction = async (req: Express.Request, res: Express.Response) => {
+export const createPaypalTransaction = async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
     // 3. Call PayPal to set up a transaction
     const finalPrice = req.body.finalPrice;
 
@@ -28,11 +29,7 @@ export const createPaypalTransaction = async (req: Express.Request, res: Express
 
     try {
         if (finalPrice <= 0) {
-            throw {
-                status: 500,
-                code: 'EERPAYPALPRICE',
-                message: 'El precio de la compra no puede ser menor o igual a cero!',
-            };
+            return next(new AppError('El precio de la compra no puede ser menor o igual a cero!', 400,'EERPAYPALPRICE'));
         }
 
         const request = createRequest(moneyCode, finalPrice.toString(), nameItemBuy, descriptionItem);

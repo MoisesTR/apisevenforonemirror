@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import moment, {DurationInputArg1, DurationInputArg2} from 'moment';
 import Server from './../server';
 import {IUserDocument} from "../db/interfaces/IUser";
+import AppError from '../classes/AppError';
 export interface IjwtResponse {
     ensureAuth: (req: Express.Request, res: Express.Response, next: NextFunction) => Promise<void>;
     createAccessToken: (user: IUserDocument, expiration?: number, unitOfTime?: any ) => Promise<({_token: string, expiration: number})>;
@@ -53,7 +54,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
             if (_err.name === 'TokenExpiredError') {
                 _decoded = jwt.decode(token, {complete: true});
                 if (!_decoded && typeof _decoded !== 'string')
-                    throw new Error('Decoded Cannot be null!');
+                    throw new AppError('Decoded Cannot be null!', 400);
                 // @ts-ignore
                 _decoded.payload.isExpired = true;
                 // @ts-ignore
@@ -71,12 +72,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
 
     const containToken = (req: Express.Request, res: Express.Response, next: NextFunction) => {
         if (!req.headers.authorization) {
-            return res.status(401)
-                .json({
-                    status: 401,
-                    code: 'NAUTH',
-                    message: 'The request has no authentication header'
-                });
+            return next(new AppError('The request has no authentication header', 401, 'NAUTH'));
         }
         next();
     };
@@ -90,15 +86,10 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
      */
     const ensureAuth = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         if (!req.headers.authorization) {
-            return next({
-                status: 402,
-                code: 'NAUTH',
-                message: 'The request has no authentication header'
-            });
+            return next(new AppError('The request has no authentication header', 401, 'NAUTH'));
         }
         const token = req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
 
-        try {
             server.logger.info('Verificando token: ' + token, {location: 'jwt'});
             const decode = await verifyToken(token, envVars.JWT_SECRET);
             const user = await models.User.findById(decode.sub);
@@ -107,16 +98,10 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
                 //Si encontramos el usuario
                 if (user.enabled === false) {
                     //si el usuario se encuentra deshabilitado
-                    throw {
-                        status: 403, code: 'EPUSER',
-                        message: 'Usuario deshabilitado, contacte con el soporte de 7x1!.'
-                    };
+                    return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
                 }
                 if( decode.isExpired ) {
-                    throw {
-                        status: 401, code: 'TOKENEXPIRED',
-                        message: 'Access token expired, refresh please!'
-                    }
+                    return next(new AppError('Access token expired, refresh please!', 401, 'TOKENEXPIRED'));
                 }
                 //Si el usuario esta habilitado se procede a actualizar el username y el email
                 //por si ha habido un cambio en estos
@@ -133,14 +118,8 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
                 req.user = user;
                 next(); //next para pasar al siguiente controlador
             } else {
-                throw {
-                    status: 404, code: 'NFUSER',
-                    message: 'Usuario no encontrado, contacte al administrador!'
-                };
+                return next( new AppError('Usuario no encontrado', 404,'UNFOUND'));
             }
-        } catch (error) {
-            next(error);
-        }
     };
 
     const midOwnUserOrAdmon = (req: Express.Request, res: Express.Response, next: NextFunction) => {

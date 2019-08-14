@@ -11,6 +11,7 @@ import {EGameEvents} from '../../sockets/constants/game';
 import {EMainEvents} from '../../sockets/constants/main';
 import DynamicKey from '../../redis/keys/dynamics';
 import {userIdParam} from '../../services/validations/game';
+import AppError from '../../classes/AppError';
 
 export const memberSchema: Schema = new Schema(
   {
@@ -81,7 +82,7 @@ groupSchema.methods.removeMember = async function(memberId: string | ObjectId) {
   // });
   const removeMember = this.members.find((member: IMemberDocument) => member.userId.equals(memberId));
   if (!removeMember) {
-    throw {status: 404, message: 'Este usuario no es miembro de este grupo!'};
+    throw new AppError('Este usuario no es miembro de este grupo!',404,'')
   }
   await removeMember.remove();
 
@@ -96,14 +97,14 @@ groupSchema.methods.addMember = async function(memberData: IMember, payReference
     if (!!this.uniqueChance) {
       const alreadyIndex = this.members.find((member: IMemberDocument) => member.userId.equals(memberData.userId));
       if (!!alreadyIndex) {
-        throw {status: 409, message: 'Este usuario ya es miembro!'};
+        throw new AppError('Este usuario ya es miembro!', 409, 'AEXIST');
       }
     }
 
     const user: IUserDocument = await this.model('user').findById(memberData.userId);
     // Check user existence
     if (!user) {
-      throw {status: 404, message: 'Usuario no encontrado!'};
+      throw new AppError('Usuario no encontrado', 404,'UNFOUND');
     }
 
     if (membersSize >= envVars.MAX_MEMBERS_PER_GROUP) {

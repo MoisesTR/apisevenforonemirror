@@ -21,6 +21,7 @@ import {ILoginResponse} from './interfaces/LoginResponse';
 import User from '../db/models/User';
 import catchAsync from '../utils/catchAsync';
 import FB from 'fb';
+import AppError from '../classes/AppError';
 
 const saltRounds = 10;
 
@@ -91,24 +92,16 @@ export class UserController {
         const googleUser: any = await this.verify(accessToken);
 
         if (!googleUser) {
-            res.status(403).json({
-                ok: false,
-                message: 'El token no es valido!',
-            });
+            return next(new AppError('El token no es valido', 403, 'ITOKEN'));
         }
 
         const user = await this.models.User.findOne({email: googleUser.email}).populate('role');
 
         if (user) {
             if (user.provider === 'none') {
-                throw {status: 400, code: 'AUTHNOR', message: 'Debes usar la autenticacion normal(sin redes sociales)!'};
+                return next(new AppError('Debes usar la autenticacion normal(sin redes sociales)!', 400, 'AUTHNOR'));
             } else if (user.provider === 'facebook') {
-                throw {
-                    status: 400,
-                    code: 'AUTHNOR',
-                    // message: 'This email already has a Registered Facebook account!'
-                    message: 'Este correo ya se encuentra asociado a una cuenta de facebook!!!',
-                };
+                return next(new AppError('Este correo ya se encuentra asociado a una cuenta de facebook!!!', 400, 'AUTHNOR'));
             } else {
                 const response = await this.getResponseToSendToLogin(user);
                 res.status(200).json(response);
@@ -147,7 +140,7 @@ export class UserController {
 
         const userInfo = await this.models.User.findOne({email: socialUser.email}).populate('role');
         if (!userInfo) {
-            throw new Error('Error usuario no encontrado');
+            throw new AppError('Usuario no encontrado', 404,'UNFOUND');
         }
 
         delete userInfo.passwordHash;
@@ -174,7 +167,7 @@ export class UserController {
 
         const payload = ticket.getPayload();
         if (!payload) {
-            throw new Error('Payload is empty');
+            throw new AppError('Payload is empty', 403);
         }
         const userid = payload['sub'];
         // If request specified a G Suite domain:
@@ -244,23 +237,19 @@ export class UserController {
 
             if (isequal) {
                 if (!user.isVerified) {
-                    throw {
-                        status: 401,
-                        code: 'NVERIF',
-                        message: 'Necesitas verificar tu dirección de correo electrónico para iniciar sesión',
-                    };
+                    return next(new AppError('Necesitas verificar tu dirección de correo electrónico para iniciar sesión',401, 'NVERIF'));
                 }
                 if (!user.enabled) {
-                    throw {status: 403, code: 'UDISH', message: 'Tu usuario ha sido deshabilitado!'};
+                    return next(new AppError('Tu usuario ha sido deshabilitado!',403, 'UDISH'));
                 }
                 const response = await this.getResponseToSendToLogin(user);
                 res.status(200).json(response);
             } else {
-                throw {status: 401, code: 'EPASSW', message: 'Contrasenia erronea.'};
+                next(new AppError('Contraseña erronea.',401, 'EPASSW'));
             }
         } else {
             console.log('User not found!');
-            throw {status: '401', code: 'NEXIST', message: 'Usuario no encontrado!'};
+             next( new AppError('Usuario no encontrado!',404, 'NEXIST'));
         }
     });
 
@@ -318,11 +307,7 @@ export class UserController {
         console.log(user);
 
         if (!user) {
-            throw {
-                status: 400,
-                code: 'EVERIF',
-                message: 'El token de verificacion no es valido!',
-            };
+            return next(new AppError('El token de verificacion no es valido!', 400, 'EVERIF'));
         }
         const result = await user.verifyToken();
         res.status(200).json({success: 'Bienvenido a Seven For One, su correo electrónico está verificado!'});
@@ -331,15 +316,11 @@ export class UserController {
     updateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req, {locations: ['body', 'query']});
         if (userData.userId !== req.user._id) {
-            return res.status(403).json({
-                status: 403,
-                code: 'EUNAUTH',
-                message: 'No puedes editar este usuario',
-            });
+            return next( new AppError('No puedes editar este usuario', 403,'EUNAUTH'));
         }
         const user: IUserDocument | null = await this.models.User.findById(userData.userId);
         if (user == null) {
-            throw {status: 404, message: 'User no encontrado!'};
+            return next(new AppError('Usuario no encontrado', 404,'UNFOUND'));
         }
         const userUpdate: IUserDocument = await user.updateUser(userData);
         res.status(200).json({
@@ -370,16 +351,10 @@ export class UserController {
         const user: IUserDocument = req.user;
         const adminRole: IRoleDocument | null = await this.models.Role.findOne({name: ERoles.ADMIN});
         if (!adminRole)
-            throw {
-                status: 500,
-                message: 'Ha ocurrido un error!',
-            };
+            return next(new AppError('The admin role doesn\'t exist!', 500,'NAROLE'));
 
         if (!user.role.equals(adminRole._id)) {
-            return next({
-                status: 401,
-                message: 'No esta autorizado para utilizar este endpoint!',
-            });
+            return next(new AppError('No esta autorizado para utilizar este endpoint!', 403,'NAUT'));
         }
         const users = await this.models.User.find({userName: userData.userName, email: userData.email});
 
@@ -411,10 +386,7 @@ export class UserController {
         try {
             const user = await this.models.User.findById(userData.userId);
             if (!user) {
-                throw {
-                    status: 404,
-                    message: 'Usuario no encontrado!',
-                };
+                throw new AppError('Usuario no encontrado', 404,'UNFOUND');
             }
             const hashPassw = await bcrypt.hash(userData.password, saltRounds);
             user.passwordHash = hashPassw;
@@ -440,34 +412,18 @@ export class UserController {
         const user = await this.models.User.findOne({userName: userName});
 
         if (!user) {
-            throw {
-                status: 401,
-                code: 'DTOKEN',
-                message: 'El token de actualización no es valido!.',
-            };
+            return next(new AppError('El token de actualización no es valido!.', 401, 'DTOKEN'));
         }
         if (!user.enabled) {
-            throw {
-                status: 403,
-                code: 'UDESH',
-                message: 'Tu usuario se encuentra deshabilitado!',
-            };
+            return next(new AppError('Tu usuario se encuentra deshabilitado!', 403, 'UDESH'));
         }
         // get token username
         const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
         if (!redisRefreshToken)
-            throw {
-                status: 401,
-                code: 'ETOKEN',
-                message: 'Tu token de actualización ha expirado!',
-            };
+            return next(new AppError('Tu token de actualización ha expirado!', 401, 'ETOKEN'));
 
         if (redisRefreshToken !== refreshToken) {
-            throw {
-                status: 401,
-                code: 'TRNOTVAL',
-                message: 'El token de actualización no es valido, vuelva a iniciar sesion!',
-            };
+            return next(new AppError('El token de actualización no es valido, vuelva a iniciar sesion!',401, 'TRNOTVAL'));
         }
         const {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
         await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
@@ -490,7 +446,7 @@ export class UserController {
         )
             .populate('role')
             .exec();
-        resultOrNotFound(res, user, 'User');
+        resultOrNotFound(res, user, 'User', next);
     });
 
     getEmailByUserName = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -498,9 +454,9 @@ export class UserController {
 
         const user = await this.models.User.findOne({userName: userName});
         if (!user) {
-            return res.status(404).json({message: 'Usuario no encontrado!'});
+            return next(new AppError('User not found!', 404,'UNFOUND'));
         } else if (!user.enabled) {
-            return res.status(500).json({message: 'Tu cuenta ha sido deshabilitada!'});
+            return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
         }
 
         // TODO: update that config
@@ -520,7 +476,7 @@ export class UserController {
         }
         const user = await this.models.User.findOne({...condition});
         if (!user) {
-            return res.status(404).json({message: 'Usuario no encontrado!'});
+            return next(new AppError('User not found!', 404,'UNFOUND'));
         }
         //TODO: Regresar
     });
@@ -537,23 +493,18 @@ export class UserController {
         userData: any,
         facebookCredentials: any,
     ) => {
-        try {
             const facebookUser = facebookCredentials;
 
             const user = await this.models.User.findOne({email: facebookUser.email}).populate('role');
 
             if (user) {
                 if (user.provider === 'none') {
-                    throw {
-                        status: 400,
-                        code: 'AUTHNOR',
-                        message: 'Ya tienes una cuenta con este correo, intenta utilizar la autenticacion por email (sin redes sociales)!',
-                    };
+                    return next( new AppError('Ya tienes una cuenta con este correo, intenta utilizar la autenticacion por email (sin redes sociales)!',400, 'AUTHNOR'));
                 } else if (user.provider === 'google') {
-                    throw {status: 400, code: 'AUTHNOR', message: 'Este correo ya se encuentra asociado a una cuenta de GMAIL'};
+                    return next( new AppError('Este correo ya se encuentra asociado a una cuenta de GMAIL',400, 'AUTHNOR'));
                 } else {
                     if (!user.enabled) {
-                        throw {status: 403, code: 'UDISHABLE', message: 'Usuario deshabilitado!'};
+                        return next( new AppError('Usuario deshabilitado!',403, 'UDISHABLE'));
                     }
                     const response = await this.getResponseToSendToLogin(user);
                     res.status(200).json(response);
@@ -562,11 +513,9 @@ export class UserController {
                 const dataLogin = await this.createUserWithSocialLogin(userData, facebookUser);
 
                 this.logger.info('Sending info to login');
-                res.status(200).json(dataLogin);
+                res.status(200)
+                    .json(dataLogin);
             }
-        } catch (_err) {
-            next(_err);
-        }
     };
 
     dataUserForLogin: (user: IUserDocument) => UserForLoginType = user => {
@@ -586,27 +535,13 @@ export class UserController {
 const alreadyExist = (users: IUserDocument[], userData: any) => {
     //Si se encontro mas de un usuario
     if (users.length > 1) {
-        // console.log(usersfind.recordset[0])
-        throw {
-            status: 401,
-            code: 'UEEXIST',
-            message: 'Usuario no registrado, correo electronico y nombre de usuario ya estan registrados!',
-        };
-        //res.status(401).json({code:"UEXIST",message:"No se registro el usuario, email o username ya registrados!"})
+        throw new AppError('Usuario no registrado, correo electronico y nombre de usuario ya estan registrados!',401, 'UEEXIST');
     } else if (users.length === 1) {
         // if(usersfind[0].username == userData.username || usersfind[1].username== userData.username)
         if (users[0].userName === userData.Username) {
-            throw {
-                status: 401,
-                code: 'UEXIST',
-                message: 'El usuario:' + userData.userName + ' ya existe!',
-            };
+            throw new AppError('El usuario:' + userData.userName + ' ya existe!',401, 'UEXIST');
         } else {
-            throw {
-                status: 401,
-                code: 'EEXIST',
-                message: 'El usuario no se ha registrado con el correo electronico:' + userData.email + ', ya se encuentra registrado!',
-            };
+            throw new AppError('El usuario no se ha registrado con el correo electronico:' + userData.email + ', ya se encuentra registrado!',401, 'EEXIST');
         }
     }
 };

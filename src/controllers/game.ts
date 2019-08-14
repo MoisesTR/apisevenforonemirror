@@ -9,6 +9,7 @@ import {IPurchaseHistoryDocument} from '../db/interfaces/IPurchaseHistory';
 import {Logger} from 'winston';
 import catchAsync from '../utils/catchAsync';
 import DocumentArray = Types.DocumentArray;
+import AppError from '../classes/AppError';
 
 export default class GameController {
     getOwnPurchaseHistory = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -56,14 +57,14 @@ export default class GameController {
         // ])
             .findById(groupId);
 
-        resultOrNotFound(res, group, 'Group');
+        resultOrNotFound(res, group, 'Group', next);
     });
     addMemberToGroup = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const relationData = matchedData(req);
 
         const group = await this.models.GroupGame.findById(relationData.groupId);
         if (!group) {
-            throw {status: 404, message: 'Grupo no encontrado!'};
+            return next(new AppError('Grupo no encontrado', 404,'NEXIST'));
         }
         console.log(group);
         const result = await group.addMember(
@@ -83,7 +84,7 @@ export default class GameController {
 
         let group = await this.models.GroupGame.findById(relationData.groupId);
         if (!group) {
-            throw {status: 404, message: 'Grupo no encontrado!'};
+            return next(new AppError('Grupo no encontrado', 404,'NEXIST'));
         }
         await group.removeMember(relationData.userId);
         res.status(200).json({message: 'Miembro fue removido del grupo!'});
@@ -93,7 +94,7 @@ export default class GameController {
         const user = await this.models.User.findById(userId);
 
         if (!user) {
-            throw {status: 404, message: 'User not found!'};
+            return next(new AppError('User not found!', 404,'UNFOUND'));
         }
 
         const history = await user.getPurchaseHistoryById(userId);

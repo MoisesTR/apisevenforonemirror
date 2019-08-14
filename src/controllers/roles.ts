@@ -24,7 +24,7 @@ export default class RoleController {
         const roleId = req.params.roleId;
         console.log(roleId);
         let role = this.models.Role.findById(roleId);
-        resultOrNotFound(res, role, 'Role');
+        resultOrNotFound(res, role, 'Role', next);
     });
 
     constructor(server: Server) {
