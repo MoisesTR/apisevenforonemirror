@@ -2,7 +2,7 @@ import Express from 'express';
 // 1a. Import the SDK package
 // @ts-ignore
 // @ts-ignore
-import {paypal , checkoutNodeJssdk} from '@paypal/checkout-server-sdk';
+import {paypal, checkoutNodeJssdk} from '@paypal/checkout-server-sdk';
 // import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
 // 1b. Import the PayPal SDK client that was created in `Set up Server-Side SDK`.
 /**
@@ -29,7 +29,7 @@ export const createPaypalTransaction = async (req: Express.Request, res: Express
 
     try {
         if (finalPrice <= 0) {
-            return next(new AppError('El precio de la compra no puede ser menor o igual a cero!', 400,'EERPAYPALPRICE'));
+            return next(new AppError('El precio de la compra no puede ser menor o igual a cero!', 400, 'EERPAYPALPRICE'));
         }
 
         const request = createRequest(moneyCode, finalPrice.toString(), nameItemBuy, descriptionItem);

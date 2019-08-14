@@ -48,13 +48,13 @@ export default class GameController {
         const groupId = req.params.groupId;
 
         const group = await this.models.GroupGame
-        // .aggregate([
-        //     {$unwind: "$members"},
-        //     {$sort: {"members.createdAt": 1}},
-        //     {$group: {_id: "$_id", totalInvested: {$first: "totalInvested"}, winners: {$first: "$winners"}, totalMembers: { $sum: 1 }, initialInvertion: {$first: "$initialInvertion"},members: {$push: "$members"}}},
-        //     // {$addFields: {"members.$[].position": {$sum: 1}}},
-        //     // {$group:{_id:{age: "$age"}, allHobbies: {$push: "$hobbies"}}},
-        // ])
+            // .aggregate([
+            //     {$unwind: "$members"},
+            //     {$sort: {"members.createdAt": 1}},
+            //     {$group: {_id: "$_id", totalInvested: {$first: "totalInvested"}, winners: {$first: "$winners"}, totalMembers: { $sum: 1 }, initialInvertion: {$first: "$initialInvertion"},members: {$push: "$members"}}},
+            //     // {$addFields: {"members.$[].position": {$sum: 1}}},
+            //     // {$group:{_id:{age: "$age"}, allHobbies: {$push: "$hobbies"}}},
+            // ])
             .findById(groupId);
 
         resultOrNotFound(res, group, 'Group', next);
@@ -64,7 +64,7 @@ export default class GameController {
 
         const group = await this.models.GroupGame.findById(relationData.groupId);
         if (!group) {
-            return next(new AppError('Grupo no encontrado', 404,'NEXIST'));
+            return next(new AppError('Grupo no encontrado', 404, 'NEXIST'));
         }
         console.log(group);
         const result = await group.addMember(
@@ -84,7 +84,7 @@ export default class GameController {
 
         let group = await this.models.GroupGame.findById(relationData.groupId);
         if (!group) {
-            return next(new AppError('Grupo no encontrado', 404,'NEXIST'));
+            return next(new AppError('Grupo no encontrado', 404, 'NEXIST'));
         }
         await group.removeMember(relationData.userId);
         res.status(200).json({message: 'Miembro fue removido del grupo!'});
@@ -94,7 +94,7 @@ export default class GameController {
         const user = await this.models.User.findById(userId);
 
         if (!user) {
-            return next(new AppError('User not found!', 404,'UNFOUND'));
+            return next(new AppError('User not found!', 404, 'UNFOUND'));
         }
 
         const history = await user.getPurchaseHistoryById(userId);

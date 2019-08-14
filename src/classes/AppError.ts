@@ -5,7 +5,6 @@ class AppError extends Error {
     code?: string;
     isOperational: boolean;
 
-
     /**
      * @param message string
      * @param status number

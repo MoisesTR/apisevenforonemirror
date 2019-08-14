@@ -140,7 +140,7 @@ export class UserController {
 
         const userInfo = await this.models.User.findOne({email: socialUser.email}).populate('role');
         if (!userInfo) {
-            throw new AppError('Usuario no encontrado', 404,'UNFOUND');
+            throw new AppError('Usuario no encontrado', 404, 'UNFOUND');
         }
 
         delete userInfo.passwordHash;
@@ -237,19 +237,19 @@ export class UserController {
 
             if (isequal) {
                 if (!user.isVerified) {
-                    return next(new AppError('Necesitas verificar tu dirección de correo electrónico para iniciar sesión',401, 'NVERIF'));
+                    return next(new AppError('Necesitas verificar tu dirección de correo electrónico para iniciar sesión', 401, 'NVERIF'));
                 }
                 if (!user.enabled) {
-                    return next(new AppError('Tu usuario ha sido deshabilitado!',403, 'UDISH'));
+                    return next(new AppError('Tu usuario ha sido deshabilitado!', 403, 'UDISH'));
                 }
                 const response = await this.getResponseToSendToLogin(user);
                 res.status(200).json(response);
             } else {
-                next(new AppError('Contraseña erronea.',401, 'EPASSW'));
+                next(new AppError('Contraseña erronea.', 401, 'EPASSW'));
             }
         } else {
             console.log('User not found!');
-             next( new AppError('Usuario no encontrado!',404, 'NEXIST'));
+            next(new AppError('Usuario no encontrado!', 404, 'NEXIST'));
         }
     });
 
@@ -316,11 +316,11 @@ export class UserController {
     updateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req, {locations: ['body', 'query']});
         if (userData.userId !== req.user._id) {
-            return next( new AppError('No puedes editar este usuario', 403,'EUNAUTH'));
+            return next(new AppError('No puedes editar este usuario', 403, 'EUNAUTH'));
         }
         const user: IUserDocument | null = await this.models.User.findById(userData.userId);
         if (user == null) {
-            return next(new AppError('Usuario no encontrado', 404,'UNFOUND'));
+            return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
         }
         const userUpdate: IUserDocument = await user.updateUser(userData);
         res.status(200).json({
@@ -350,11 +350,10 @@ export class UserController {
         const userData = matchedData(req);
         const user: IUserDocument = req.user;
         const adminRole: IRoleDocument | null = await this.models.Role.findOne({name: ERoles.ADMIN});
-        if (!adminRole)
-            return next(new AppError('The admin role doesn\'t exist!', 500,'NAROLE'));
+        if (!adminRole) return next(new AppError("The admin role doesn't exist!", 500, 'NAROLE'));
 
         if (!user.role.equals(adminRole._id)) {
-            return next(new AppError('No esta autorizado para utilizar este endpoint!', 403,'NAUT'));
+            return next(new AppError('No esta autorizado para utilizar este endpoint!', 403, 'NAUT'));
         }
         const users = await this.models.User.find({userName: userData.userName, email: userData.email});
 
@@ -386,7 +385,7 @@ export class UserController {
         try {
             const user = await this.models.User.findById(userData.userId);
             if (!user) {
-                throw new AppError('Usuario no encontrado', 404,'UNFOUND');
+                throw new AppError('Usuario no encontrado', 404, 'UNFOUND');
             }
             const hashPassw = await bcrypt.hash(userData.password, saltRounds);
             user.passwordHash = hashPassw;
@@ -419,11 +418,10 @@ export class UserController {
         }
         // get token username
         const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
-        if (!redisRefreshToken)
-            return next(new AppError('Tu token de actualización ha expirado!', 401, 'ETOKEN'));
+        if (!redisRefreshToken) return next(new AppError('Tu token de actualización ha expirado!', 401, 'ETOKEN'));
 
         if (redisRefreshToken !== refreshToken) {
-            return next(new AppError('El token de actualización no es valido, vuelva a iniciar sesion!',401, 'TRNOTVAL'));
+            return next(new AppError('El token de actualización no es valido, vuelva a iniciar sesion!', 401, 'TRNOTVAL'));
         }
         const {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
         await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
@@ -454,7 +452,7 @@ export class UserController {
 
         const user = await this.models.User.findOne({userName: userName});
         if (!user) {
-            return next(new AppError('User not found!', 404,'UNFOUND'));
+            return next(new AppError('User not found!', 404, 'UNFOUND'));
         } else if (!user.enabled) {
             return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
         }
@@ -476,7 +474,7 @@ export class UserController {
         }
         const user = await this.models.User.findOne({...condition});
         if (!user) {
-            return next(new AppError('User not found!', 404,'UNFOUND'));
+            return next(new AppError('User not found!', 404, 'UNFOUND'));
         }
         //TODO: Regresar
     });
@@ -493,29 +491,34 @@ export class UserController {
         userData: any,
         facebookCredentials: any,
     ) => {
-            const facebookUser = facebookCredentials;
+        const facebookUser = facebookCredentials;
 
-            const user = await this.models.User.findOne({email: facebookUser.email}).populate('role');
+        const user = await this.models.User.findOne({email: facebookUser.email}).populate('role');
 
-            if (user) {
-                if (user.provider === 'none') {
-                    return next( new AppError('Ya tienes una cuenta con este correo, intenta utilizar la autenticacion por email (sin redes sociales)!',400, 'AUTHNOR'));
-                } else if (user.provider === 'google') {
-                    return next( new AppError('Este correo ya se encuentra asociado a una cuenta de GMAIL',400, 'AUTHNOR'));
-                } else {
-                    if (!user.enabled) {
-                        return next( new AppError('Usuario deshabilitado!',403, 'UDISHABLE'));
-                    }
-                    const response = await this.getResponseToSendToLogin(user);
-                    res.status(200).json(response);
-                }
+        if (user) {
+            if (user.provider === 'none') {
+                return next(
+                    new AppError(
+                        'Ya tienes una cuenta con este correo, intenta utilizar la autenticacion por email (sin redes sociales)!',
+                        400,
+                        'AUTHNOR',
+                    ),
+                );
+            } else if (user.provider === 'google') {
+                return next(new AppError('Este correo ya se encuentra asociado a una cuenta de GMAIL', 400, 'AUTHNOR'));
             } else {
-                const dataLogin = await this.createUserWithSocialLogin(userData, facebookUser);
-
-                this.logger.info('Sending info to login');
-                res.status(200)
-                    .json(dataLogin);
+                if (!user.enabled) {
+                    return next(new AppError('Usuario deshabilitado!', 403, 'UDISHABLE'));
+                }
+                const response = await this.getResponseToSendToLogin(user);
+                res.status(200).json(response);
             }
+        } else {
+            const dataLogin = await this.createUserWithSocialLogin(userData, facebookUser);
+
+            this.logger.info('Sending info to login');
+            res.status(200).json(dataLogin);
+        }
     };
 
     dataUserForLogin: (user: IUserDocument) => UserForLoginType = user => {
@@ -535,13 +538,17 @@ export class UserController {
 const alreadyExist = (users: IUserDocument[], userData: any) => {
     //Si se encontro mas de un usuario
     if (users.length > 1) {
-        throw new AppError('Usuario no registrado, correo electronico y nombre de usuario ya estan registrados!',401, 'UEEXIST');
+        throw new AppError('Usuario no registrado, correo electronico y nombre de usuario ya estan registrados!', 401, 'UEEXIST');
     } else if (users.length === 1) {
         // if(usersfind[0].username == userData.username || usersfind[1].username== userData.username)
         if (users[0].userName === userData.Username) {
-            throw new AppError('El usuario:' + userData.userName + ' ya existe!',401, 'UEXIST');
+            throw new AppError('El usuario:' + userData.userName + ' ya existe!', 401, 'UEXIST');
         } else {
-            throw new AppError('El usuario no se ha registrado con el correo electronico:' + userData.email + ', ya se encuentra registrado!',401, 'EEXIST');
+            throw new AppError(
+                'El usuario no se ha registrado con el correo electronico:' + userData.email + ', ya se encuentra registrado!',
+                401,
+                'EEXIST',
+            );
         }
     }
 };
