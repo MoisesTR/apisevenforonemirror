@@ -46,7 +46,7 @@ export class Core {
             GroupGame: GroupGameModel,
             ActivityTypes: ActivityTypes,
             PurchaseHistory: PurchaseHistory,
-            Notification: Notification
+            Notification: Notification,
         };
     }
 
@@ -61,8 +61,9 @@ export class Core {
 
     async connect(logger: Logger, successCB: Function) {
         console.log(dbConfig.mongoURI);
-        mongoose.connect(dbConfig.mongoURI, {useNewUrlParser: true, useCreateIndex: true})
-            .then((mongo) => {
+        mongoose
+            .connect(dbConfig.mongoURI, {useNewUrlParser: true, useCreateIndex: true})
+            .then(mongo => {
                 this.mongoose = mongo;
                 logger.info('Mongo is Connected');
                 process.on('SIGINT', () => {
@@ -84,7 +85,7 @@ export class Core {
                     .catch(err => console.log(err));
                 successCB();
             })
-            .catch((err) => {
+            .catch(err => {
                 console.log(err);
                 logger.error('Cannot be established a connection with the MongoDb server!', {metadata: {boot: true}});
                 process.exit();

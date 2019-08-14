@@ -1,24 +1,20 @@
 import Express from 'express';
 import ENV from './global/environment';
-import http from "http";
+import http from 'http';
 import {debug} from 'winston';
 import EnvVar from './global/environment';
 
 const app = Express();
 app.set('port', ENV.SERVER_PORT);
 
-
 /**
  * Event listener for HTTP server "listening" event.
  */
 const onListening = () => {
     const addr = httpServer.address() || '';
-    const bind = typeof addr === 'string'
-        ? 'pipe ' + addr
-        : 'port ' + addr.port;
+    const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
     debug('Listening on ' + bind);
-}
-
+};
 
 /**
  * Event listener for HTTP server "error" event.
@@ -48,7 +44,4 @@ httpServer.on('error', onError);
 httpServer.on('listening', onListening);
 httpServer.on('close', () => console.log('closing'));
 
-export {
-    app,
-    httpServer
-}
+export {app, httpServer};

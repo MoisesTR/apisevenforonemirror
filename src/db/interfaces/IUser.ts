@@ -1,6 +1,6 @@
-import {ObjectId} from "bson";
-import {Document, Model, Types} from "mongoose";
-import {IPurchaseHistoryDocument} from "./IPurchaseHistory";
+import {ObjectId} from 'bson';
+import {Document, Model, Types} from 'mongoose';
+import {IPurchaseHistoryDocument} from './IPurchaseHistory';
 
 export interface IUser {
     firstName: string;
@@ -18,12 +18,11 @@ export interface IUser {
     enabled: boolean;
     provider: string;
 }
-export interface IUserDocument extends IUser, Document{
-    getPurchaseHistoryById: (userId: Types.ObjectId) => Types.DocumentArray<IPurchaseHistoryDocument>
-    getPurchaseHistory: () => Promise<Types.DocumentArray<IPurchaseHistoryDocument>>,
-    verifyToken: () => Promise<IUserDocument>,
-    updateUser: (arr: any) => Promise<IUserDocument>
+export interface IUserDocument extends IUser, Document {
+    getPurchaseHistoryById: (userId: Types.ObjectId) => Types.DocumentArray<IPurchaseHistoryDocument>;
+    getPurchaseHistory: () => Promise<Types.DocumentArray<IPurchaseHistoryDocument>>;
+    verifyToken: () => Promise<IUserDocument>;
+    updateUser: (arr: any) => Promise<IUserDocument>;
 }
 
-export interface IUserModel extends Model<IUserDocument>{
-}
+export interface IUserModel extends Model<IUserDocument> {}

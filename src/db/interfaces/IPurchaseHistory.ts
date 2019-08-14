@@ -1,9 +1,9 @@
-import {ObjectId} from "bson";
-import {Document, Model} from "mongoose";
+import {ObjectId} from 'bson';
+import {Document, Model} from 'mongoose';
 
 export enum EAction {
     WIN = 'win',
-    INVEST = 'invest'
+    INVEST = 'invest',
 }
 
 export interface IPurchaseHistory {
@@ -14,7 +14,5 @@ export interface IPurchaseHistory {
     payReference: string;
     quantity: number;
 }
-export interface IPurchaseHistoryDocument extends Document, IPurchaseHistory{
-}
-export interface IPurchaseHistoryModel extends Model<IPurchaseHistoryDocument>{
-}
+export interface IPurchaseHistoryDocument extends Document, IPurchaseHistory {}
+export interface IPurchaseHistoryModel extends Model<IPurchaseHistoryDocument> {}

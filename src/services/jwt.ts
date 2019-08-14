@@ -4,15 +4,19 @@ import envVars from '../global/environment';
 import jwt from 'jsonwebtoken';
 import moment, {DurationInputArg1, DurationInputArg2} from 'moment';
 import Server from './../server';
-import {IUserDocument} from "../db/interfaces/IUser";
+import {IUserDocument} from '../db/interfaces/IUser';
 import AppError from '../classes/AppError';
 export interface IjwtResponse {
     ensureAuth: (req: Express.Request, res: Express.Response, next: NextFunction) => Promise<void>;
-    createAccessToken: (user: IUserDocument, expiration?: number, unitOfTime?: any ) => Promise<({_token: string, expiration: number})>;
-    createRefreshToken: (user: IUserDocument, expiration?: number, unitOfTime?: DurationInputArg2) => Promise<({_token: string, expiration: number})>;
+    createAccessToken: (user: IUserDocument, expiration?: number, unitOfTime?: any) => Promise<{_token: string; expiration: number}>;
+    createRefreshToken: (
+        user: IUserDocument,
+        expiration?: number,
+        unitOfTime?: DurationInputArg2,
+    ) => Promise<{_token: string; expiration: number}>;
 }
 
-export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
+export const get: (server: Server) => IjwtResponse = (server: Server) => {
     const models = server.dbCore.models;
 
     async function createToken(customPayload: any, secret: string, expiration: DurationInputArg1, unitTime: DurationInputArg2) {
@@ -20,7 +24,9 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         const payload = {
             ...customPayload,
             // iar:    moment().unix(), /* Fecha de creacion */
-            exp: moment().add(expiration, unitTime).unix() /* Token expira en una hora */
+            exp: moment()
+                .add(expiration, unitTime)
+                .unix() /* Token expira en una hora */,
         };
         //jsonwebtoken agrega el campo iat por defecto
         //Generated jwts will include an iat (issued at) claim by default unless noTimestamp is specified.
@@ -28,21 +34,31 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         //En este caso la fecha de expiracion la calculamos con moment
         //HMAC SHA256
         _token = await jwt.sign(payload, secret);
-        return {_token, expiration: payload.exp}
+        return {_token, expiration: payload.exp};
     }
 
-    const createAccessToken = async (user: IUserDocument, expiration: number = 5, unitOfTime: DurationInputArg2 = "minutes") => {
-        return createToken({
-            sub: user._id,
-            email: user.email,
-            username: user.userName,
-        }, envVars.JWT_SECRET, expiration, unitOfTime)
+    const createAccessToken = async (user: IUserDocument, expiration: number = 5, unitOfTime: DurationInputArg2 = 'minutes') => {
+        return createToken(
+            {
+                sub: user._id,
+                email: user.email,
+                username: user.userName,
+            },
+            envVars.JWT_SECRET,
+            expiration,
+            unitOfTime,
+        );
     };
 
-    const createRefreshToken = async (user: IUserDocument, expiration: number = 10, unitOfTime: DurationInputArg2 = "minutes") => {
-        return createToken({
-            sub: user._id
-        }, envVars.JWT_SECRET, expiration, unitOfTime)
+    const createRefreshToken = async (user: IUserDocument, expiration: number = 10, unitOfTime: DurationInputArg2 = 'minutes') => {
+        return createToken(
+            {
+                sub: user._id,
+            },
+            envVars.JWT_SECRET,
+            expiration,
+            unitOfTime,
+        );
     };
 
     async function verifyToken(token: string, secret: string) {
@@ -53,8 +69,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         } catch (_err) {
             if (_err.name === 'TokenExpiredError') {
                 _decoded = jwt.decode(token, {complete: true});
-                if (!_decoded && typeof _decoded !== 'string')
-                    throw new AppError('Decoded Cannot be null!', 400);
+                if (!_decoded && typeof _decoded !== 'string') throw new AppError('Decoded Cannot be null!', 400);
                 // @ts-ignore
                 _decoded.payload.isExpired = true;
                 // @ts-ignore
@@ -64,7 +79,7 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
                 error.code = 'EITOKEN';
                 throw {
                     ...error,
-                    status: 401
+                    status: 401,
                 };
             }
         }
@@ -90,36 +105,36 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
         }
         const token = req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
 
-            server.logger.info('Verificando token: ' + token, {location: 'jwt'});
-            const decode = await verifyToken(token, envVars.JWT_SECRET);
-            const user = await models.User.findById(decode.sub);
-            //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
-            if (!!user) {
-                //Si encontramos el usuario
-                if (user.enabled === false) {
-                    //si el usuario se encuentra deshabilitado
-                    return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
-                }
-                if( decode.isExpired ) {
-                    return next(new AppError('Access token expired, refresh please!', 401, 'TOKENEXPIRED'));
-                }
-                //Si el usuario esta habilitado se procede a actualizar el username y el email
-                //por si ha habido un cambio en estos
-                //Verificamos que no ah habido cambio en la informacion del usuario, desde la creacion del token
-                // if( moment(user.UpdatedAt).unix() > decoded.iat ){
-                //     // si su info cambio no lo dejamos procedere
-                //     throw {
-                //             status: 401, code:'EUCHAN',
-                //             message: 'La informacion del usuario cambio por favor vuelve a iniciar sesion!'
-                //         };
-                // }
-                // //setear el valor del payload en la request, para poder acceder a esta informacion
-                //en todas la funciones de nuestros controladores
-                req.user = user;
-                next(); //next para pasar al siguiente controlador
-            } else {
-                return next( new AppError('Usuario no encontrado', 404,'UNFOUND'));
+        server.logger.info('Verificando token: ' + token, {location: 'jwt'});
+        const decode = await verifyToken(token, envVars.JWT_SECRET);
+        const user = await models.User.findById(decode.sub);
+        //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
+        if (!!user) {
+            //Si encontramos el usuario
+            if (user.enabled === false) {
+                //si el usuario se encuentra deshabilitado
+                return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
             }
+            if (decode.isExpired) {
+                return next(new AppError('Access token expired, refresh please!', 401, 'TOKENEXPIRED'));
+            }
+            //Si el usuario esta habilitado se procede a actualizar el username y el email
+            //por si ha habido un cambio en estos
+            //Verificamos que no ah habido cambio en la informacion del usuario, desde la creacion del token
+            // if( moment(user.UpdatedAt).unix() > decoded.iat ){
+            //     // si su info cambio no lo dejamos procedere
+            //     throw {
+            //             status: 401, code:'EUCHAN',
+            //             message: 'La informacion del usuario cambio por favor vuelve a iniciar sesion!'
+            //         };
+            // }
+            // //setear el valor del payload en la request, para poder acceder a esta informacion
+            //en todas la funciones de nuestros controladores
+            req.user = user;
+            next(); //next para pasar al siguiente controlador
+        } else {
+            return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
+        }
     };
 
     const midOwnUserOrAdmon = (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -129,19 +144,19 @@ export const get:(server: Server) => IjwtResponse = ( server: Server )=> {
          */
         // console.log(global.roleAdmon, req.user.id_role);
         // @ts-ignore
-        if ((req.user._id !== +receivedId) || (req.user.role !== global.roleAdmon))
+        if (req.user._id !== +receivedId || req.user.role !== global.roleAdmon)
             return next({
                 status: 403,
                 code: 'NOTPER',
-                message: 'No tienes permisos!'
+                message: 'No tienes permisos!',
             });
         next();
     };
-    return ({
+    return {
         ensureAuth,
         midOwnUserOrAdmon,
         createRefreshToken,
         containToken,
-        createAccessToken
-    })
-}
+        createAccessToken,
+    };
+};

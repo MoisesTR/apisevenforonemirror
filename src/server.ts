@@ -34,7 +34,6 @@ i18n.configure({
 });
 
 export default class Server {
-
     private static _intance: Server;
 
     public logger: Logger;
@@ -42,7 +41,6 @@ export default class Server {
     public jwt: IjwtResponse;
 
     private constructor() {
-
         const myLogg = new MyLogger(__dirname);
         this.logger = myLogg.logger;
         this.dbCore = new Core();
@@ -59,8 +57,10 @@ export default class Server {
         //Configuracion cabeceras y cors
         app.use((req: Express.Request, res: Express.Response, next: NextFunction) => {
             res.header('Access-Control-Allow-Origin', '*');
-            res.header('Access-Control-Allow-Headers', 'Authorization, X-API-KEY, Origin, ' +
-                'X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method');
+            res.header(
+                'Access-Control-Allow-Headers',
+                'Authorization, X-API-KEY, Origin, ' + 'X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method',
+            );
             res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
             res.header('Allow', 'GET, POST, OPTIONS, PUT, DELETE');
             next();
@@ -83,7 +83,6 @@ export default class Server {
     }
 
     private escucharSockets() {
-
         console.log('Escuchando conexiones - sockets');
 
         // this.io.on('connection', cliente => {
@@ -102,7 +101,5 @@ export default class Server {
         //
         //
         // });
-
     }
-
 }
