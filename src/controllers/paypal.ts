@@ -1,21 +1,22 @@
 import Express from 'express';
 // 1a. Import the SDK package
 // @ts-ignore
+import paypal from '@paypal/checkout-server-sdk';
 // @ts-ignore
-import {paypal, checkoutNodeJssdk} from '@paypal/checkout-server-sdk';
+import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
 // import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
 // 1b. Import the PayPal SDK client that was created in `Set up Server-Side SDK`.
 /**
- *
  * PayPal HTTP client dependency
  */
 import {client} from '../paypalClient';
 import server from '../server';
 import AppError from '../classes/AppError';
+import catchAsync from '../utils/catchAsync';
 // 1. Set up your server to make calls to PayPal
 
 // 2. Set up your server to receive a call from the client
-export const createPaypalTransaction = async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+export const createPaypalTransaction = catchAsync(async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
     // 3. Call PayPal to set up a transaction
     const finalPrice = req.body.finalPrice;
 
@@ -39,23 +40,24 @@ export const createPaypalTransaction = async (req: Express.Request, res: Express
         // 4. Handle any errors from the call
         server.instance.logger.error('Error Paypal', err);
 
-        let messageError = '';
-        if (err.code === 'EERPAYPALPRICE') {
-            messageError = err.message;
-        } else {
-            messageError = 'Ha ocurrido un error con los datos de la orden de compra!';
-        }
+        throw err as AppError;
+        // let messageError = '';
+        // if (err.code === 'EERPAYPALPRICE') {
+        //     messageError = err.message;
+        // } else {
+        //     messageError = 'Ha ocurrido un error con los datos de la orden de compra!';
+        // }
 
-        return res.status(500).json({error: messageError});
+        // return next(new AppError(messageError, 500, err.code))
     }
 
     // 5. Return a successful response to the client with the order ID
-    return res.status(200).json({
+    res.status(200).json({
         orderID: order.result.id,
     });
-};
+});
 
-export const createAuthorizationTransaction = async (req: Express.Request, res: Express.Response) => {
+export const createAuthorizationTransaction = catchAsync(async (req: Express.Request, res: Express.Response) => {
     // 2a. Get the order ID from the request body
     const orderID = req.body.orderID;
 
@@ -81,9 +83,9 @@ export const createAuthorizationTransaction = async (req: Express.Request, res: 
     // return res.send(200).json({
     //     authorizationID: authorizationID
     // });
-};
+});
 
-export const captureAuthorization = async (req: Express.Request, res: Express.Response) => {
+export const captureAuthorization = catchAsync(async (req: Express.Request, res: Express.Response) => {
     // 2. Get the authorization ID from your database
     const authorizationID = req.body.authorizationID;
 
@@ -104,7 +106,7 @@ export const captureAuthorization = async (req: Express.Request, res: Express.Re
 
     // 6. Return a successful response to the client
     return res.send(200);
-};
+});
 
 function createRequest(moneyCode: string, finalPrice: number, nameItemBuy: string, descriptionItem: string) {
     const request = new paypal.orders.OrdersCreateRequest();

@@ -28,7 +28,7 @@ const saltRounds = 10;
 // Using require() in ES5
 
 // GOOGLE AUTHENTICATION
-const client = new OAuth2Client(envVars.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client(envVars.GOOGLE_CLIENT_ID);
 
 const generateRandomUserName = (email: string) => {
     const options = {
@@ -92,14 +92,16 @@ export class UserController {
         const googleUser: any = await this.verify(accessToken);
 
         if (!googleUser) {
-            return next(new AppError('El token no es valido', 403, 'ITOKEN'));
+            return next(new AppError('No fue posible authenticarse con google.', 403, 'ITOKEN'));
         }
 
         const user = await this.models.User.findOne({email: googleUser.email}).populate('role');
 
         if (user) {
+            if ( !user.enabled )
+                return next(new AppError('Tu usuario se encuentra deshabilitado!', 403, 'UDISH'));
             if (user.provider === 'none') {
-                return next(new AppError('Debes usar la autenticacion normal(sin redes sociales)!', 400, 'AUTHNOR'));
+                return next(new AppError('Debes usar la autenticacion con email y contraseña. (sin redes sociales)!', 400, 'AUTHNOR'));
             } else if (user.provider === 'facebook') {
                 return next(new AppError('Este correo ya se encuentra asociado a una cuenta de facebook!!!', 400, 'AUTHNOR'));
             } else {
@@ -158,7 +160,7 @@ export class UserController {
     };
 
     async verify(token: string) {
-        const ticket = await client.verifyIdToken({
+        const ticket = await googleClient.verifyIdToken({
             idToken: token,
             audience: envVars.GOOGLE_CLIENT_ID, // Specify the CLIENT_ID of the app that accesses the backend
             // Or, if multiple clients access the backend:
@@ -167,7 +169,7 @@ export class UserController {
 
         const payload = ticket.getPayload();
         if (!payload) {
-            throw new AppError('Payload is empty', 403);
+            throw new AppError('Ocurrio un error con la obtencion de tu informacion!', 403);
         }
         const userid = payload['sub'];
         // If request specified a G Suite domain:
@@ -231,8 +233,12 @@ export class UserController {
         this.logger.info('Login usuario');
 
         // find user by username or email
-        const user = await this.models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]}).populate('role');
-        if (user) {
+        let user: IUserDocument | null= await this.models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]}).populate('role').select('+passwordHash');
+        if ( !!user) {
+            if (user.provider === 'google')
+                return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL, utiliza el login correspondiente!`, 400, 'AUTHNOR'));
+            if (user.provider === 'facebook')
+                return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de Facebook, utiliza el login correspondiente!`, 400, 'AUTHNOR'));
             const isequal = await bcrypt.compare(userData.password, user.passwordHash);
 
             if (isequal) {
@@ -496,6 +502,9 @@ export class UserController {
         const user = await this.models.User.findOne({email: facebookUser.email}).populate('role');
 
         if (user) {
+            if (!user.enabled) {
+                return next(new AppError('Tu usuario se encuentra deshabilitado!', 403, 'UDISHABLE'));
+            }
             if (user.provider === 'none') {
                 return next(
                     new AppError(
@@ -505,14 +514,10 @@ export class UserController {
                     ),
                 );
             } else if (user.provider === 'google') {
-                return next(new AppError('Este correo ya se encuentra asociado a una cuenta de GMAIL', 400, 'AUTHNOR'));
-            } else {
-                if (!user.enabled) {
-                    return next(new AppError('Usuario deshabilitado!', 403, 'UDISHABLE'));
-                }
-                const response = await this.getResponseToSendToLogin(user);
-                res.status(200).json(response);
+                return next(new AppError(  `El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL.`, 400, 'AUTHNOR'));
             }
+            const response = await this.getResponseToSendToLogin(user);
+            res.status(200).json(response);
         } else {
             const dataLogin = await this.createUserWithSocialLogin(userData, facebookUser);
 
