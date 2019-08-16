@@ -1,3 +1,5 @@
+import {DurationInputArg2} from 'moment';
+
 interface IEnvironment {
     SERVER_PORT: number;
     GOOGLE_CLIENT_ID: string;
@@ -18,6 +20,10 @@ interface IEnvironment {
     REDIS_PASSWORD: string;
     SENDGRID_KEY: string;
     ADMON_EMAIL: string;
+    ACCESS_TOKEN_DURATION: number;
+    ACCESS_TOKEN_MEASURE: DurationInputArg2;
+    REFRESH_TOKEN_DURATION: number;
+    REFRESH_TOKEN_MEASURE: DurationInputArg2;
 }
 
 const EnvVar: IEnvironment = {
@@ -47,6 +53,11 @@ const EnvVar: IEnvironment = {
     REDIS_PASSWORD: process.env.REDIS_PASSWORD || 'jose12',
     SENDGRID_KEY: process.env.SENDGRID_KEY || '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',
     ADMON_EMAIL: process.env.ADMON_EMAIL || 'atomicdevelopersnic@gmail.com',
+    // Tokens config
+    ACCESS_TOKEN_DURATION: !!process.env.ACCESS_TOKEN_DURATION  ? +process.env.ACCESS_TOKEN_DURATION : 1,
+    ACCESS_TOKEN_MEASURE: process.env.ACCESS_TOKEN_MEASURE as DurationInputArg2 || 'minute',
+    REFRESH_TOKEN_DURATION:!!process.env.REFRESH_TOKEN_DURATION  ? +process.env.REFRESH_TOKEN_DURATION : 2,
+    REFRESH_TOKEN_MEASURE: process.env.REFRESH_TOKEN_MEASURE as DurationInputArg2  || 'minutes'
 };
 
 export default EnvVar;

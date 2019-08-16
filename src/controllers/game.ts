@@ -149,6 +149,9 @@ export default class GameController {
             },
         ]).exec();
 
+        res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+        res.header('Expires', '-1');
+        res.header('Pragma', 'no-cache');
         res.status(200).json(result);
     });
     getTopWinners = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
