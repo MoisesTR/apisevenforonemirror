@@ -534,6 +534,7 @@ export class UserController {
             lastName: user.lastName,
             provider: user.provider,
             role: user.role,
+            gender: user.gender,
             email: user.email,
             image: user.image,
         };
