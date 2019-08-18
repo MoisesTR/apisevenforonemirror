@@ -75,7 +75,6 @@
     "prettier": "^1.18.2",
     "ts-node": "^8.3.0",
     "tslint": "5.17.0",
-    "typescript": "3.5.1",
-    "xss": "1.0.6"
+    "typescript": "3.5.1"
   }
 }

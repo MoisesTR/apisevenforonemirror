@@ -9,10 +9,15 @@ import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
 /**
  * PayPal HTTP client dependency
  */
+import envVars from '../global/environment';
 import {client} from '../paypalClient';
 import server from '../server';
 import AppError from '../classes/AppError';
 import catchAsync from '../utils/catchAsync';
+import requestPaypal from 'request';
+import shortid from 'shortid';
+//NAME ERROR PAYPAL
+const INSUFFICIENT_FUNDS = 'INSUFFICIENT_FUNDS';
 import logger from '../services/logger';
 // 1. Set up your server to make calls to PayPal
 
@@ -57,6 +62,45 @@ export const createPaypalTransaction = catchAsync(async (req: Express.Request, r
         orderID: order.result.id,
     });
 });
+
+function createRequest(moneyCode: string, finalPrice: number, nameItemBuy: string, descriptionItem: string) {
+    const request = new paypal.orders.OrdersCreateRequest();
+    request.prefer('return=representation');
+    request.requestBody({
+        currency: moneyCode,
+        intent: 'CAPTURE',
+        locale: 'en_US',
+        purchase_units: [
+            {
+                amount: {
+                    currency_code: moneyCode,
+                    value: finalPrice,
+                    breakdown: {
+                        item_total: {
+                            currency_code: moneyCode,
+                            value: finalPrice,
+                        },
+                    },
+                },
+                // description: "Inversion Grupo de Juego 7x1",
+                items: [
+                    {
+                        name: nameItemBuy,
+                        quantity: '1',
+                        description: descriptionItem,
+                        category: 'DIGITAL_GOODS',
+                        unit_amount: {
+                            currency_code: moneyCode,
+                            value: finalPrice,
+                        },
+                    },
+                ],
+            },
+        ],
+    });
+
+    return request;
+}
 
 export const createAuthorizationTransaction = catchAsync(async (req: Express.Request, res: Express.Response) => {
     // 2a. Get the order ID from the request body
@@ -109,41 +153,96 @@ export const captureAuthorization = catchAsync(async (req: Express.Request, res:
     return res.send(200);
 });
 
-function createRequest(moneyCode: string, finalPrice: number, nameItemBuy: string, descriptionItem: string) {
-    const request = new paypal.orders.OrdersCreateRequest();
-    request.prefer('return=representation');
-    request.requestBody({
-        currency: moneyCode,
-        intent: 'CAPTURE',
-        locale: 'en_US',
-        purchase_units: [
-            {
-                amount: {
-                    currency_code: moneyCode,
-                    value: finalPrice,
-                    breakdown: {
-                        item_total: {
-                            currency_code: moneyCode,
-                            value: finalPrice,
-                        },
-                    },
-                },
-                // description: "Inversion Grupo de Juego 7x1",
-                items: [
-                    {
-                        name: nameItemBuy,
-                        quantity: '1',
-                        description: descriptionItem,
-                        category: 'DIGITAL_GOODS',
-                        unit_amount: {
-                            currency_code: moneyCode,
-                            value: finalPrice,
-                        },
-                    },
-                ],
-            },
-        ],
-    });
 
-    return request;
+export const payout = catchAsync(async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+    const amountMoneyToPay = req.body.amountMoneyToPay;
+    const email = 'gerencia@fumipgreen.com';
+
+    getToken(next).then((body: any) => {
+        const uriPayout =
+          envVars.ENVIRONMENT === 'production'
+            ? 'https://api.paypal.com/v1/payments/payouts'
+            : 'https://api.sandbox.paypal.com/v1/payments/payouts';
+        const senderBatchId = shortid.generate();
+        const bodyParsed = JSON.parse(body);
+        requestPaypal.post(
+          {
+              uri: uriPayout,
+              headers: {
+                  'content-type': 'application/json',
+                  Authorization: 'Bearer ' + bodyParsed.access_token,
+              },
+              body: JSON.stringify({
+                  sender_batch_header: {
+                      sender_batch_id: senderBatchId,
+                      email_subject: 'Tienes un pago!',
+                      email_message: 'Has recibido un pago! Gracias por jugar!!',
+                  },
+                  items: [
+                      {
+                          recipient_type: 'EMAIL',
+                          amount: {
+                              value: amountMoneyToPay,
+                              currency: 'USD',
+                          },
+                          note: 'Gracias por jugar!!',
+                          receiver: email,
+                      },
+                  ],
+              }),
+          },
+          (error, response: any, body) => {
+              const payoutBody = JSON.parse(body);
+              console.log(payoutBody); //TODO REEMPLAZAR POR EL LOGGER
+
+              if (response.statusCode === 201) {
+                  // LUEGO DE QUE EL PAGO SE HAYA ENVIADO AGREGAR FUNCIONALIDAD PARA DEDUCIR DEL DINERO RESTANTE LO QUE SE LE PAGO AL USUARIO
+                  // Y SACARLO DE LA LISTA DE SOLICITADOS DE RECLAMO DE PAGO, LA CUAL ESTAS SOLICITADES ESTARIAN EN DOCUMENTO APARTE
+                  return res.status(201).json({message: 'El pago se ha realizado correctamente!'});
+              } else {
+                  const bodyParsed = JSON.parse(body);
+                  console.log('Error Paypal', bodyParsed); //TODO REEMPLAZAR POR EL LOGGER
+
+                  if (bodyParsed.name === INSUFFICIENT_FUNDS) {
+                      return next(new AppError('Fondos insuficientes para realizar el pago!', 400, 'PAYPALERROR'));
+                  } else {
+                      return next(new AppError('Ha ocurrido un error al realizar el pago!', 400, 'PAYPALERROR'));
+                  }
+              }
+          },
+        );
+    });
+});
+
+function getToken(next: Express.NextFunction) {
+    const uri =
+      envVars.ENVIRONMENT === 'production' ? 'https://api.paypal.com/v1/oauth2/token' : 'https://api.sandbox.paypal.com/v1/oauth2/token';
+
+    return new Promise((resolve, reject) => {
+        requestPaypal.post(
+          {
+              uri: uri,
+              headers: {
+                  Accept: 'application/json',
+                  'Accept-Language': 'en_US',
+                  'content-type': 'application/x-www-form-urlencoded',
+              },
+              auth: {
+                  user: envVars.PAYPAL_CLIENT_ID,
+                  pass: envVars.PAYPAL_CLIENT_SECRET,
+              },
+              form: {
+                  grant_type: 'client_credentials',
+              },
+          },
+          (error, response, body) => {
+              if (response.statusCode === 200) {
+                  resolve(body);
+              } else {
+                  console.log('Error Paypal', body); //TODO REEMPLAZAR POR EL LOGGER
+                  return next(new AppError('Ha ocurrido un error al obtener el token de acceso de paypal!', 400, 'PAYPALERROR'));
+              }
+          },
+        );
+    });
 }
