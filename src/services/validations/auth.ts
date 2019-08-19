@@ -61,11 +61,11 @@ export const updateUser = [
     body('firstName', getMessageMinMaxChar('Los nombres deben', 3, 150)).isLength({
         min: 3,
         max: 150,
-    }),
+    }).optional({nullable: true}),
     body('lastName', getMessageMinMaxChar('Los apellidos deben', 3, 150)).isLength({
         min: 3,
         max: 150,
-    }),
+    }).optional({nullable: true}),
     body('phones', 'Debe ser un array de strings!')
         .isArray()
         .optional({nullable: true}),
@@ -76,7 +76,7 @@ export const updateUser = [
         .custom(isValidDate)
         .optional({nullable: true}),
     body('gender')
-        .isString()
+        .isIn(['M', 'F'])
         .optional({nullable: true}),
 ];
 

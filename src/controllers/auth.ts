@@ -320,8 +320,9 @@ export class UserController {
     });
 
     updateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-        const userData = matchedData(req, {locations: ['body', 'query']});
-        if (userData.userId !== req.user._id) {
+        const userData = matchedData(req, {locations: ['body', 'query', 'params']});
+
+        if (userData.userId === JSON.stringify(req.user._id)) {
             return next(new AppError('No puedes editar este usuario', 403, 'EUNAUTH'));
         }
         const user: IUserDocument | null = await this.models.User.findById(userData.userId);
