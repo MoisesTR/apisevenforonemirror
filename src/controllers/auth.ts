@@ -130,7 +130,7 @@ export class UserController {
             provider: socialUser.provider,
             email: socialUser.email,
             passwordHash: hashPassw,
-            role: userData.roleId,
+            role: userData.roleId || req.app.locals.roleUser._id,
             isVerified: true,
             enabled: true,
         });
@@ -202,7 +202,7 @@ export class UserController {
                 email: userData.email,
                 passwordHash: hashPassw,
                 phones: userData.phones,
-                role: userData.roleId,
+                role: userData.roleId || req.app.locals.roleUser._id,
                 birthDate: userData.birthDate,
                 gender: userData.gender,
                 isVerified: false,
@@ -316,7 +316,7 @@ export class UserController {
             return next(new AppError('El token de verificacion no es valido!', 400, 'EVERIF'));
         }
         const result = await user.verifyToken();
-        res.status(200).json({success: 'Bienvenido a Seven For One, su correo electrónico está verificado!'});
+        res.status(200).json({success: 'Bienvenido a Seven For One, su correo electrónico ha sido verificado!'});
     });
 
     updateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {

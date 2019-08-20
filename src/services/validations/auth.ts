@@ -35,7 +35,7 @@ const commonUserVal = [
         max: 40,
     }),
     body('email', 'Debe ser un correo válido!').isEmail(),
-    body('roleId').custom(isObjectId),
+    body('roleId').optional({nullable: true}).custom(isObjectId),
 ];
 
 export const createAdmin = commonUserVal;
