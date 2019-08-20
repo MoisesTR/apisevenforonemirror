@@ -11,8 +11,11 @@ process.on('uncaughtException', err => {
 });
 
 dotenv.config({path: path.resolve(__dirname, '..', '.env')});
-import {httpServer} from './app';
+import {httpServer, app} from './app';
 import Server from './server';
+import User from './db/models/User';
+import Role, {ERoles} from './db/models/Role';
+import AppError from './classes/AppError';
 const server = Server.instance;
 console.log(path.resolve(__dirname, '..', '.env'));
 
@@ -38,6 +41,16 @@ server.registerRouter();
 server.errorMiddlewares();
 server.dbCore.connect(server.logger, () => {
     server.start((port: number) => {
+        const adminRole = Role.findOne({name: ERoles.ADMIN});
+        const userRole = Role.findOne({name: ERoles.USER});
+        if (!adminRole) {
+            throw new AppError('The server cannot start doesn\'t be find the admin role in the database.',500)
+        }
+        if (!userRole) {
+            throw new AppError('The server cannot start doesn\'t be find the user role in the database.',500)
+        }
+        app.locals.roleAdmin = adminRole;
+        app.locals.roleUser = userRole;
         server.logger.info(`The API is already running, on the ${port}`, {port});
     });
 });

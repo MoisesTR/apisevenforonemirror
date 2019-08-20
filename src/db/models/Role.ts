@@ -1,7 +1,7 @@
 'use strict';
 
 import {model, Schema} from 'mongoose';
-import {IRoleDocument} from '../interfaces/IRole';
+import {IRoleDocument, IRoleModel} from '../interfaces/IRole';
 
 export enum ERoles {
     ADMIN = 'ADMIN',
@@ -31,4 +31,4 @@ const roleModel = new Schema(
     },
 );
 
-export default model<IRoleDocument>('Role', roleModel);
+export default model<IRoleDocument, IRoleModel>('Role', roleModel);

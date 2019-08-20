@@ -356,7 +356,8 @@ export class UserController {
     createAdminUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req);
         const user: IUserDocument = req.user;
-        const adminRole: IRoleDocument | null = await this.models.Role.findOne({name: ERoles.ADMIN});
+        // const adminRole: IRoleDocument | null = await this.models.Role.findOne({name: ERoles.ADMIN});
+        const adminRole: IRoleDocument = req.app.locals.adminRole;
         if (!adminRole) return next(new AppError("The admin role doesn't exist!", 500, 'NAROLE'));
 
         if (!user.role.equals(adminRole._id)) {
