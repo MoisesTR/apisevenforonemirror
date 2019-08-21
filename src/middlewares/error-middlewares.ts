@@ -4,7 +4,7 @@ import AppError from '../classes/AppError';
 
 export const apply = (app: Express.Application) => {
     app.use(function(req: Express.Request, res: Express.Response, next: NextFunction) {
-        const err = new AppError(Errors.BadRequest.message, Errors.BadRequest.status);
+        const err = new AppError(Errors.NotFound.message, Errors.NotFound.status);
         next(err);
     });
 

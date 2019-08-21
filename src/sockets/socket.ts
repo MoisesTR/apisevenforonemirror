@@ -99,9 +99,9 @@ export const listenSockets = (models: IModels) => {
     });
 
     // Watch changes on Users collection
-    models.User.watch({}).on('change', user => {
-        console.log('User update', user);
-    });
+    // models.User.watch({}).on('change', user => {
+    //     console.log('User update', user);
+    // });
     // const GGNamespaces: GroupGameNamespace[] = [];
     // groups.forEach(group => {
     //     new GroupGameNamespace(group , mainSocket);

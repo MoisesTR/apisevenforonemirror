@@ -59,36 +59,32 @@ export class Core {
         return this._instance;
     }
 
-    async connect(logger: Logger, successCB: Function) {
+    async connect(logger: Logger) {
         console.log(dbConfig.mongoURI);
-        mongoose
-            .connect(dbConfig.mongoURI, {useNewUrlParser: true, useCreateIndex: true})
-            .then(mongo => {
-                this.mongoose = mongo;
-                logger.info('Mongo is Connected');
-                process.on('SIGINT', () => {
-                    logger.error('The signal has been interrupt!');
-                    mongoose.connection.close(() => {
-                        logger.info('Interrupt Signal, the mongo connection has been close!');
-                        process.exit(1);
-                    });
-                });
-                this.models.User.find({})
-                    .then(admins => {
-                        if (admins) {
-                            admins.forEach(admon => {
-                                // console.log(admon);
-                                // redisPub.lpush('admins', admon);
-                            });
-                        }
-                    })
-                    .catch(err => console.log(err));
-                successCB();
-            })
-            .catch(err => {
-                console.log(err);
-                logger.error('Cannot be established a connection with the MongoDb server!', {metadata: {boot: true}});
-                process.exit();
+        this.mongoose = await mongoose
+            .connect(dbConfig.mongoURI, {useNewUrlParser: true, useCreateIndex: true});
+        logger.info('Mongo is Connected');
+        process.on('SIGINT', () => {
+            logger.error('The signal has been interrupt!');
+            mongoose.connection.close(() => {
+                logger.info('Interrupt Signal, the mongo connection has been close!');
+                process.exit(1);
             });
+        });
+        // this.models.User.find({})
+        //     .then(admins => {
+        //         if (admins) {
+        //             admins.forEach(admon => {
+        //                 // console.log(admon);
+        //                 // redisPub.lpush('admins', admon);
+        //             });
+        //         }
+        //     })
+        //     .catch(err => console.log(err));
+            // .catch(err => {
+            //     console.log(err);
+            //     logger.error('Cannot be established a connection with the MongoDb server!', {metadata: {boot: true}});
+            //     process.exit();
+            // });
     }
 }

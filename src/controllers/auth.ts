@@ -109,7 +109,7 @@ export class UserController {
                 res.status(200).json(response);
             }
         } else {
-            const dataLogin = await this.createUserWithSocialLogin(userData, googleUser);
+            const dataLogin = await this.createUserWithSocialLogin({...userData, role: req.app.locals.roleUser._id}, googleUser);
 
             this.logger.info('Sending info to login');
             res.status(200).json(dataLogin);
@@ -130,7 +130,7 @@ export class UserController {
             provider: socialUser.provider,
             email: socialUser.email,
             passwordHash: hashPassw,
-            role: userData.roleId || req.app.locals.roleUser._id,
+            role: userData.roleId,
             isVerified: true,
             enabled: true,
         });
@@ -218,8 +218,9 @@ export class UserController {
             this.logger.info(`You're successfully registered, we're Sending the verification email`);
 
             await sendConfirmationEmail(userData.email, user);
+        } else {
+             alreadyExist(users, userData);
         }
-        alreadyExist(users, userData);
     });
 
     /**
@@ -521,7 +522,7 @@ export class UserController {
             const response = await this.getResponseToSendToLogin(user);
             res.status(200).json(response);
         } else {
-            const dataLogin = await this.createUserWithSocialLogin(userData, facebookUser);
+            const dataLogin = await this.createUserWithSocialLogin({...userData, role: req.app.locals.roleUser._id}, facebookUser);
 
             this.logger.info('Sending info to login');
             res.status(200).json(dataLogin);

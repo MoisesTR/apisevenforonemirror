@@ -39,10 +39,10 @@ process.on('unhandledRejection', err => {
 server.basicMiddlewares();
 server.registerRouter();
 server.errorMiddlewares();
-server.dbCore.connect(server.logger, () => {
-    server.start((port: number) => {
-        const adminRole = Role.findOne({name: ERoles.ADMIN});
-        const userRole = Role.findOne({name: ERoles.USER});
+server.dbCore.connect(server.logger)
+    .then(async () => {
+        const adminRole = await Role.findOne({name: ERoles.ADMIN});
+        const userRole = await Role.findOne({name: ERoles.USER});
         if (!adminRole) {
             throw new AppError('The server cannot start doesn\'t be find the admin role in the database.',500)
         }
@@ -51,6 +51,9 @@ server.dbCore.connect(server.logger, () => {
         }
         app.locals.roleAdmin = adminRole;
         app.locals.roleUser = userRole;
-        server.logger.info(`The API is already running, on the ${port}`, {port});
+        return {}
+    }).then(() => {
+        server.start((port: number) => {
+            server.logger.info(`The API is already running, on the ${port}`, {port});
+        });
     });
-});
