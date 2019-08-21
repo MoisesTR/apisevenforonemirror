@@ -19,8 +19,9 @@ import User from '../db/models/User';
 import catchAsync from '../utils/catchAsync';
 import FB from 'fb';
 import AppError from '../classes/AppError';
+import fs from 'fs';
+import path from 'path';
 import models from '../db/models';
-import {IJWTResponse} from '../services/interfaces/JWTResponse';
 import logger from '../services/logger';
 import {createAccessToken, createRefreshToken, ensureAuth} from '../services/jwt';
 import {ECookies} from './interfaces/ECookies';
@@ -418,6 +419,26 @@ export class UserController {
         alreadyExist(users, userData);
     });
 
+    /**
+     * FOLDER --folder where the image is located
+     * IMG -- name of image to find
+     * @param req
+     * @param res
+     */
+    getImage = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+        const folder = req.params.folder;
+        const img = req.params.img;
+
+        const pathImage = path.resolve(__dirname, `../uploads/${folder}/${img}`);
+
+        if (fs.existsSync(pathImage)) {
+            res.sendFile(pathImage);
+        } else {
+            const pathNoImage = path.resolve(__dirname, '../uploads/temp/no-img.jpg');
+            res.sendFile(pathNoImage);
+        }
+    });
+
     changePassword = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req, {locations: ['body', 'params']});
 
@@ -499,6 +520,10 @@ export class UserController {
             return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
         }
 
+        // TODO: update that config
+        const emailResp = await recoverAccountEmail(user.email, user);
+
+        console.log('Email envado', emailResp);
         res.status(200).json({userName: userName, email: user.email});
     });
 
