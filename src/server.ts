@@ -13,10 +13,10 @@ import * as AuthRouter from './routes/authRoutes';
 import * as GroupGamesRouter from './routes/group-games';
 import * as PaypalRouter from './routes/paypal';
 import * as JWT from './services/jwt';
-import {IjwtResponse} from './services/jwt';
 // Socket
 import {app, httpServer} from './app';
 import {listenGroupSocket, listenSockets} from './sockets/socket';
+import {IJWTResponse} from './services/interfaces/JWTResponse';
 
 const debug = require('debug')('sevenforoneapi:server');
 
@@ -38,7 +38,7 @@ export default class Server {
 
     public logger: Logger;
     public dbCore: Core;
-    public jwt: IjwtResponse;
+    public jwt: IJWTResponse;
 
     private constructor() {
         const myLogg = new MyLogger(__dirname);

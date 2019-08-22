@@ -10,7 +10,6 @@ import {IUserDocument} from '../db/interfaces/IUser';
 import {IActivityTypesDocument} from '../db/interfaces/IActivityTypes';
 import {Logger} from 'winston';
 import envVars from '../global/environment';
-import {IjwtResponse} from '../services/jwt';
 import {redisPub} from '../redis/redis';
 import DynamicKeys from '../redis/keys/dynamics';
 import {recoverAccountEmail, sendConfirmationEmail} from '../services/email';
@@ -22,6 +21,7 @@ import catchAsync from '../utils/catchAsync';
 import FB from 'fb';
 import AppError from '../classes/AppError';
 import models from '../db/models'
+import {IJWTResponse} from '../services/interfaces/JWTResponse';
 const saltRounds = 10;
 
 // Using require() in ES5
@@ -43,7 +43,7 @@ const generateRandomUserName = (email: string) => {
 
 export class UserController {
     private logger: Logger;
-    private jwt: IjwtResponse;
+    private jwt: IJWTResponse;
 
     constructor(server: Server) {
         this.logger = server.logger;

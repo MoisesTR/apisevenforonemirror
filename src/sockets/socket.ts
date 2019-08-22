@@ -10,11 +10,6 @@ import DynamicKey from '../redis/keys/dynamics';
 import game from '../controllers/game';
 import models from '../db/models'
 
-export interface ISocketManagerAttributes {
-    main: socketIO.Server;
-    gameGroups?: socketIO.Namespace;
-}
-
 let mainSocket: socketIO.Server;
 let gameGroups: socketIO.Namespace;
 

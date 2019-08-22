@@ -1,11 +1,6 @@
 import SocketIO from 'socket.io';
 import {IGroupGameDocument} from '../db/interfaces/IGroupGame';
-
-export interface IGroupGameNamespace {
-    _id: string;
-    path: string;
-    io: SocketIO.Namespace;
-}
+import {IGroupGameNamespace} from './interfaces/GroupGameNamespace';
 
 export class GroupGameNamespace implements IGroupGameNamespace {
     _id: string;

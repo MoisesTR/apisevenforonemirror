@@ -7,17 +7,9 @@ import Server from './../server';
 import {IUserDocument} from '../db/interfaces/IUser';
 import AppError from '../classes/AppError';
 import models from '../db/models'
-export interface IjwtResponse {
-    ensureAuth: (req: Express.Request, res: Express.Response, next: NextFunction) => Promise<void>;
-    createAccessToken: (user: IUserDocument, expiration?: number, unitOfTime?: any) => Promise<{_token: string; expiration: number}>;
-    createRefreshToken: (
-        user: IUserDocument,
-        expiration?: number,
-        unitOfTime?: DurationInputArg2,
-    ) => Promise<{_token: string; expiration: number}>;
-}
+import {IJWTResponse} from './interfaces/JWTResponse';
 
-export const get: (server: Server) => IjwtResponse = (server: Server) => {
+export const get: (server: Server) => IJWTResponse = (server: Server) => {
     async function createToken(customPayload: any, secret: string, expiration: DurationInputArg1, unitTime: DurationInputArg2) {
         let _token;
         const payload = {
