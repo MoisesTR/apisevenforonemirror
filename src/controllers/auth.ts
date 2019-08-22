@@ -8,7 +8,6 @@ import {OAuth2Client} from 'google-auth-library';
 import Server from '../server';
 import {IUserDocument} from '../db/interfaces/IUser';
 import {IActivityTypesDocument} from '../db/interfaces/IActivityTypes';
-import {Logger} from 'winston';
 import envVars from '../global/environment';
 import {redisPub} from '../redis/redis';
 import DynamicKeys from '../redis/keys/dynamics';
@@ -20,8 +19,10 @@ import User from '../db/models/User';
 import catchAsync from '../utils/catchAsync';
 import FB from 'fb';
 import AppError from '../classes/AppError';
-import models from '../db/models'
+import models from '../db/models';
 import {IJWTResponse} from '../services/interfaces/JWTResponse';
+import logger from '../services/logger';
+
 const saltRounds = 10;
 
 // Using require() in ES5
@@ -42,11 +43,9 @@ const generateRandomUserName = (email: string) => {
 };
 
 export class UserController {
-    private logger: Logger;
     private jwt: IJWTResponse;
 
     constructor(server: Server) {
-        this.logger = server.logger;
         this.jwt = server.jwt;
     }
 
@@ -56,10 +55,13 @@ export class UserController {
 
         FB.api(
             '/me',
-            {fields: 'id,name,email,first_name,last_name,picture.width(300).height(300){url}', access_token: userData.accessToken},
+            {
+                fields: 'id,name,email,first_name,last_name,picture.width(300).height(300){url}',
+                access_token: userData.accessToken
+            },
             async (response?: any) => {
                 if (!response || response.error) {
-                    this.logger.info(!response ? 'error occurred' : response.error);
+                    logger.info(!response ? 'error occurred' : response.error);
                     res.status(403).json({
                         ok: false,
                         message: !response ? 'error occurred' : response.error,
@@ -84,7 +86,7 @@ export class UserController {
     signInGoogle = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req);
         const accessToken = userData.accessToken;
-        this.logger.info('Token google: ' + accessToken);
+        logger.info('Token google: ' + accessToken);
 
         const googleUser: any = await this.verify(accessToken);
 
@@ -95,8 +97,9 @@ export class UserController {
         const user = await models.User.findOne({email: googleUser.email}).populate('role');
 
         if (user) {
-            if ( !user.enabled )
+            if (!user.enabled) {
                 return next(new AppError('Tu usuario se encuentra deshabilitado!', 403, 'UDISH'));
+            }
             if (user.provider === 'none') {
                 return next(new AppError('Debes usar la autenticacion con email y contraseña. (sin redes sociales)!', 400, 'AUTHNOR'));
             } else if (user.provider === 'facebook') {
@@ -106,9 +109,12 @@ export class UserController {
                 res.status(200).json(response);
             }
         } else {
-            const dataLogin = await this.createUserWithSocialLogin({...userData, role: req.app.locals.roleUser._id}, googleUser);
+            const dataLogin = await this.createUserWithSocialLogin({
+                ...userData,
+                role: req.app.locals.roleUser._id
+            }, googleUser);
 
-            this.logger.info('Sending info to login');
+            logger.info('Sending info to login');
             res.status(200).json(dataLogin);
         }
     });
@@ -144,7 +150,7 @@ export class UserController {
 
         delete userInfo.passwordHash;
 
-        this.logger.info('Token de usuario creado');
+        logger.info('Token de usuario creado');
 
         await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), accessTokenGen);
         await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefresh), refreshTokenGen);
@@ -172,7 +178,7 @@ export class UserController {
         // If request specified a G Suite domain:
         //const domain = payload['hd'];
         // TODO: descomment
-        // this.logger.info('Payload google user: ' + payload);
+        // logger.info('Payload google user: ' + payload);
         console.log(payload);
         return {
             name: payload.name,
@@ -212,11 +218,11 @@ export class UserController {
                 success: 'Se ha registrado correctamente, proceda a verificar su correo eletronico!',
             });
 
-            this.logger.info(`You're successfully registered, we're Sending the verification email`);
+            logger.info(`You're successfully registered, we're Sending the verification email`);
 
             await sendConfirmationEmail(userData.email, user);
         } else {
-             alreadyExist(users, userData);
+            alreadyExist(users, userData);
         }
     });
 
@@ -228,15 +234,17 @@ export class UserController {
 
     signInMiddleware = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req);
-        this.logger.info('Login usuario');
+        logger.info('Login usuario');
 
         // find user by username or email
-        let user: IUserDocument | null= await models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]}).populate('role').select('+passwordHash');
-        if ( !!user) {
-            if (user.provider === 'google')
+        let user: IUserDocument | null = await models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]}).populate('role').select('+passwordHash');
+        if (!!user) {
+            if (user.provider === 'google') {
                 return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL, utiliza el login correspondiente!`, 400, 'AUTHNOR'));
-            if (user.provider === 'facebook')
+            }
+            if (user.provider === 'facebook') {
                 return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de Facebook, utiliza el login correspondiente!`, 400, 'AUTHNOR'));
+            }
             const isequal = await bcrypt.compare(userData.password, user.passwordHash);
 
             if (isequal) {
@@ -271,7 +279,7 @@ export class UserController {
             refreshToken: _tokenRefresh,
             expiration,
         };
-        this.logger.info(`User ${user.userName} logged`, {access: tokenGen, refresh: _tokenRefresh});
+        logger.info(`User ${user.userName} logged`, {access: tokenGen, refresh: _tokenRefresh});
         return response;
     }
 
@@ -356,7 +364,9 @@ export class UserController {
         const user: IUserDocument = req.user;
         // const adminRole: IRoleDocument | null = await models.Role.findOne({name: ERoles.ADMIN});
         const adminRole: IRoleDocument = req.app.locals.adminRole;
-        if (!adminRole) return next(new AppError("The admin role doesn't exist!", 500, 'NAROLE'));
+        if (!adminRole) {
+            return next(new AppError('The admin role doesn\'t exist!', 500, 'NAROLE'));
+        }
 
         if (!user.role.equals(adminRole._id)) {
             return next(new AppError('No esta autorizado para utilizar este endpoint!', 403, 'NAUT'));
@@ -424,7 +434,9 @@ export class UserController {
         }
         // get token username
         const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
-        if (!redisRefreshToken) return next(new AppError('Tu token de actualización ha expirado!', 401, 'ETOKEN'));
+        if (!redisRefreshToken) {
+            return next(new AppError('Tu token de actualización ha expirado!', 401, 'ETOKEN'));
+        }
 
         if (redisRefreshToken !== refreshToken) {
             return next(new AppError('El token de actualización no es valido, vuelva a iniciar sesion!', 401, 'TRNOTVAL'));
@@ -432,7 +444,7 @@ export class UserController {
         const {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
         await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
 
-        this.logger.info('New access token for ' + user.userName, {token: tokenGen, refreshToken});
+        logger.info('New access token for ' + user.userName, {token: tokenGen, refreshToken});
         res.status(200).json({
             token: tokenGen,
             expiration,
@@ -484,8 +496,8 @@ export class UserController {
         }
         // 3) Generate the random token and set it on the secretToken field of user, and return it (the not hashed)
         const resetToken = user.createPasswordResetToken();
-        await user.save({ validateBeforeSave: false});
-        console.log('Auth controller. forgot password', resetToken)
+        await user.save({validateBeforeSave: false});
+        console.log('Auth controller. forgot password', resetToken);
 
         // 4) Send it to user's email
         try {
@@ -495,11 +507,11 @@ export class UserController {
                 .json({
                     status: 'success',
                     message: 'Success, recover email successfully sent'
-                })
-        } catch( err ) {
+                });
+        } catch (err) {
             user.secretToken = undefined;
             user.passwordResetExp = undefined;
-            await user.save({ validateBeforeSave: false})
+            await user.save({validateBeforeSave: false});
         }
     });
 
@@ -532,14 +544,17 @@ export class UserController {
                     ),
                 );
             } else if (user.provider === 'google') {
-                return next(new AppError(  `El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL.`, 400, 'AUTHNOR'));
+                return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL.`, 400, 'AUTHNOR'));
             }
             const response = await this.getResponseToSendToLogin(user);
             res.status(200).json(response);
         } else {
-            const dataLogin = await this.createUserWithSocialLogin({...userData, role: req.app.locals.roleUser._id}, facebookUser);
+            const dataLogin = await this.createUserWithSocialLogin({
+                ...userData,
+                role: req.app.locals.roleUser._id
+            }, facebookUser);
 
-            this.logger.info('Sending info to login');
+            logger.info('Sending info to login');
             res.status(200).json(dataLogin);
         }
     };
@@ -572,7 +587,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
     const user = await User.findOne({
         secretToken: hashedToken,
-        passwordResetExp: { $gt: Date.now() }
+        passwordResetExp: {$gt: Date.now()}
     });
 
     // 2) If token has not expired, and there is user, set the new oassword
@@ -585,7 +600,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     user.passwordResetExp = undefined;
 
     // 3) Updat changedPasswordAt property for the user
-    await user.save({ validateBeforeSave: true });
+    await user.save({validateBeforeSave: true});
     // 4) Log the user in, send JWT
     // createSendToken(user, 200, res);
 });

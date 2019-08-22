@@ -1,7 +1,7 @@
 import mongoose, {Mongoose} from 'mongoose';
 import dbConfig from '../global/config/database';
 import path from 'path';
-import {Logger} from 'winston';
+import logger from '../services/logger';
 
 const basename = path.basename(__filename);
 
@@ -20,7 +20,7 @@ export class Core {
         return this._instance;
     }
 
-    async connect(logger: Logger) {
+    async connect() {
         console.log(dbConfig.mongoURI);
         this.mongoose = await mongoose
             .connect(dbConfig.mongoURI, {useNewUrlParser: true, useCreateIndex: true});

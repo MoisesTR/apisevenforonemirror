@@ -1,5 +1,11 @@
 import dotenv from 'dotenv';
 import path from 'path';
+dotenv.config({path: path.resolve(__dirname, '../', '.env')});
+import {app, httpServer} from './app';
+import Server from './server';
+import Role, {ERoles} from './db/models/Role';
+import AppError from './classes/AppError';
+import logger from './services/logger';
 // That's going to catch all the uncaught errors, for example
 // undefined variables
 process.on('uncaughtException', err => {
@@ -10,12 +16,7 @@ process.on('uncaughtException', err => {
     process.exit(1);
 });
 
-dotenv.config({path: path.resolve(__dirname, '..', '.env')});
-import {httpServer, app} from './app';
-import Server from './server';
-import User from './db/models/User';
-import Role, {ERoles} from './db/models/Role';
-import AppError from './classes/AppError';
+console.log(path.resolve(__dirname, '../', '.env'))
 const server = Server.instance;
 console.log(path.resolve(__dirname, '..', '.env'));
 
@@ -39,21 +40,21 @@ process.on('unhandledRejection', err => {
 server.basicMiddlewares();
 server.registerRouter();
 server.errorMiddlewares();
-server.dbCore.connect(server.logger)
+server.dbCore.connect()
     .then(async () => {
         const adminRole = await Role.findOne({name: ERoles.ADMIN});
         const userRole = await Role.findOne({name: ERoles.USER});
         if (!adminRole) {
-            throw new AppError('The server cannot start doesn\'t be find the admin role in the database.',500)
+            throw new AppError('The server cannot start doesn\'t be find the admin role in the database.', 500);
         }
         if (!userRole) {
-            throw new AppError('The server cannot start doesn\'t be find the user role in the database.',500)
+            throw new AppError('The server cannot start doesn\'t be find the user role in the database.', 500);
         }
         app.locals.roleAdmin = adminRole;
         app.locals.roleUser = userRole;
-        return {}
+        return {};
     }).then(() => {
-        server.start((port: number) => {
-            server.logger.info(`The API is already running, on the ${port}`, {port});
-        });
+    server.start((port: number) => {
+        logger.info(`The API is already running, on the ${port}`, {port});
     });
+});

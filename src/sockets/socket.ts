@@ -7,7 +7,7 @@ import {httpServer} from '../app';
 import {EMainEvents} from './constants/main';
 import {EGameEvents} from './constants/game';
 import DynamicKey from '../redis/keys/dynamics';
-import game from '../controllers/game';
+import * as game from '../controllers/game';
 import models from '../db/models'
 
 let mainSocket: socketIO.Server;

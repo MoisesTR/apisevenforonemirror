@@ -36,13 +36,10 @@ i18n.configure({
 export default class Server {
     private static _intance: Server;
 
-    public logger: Logger;
     public dbCore: Core;
     public jwt: IJWTResponse;
 
     private constructor() {
-        const myLogg = new MyLogger(__dirname);
-        this.logger = myLogg.logger;
         this.dbCore = new Core();
         this.jwt = JWT.get(this);
         listenSockets();

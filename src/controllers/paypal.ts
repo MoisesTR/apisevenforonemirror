@@ -13,6 +13,7 @@ import {client} from '../paypalClient';
 import server from '../server';
 import AppError from '../classes/AppError';
 import catchAsync from '../utils/catchAsync';
+import logger from '../services/logger';
 // 1. Set up your server to make calls to PayPal
 
 // 2. Set up your server to receive a call from the client
@@ -24,7 +25,7 @@ export const createPaypalTransaction = catchAsync(async (req: Express.Request, r
     const descriptionItem = 'Inversion en grupo de juego 7x1';
     const nameItemBuy = 'Inversion Grupo';
 
-    server.instance.logger.info('Creando transaccion paypal');
+    logger.info('Creando transaccion paypal');
 
     let order;
 
@@ -38,7 +39,7 @@ export const createPaypalTransaction = catchAsync(async (req: Express.Request, r
         order = await client().execute(request);
     } catch (err) {
         // 4. Handle any errors from the call
-        server.instance.logger.error('Error Paypal', err);
+        logger.error('Error Paypal', err);
 
         throw err as AppError;
         // let messageError = '';

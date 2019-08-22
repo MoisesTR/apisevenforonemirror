@@ -8,6 +8,7 @@ import {IUserDocument} from '../db/interfaces/IUser';
 import AppError from '../classes/AppError';
 import models from '../db/models'
 import {IJWTResponse} from './interfaces/JWTResponse';
+import logger from './logger';
 
 export const get: (server: Server) => IJWTResponse = (server: Server) => {
     async function createToken(customPayload: any, secret: string, expiration: DurationInputArg1, unitTime: DurationInputArg2) {
@@ -96,7 +97,7 @@ export const get: (server: Server) => IJWTResponse = (server: Server) => {
         }
         const token = req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
 
-        server.logger.info('Verificando token: ' + token, {location: 'jwt'});
+        logger.info('Verificando token: ' + token, {location: 'jwt'});
         const decode = await verifyToken(token, envVars.JWT_SECRET);
         const user = await models.User.findById(decode.sub);
         //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
