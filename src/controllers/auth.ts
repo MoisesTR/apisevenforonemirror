@@ -5,7 +5,6 @@ import randomstring from 'randomstring';
 import randomNumber from 'random-number';
 import {matchedData, remainigTimeInSeconds, resultOrNotFound} from '../utils/defaultImports';
 import {OAuth2Client} from 'google-auth-library';
-import {IModels} from '../db/core';
 import Server from '../server';
 import {IUserDocument} from '../db/interfaces/IUser';
 import {IActivityTypesDocument} from '../db/interfaces/IActivityTypes';
@@ -22,7 +21,7 @@ import User from '../db/models/User';
 import catchAsync from '../utils/catchAsync';
 import FB from 'fb';
 import AppError from '../classes/AppError';
-
+import models from '../db/models'
 const saltRounds = 10;
 
 // Using require() in ES5
@@ -43,12 +42,10 @@ const generateRandomUserName = (email: string) => {
 };
 
 export class UserController {
-    private models: IModels;
     private logger: Logger;
     private jwt: IjwtResponse;
 
     constructor(server: Server) {
-        this.models = server.dbCore.models;
         this.logger = server.logger;
         this.jwt = server.jwt;
     }
@@ -95,7 +92,7 @@ export class UserController {
             return next(new AppError('No fue posible authenticarse con google.', 403, 'ITOKEN'));
         }
 
-        const user = await this.models.User.findOne({email: googleUser.email}).populate('role');
+        const user = await models.User.findOne({email: googleUser.email}).populate('role');
 
         if (user) {
             if ( !user.enabled )
@@ -122,7 +119,7 @@ export class UserController {
         const hashPassw = await bcrypt.hash(userData.password, saltRounds);
         const randomUserName = generateRandomUserName(socialUser.email);
 
-        const user = new this.models.User({
+        const user = new models.User({
             firstName: socialUser.firstName,
             lastName: socialUser.lastName,
             userName: randomUserName,
@@ -140,7 +137,7 @@ export class UserController {
         const {_token: accessTokenGen, expiration} = await this.jwt.createAccessToken(user);
         const {_token: refreshTokenGen, expiration: expirationRefresh} = await this.jwt.createRefreshToken(user);
 
-        const userInfo = await this.models.User.findOne({email: socialUser.email}).populate('role');
+        const userInfo = await models.User.findOne({email: socialUser.email}).populate('role');
         if (!userInfo) {
             throw new AppError('Usuario no encontrado', 404, 'UNFOUND');
         }
@@ -191,11 +188,11 @@ export class UserController {
         const userData = matchedData(req);
         const hashPassw = await bcrypt.hash(userData.password, saltRounds);
 
-        const users = await this.models.User.find({userName: userData.userName, email: userData.email});
+        const users = await models.User.find({userName: userData.userName, email: userData.email});
 
         if (!users || users.length === 0) {
             const token = randomstring.generate(20);
-            const user = new this.models.User({
+            const user = new models.User({
                 firstName: userData.firstName,
                 lastName: userData.lastName,
                 userName: userData.userName,
@@ -234,7 +231,7 @@ export class UserController {
         this.logger.info('Login usuario');
 
         // find user by username or email
-        let user: IUserDocument | null= await this.models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]}).populate('role').select('+passwordHash');
+        let user: IUserDocument | null= await models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]}).populate('role').select('+passwordHash');
         if ( !!user) {
             if (user.provider === 'google')
                 return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL, utiliza el login correspondiente!`, 400, 'AUTHNOR'));
@@ -298,7 +295,7 @@ export class UserController {
     getUsers = catchAsync(async (req: Express.Request, res: Express.Response) => {
         // const filters = matchedData(req, {locations: ['query']});
 
-        const result = await this.models.User.find(
+        const result = await models.User.find(
             {},
             'firstName lastName userName email role birthDate gender isVerified enabled createdAt',
         )
@@ -310,7 +307,7 @@ export class UserController {
     verifyEmail = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const data = req.params;
 
-        const user: IUserDocument | null = await this.models.User.findOne({secretToken: data.token});
+        const user: IUserDocument | null = await models.User.findOne({secretToken: data.token});
         console.log(user);
 
         if (!user) {
@@ -326,7 +323,7 @@ export class UserController {
         if (userData.userId === JSON.stringify(req.user._id)) {
             return next(new AppError('No puedes editar este usuario', 403, 'EUNAUTH'));
         }
-        const user: IUserDocument | null = await this.models.User.findById(userData.userId);
+        const user: IUserDocument | null = await models.User.findById(userData.userId);
         if (user == null) {
             return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
         }
@@ -342,7 +339,7 @@ export class UserController {
 
         console.log('Change state user');
         console.log(data);
-        const user = await this.models.User.findById(data.userId);
+        const user = await models.User.findById(data.userId);
         if (!user) {
             res.status(400).json({failed: 'Usuario no encontrado!'});
             return;
@@ -357,18 +354,18 @@ export class UserController {
     createAdminUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req);
         const user: IUserDocument = req.user;
-        // const adminRole: IRoleDocument | null = await this.models.Role.findOne({name: ERoles.ADMIN});
+        // const adminRole: IRoleDocument | null = await models.Role.findOne({name: ERoles.ADMIN});
         const adminRole: IRoleDocument = req.app.locals.adminRole;
         if (!adminRole) return next(new AppError("The admin role doesn't exist!", 500, 'NAROLE'));
 
         if (!user.role.equals(adminRole._id)) {
             return next(new AppError('No esta autorizado para utilizar este endpoint!', 403, 'NAUT'));
         }
-        const users = await this.models.User.find({userName: userData.userName, email: userData.email});
+        const users = await models.User.find({userName: userData.userName, email: userData.email});
 
         if (!users || users.length === 0) {
             const hashPassw = await bcrypt.hash(userData.password, saltRounds);
-            const newAdmin = new this.models.User({
+            const newAdmin = new models.User({
                 firstName: userData.firstName,
                 lastName: userData.lastName,
                 userName: userData.userName,
@@ -392,7 +389,7 @@ export class UserController {
         const userData = matchedData(req, {locations: ['body', 'params']});
 
         try {
-            const user = await this.models.User.findById(userData.userId);
+            const user = await models.User.findById(userData.userId);
             if (!user) {
                 throw new AppError('Usuario no encontrado', 404, 'UNFOUND');
             }
@@ -417,7 +414,7 @@ export class UserController {
     refreshTokenMiddleware = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const {refreshToken, userName} = matchedData(req, {locations: ['body']});
 
-        const user = await this.models.User.findOne({userName: userName});
+        const user = await models.User.findOne({userName: userName});
 
         if (!user) {
             return next(new AppError('El token de actualización no es valido!.', 401, 'DTOKEN'));
@@ -447,7 +444,7 @@ export class UserController {
     getUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userId = req.params.userId;
 
-        const user = await this.models.User.findById(
+        const user = await models.User.findById(
             userId,
             'firstName lastName userName email role birthDate isVerified phones enabledcreatedAt updatedAt',
         )
@@ -460,7 +457,7 @@ export class UserController {
         // TODO: return
         const userName = req.params.userName;
 
-        const user = await this.models.User.findOne({userName: userName});
+        const user = await models.User.findOne({userName: userName});
         if (!user) {
             return next(new AppError('User not found!', 404, 'UNFOUND'));
         } else if (!user.enabled) {
@@ -480,7 +477,7 @@ export class UserController {
             condition.email = data.email;
         }
         // 2) Get user based on the above filter
-        const user = await this.models.User.findOne({...condition});
+        const user = await models.User.findOne({...condition});
 
         if (!user) {
             return next(new AppError('User not found!', 404, 'UNFOUND'));
@@ -507,7 +504,7 @@ export class UserController {
     });
 
     getActivityTypes = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-        const activities: IActivityTypesDocument[] = await this.models.ActivityTypes.find();
+        const activities: IActivityTypesDocument[] = await models.ActivityTypes.find();
         res.status(200).json(activities);
     });
 
@@ -520,7 +517,7 @@ export class UserController {
     ) => {
         const facebookUser = facebookCredentials;
 
-        const user = await this.models.User.findOne({email: facebookUser.email}).populate('role');
+        const user = await models.User.findOne({email: facebookUser.email}).populate('role');
 
         if (user) {
             if (!user.enabled) {

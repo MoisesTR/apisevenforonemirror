@@ -1,7 +1,6 @@
 import Express, {NextFunction} from 'express';
 import {matchedData, resultOrNotFound} from '../utils/defaultImports';
 import Server from '../server';
-import {IModels} from '../db/core';
 import {IGroupGameDocument} from '../db/interfaces/IGroupGame';
 import {Types} from 'mongoose';
 import {ObjectId, ObjectID} from 'bson';
@@ -10,6 +9,7 @@ import {Logger} from 'winston';
 import catchAsync from '../utils/catchAsync';
 import DocumentArray = Types.DocumentArray;
 import AppError from '../classes/AppError';
+import models from '../db/models'
 
 export default class GameController {
     getOwnPurchaseHistory = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -17,18 +17,17 @@ export default class GameController {
         const history: DocumentArray<IPurchaseHistoryDocument> = await req.user.getPurchaseHistory();
         res.status(200).json(history);
     });
-    private models: IModels;
     createGroup = catchAsync(async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
         const groupData = matchedData(req, {locations: ['body']});
 
-        const groupGame = new this.models.GroupGame({...groupData});
+        const groupGame = new models.GroupGame({...groupData});
 
         const group = await groupGame.save();
 
         res.status(201).json({message: 'Group created!!'});
     });
     getGameGroups = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-        const groups: Types.DocumentArray<IGroupGameDocument> = await this.models.GroupGame.aggregate([
+        const groups: Types.DocumentArray<IGroupGameDocument> = await models.GroupGame.aggregate([
             {
                 $project: {
                     initialInvertion: 1,
@@ -47,7 +46,7 @@ export default class GameController {
     getGroupMembers = catchAsync(async (req: Express.Request, res: Express.Response, next: (err?: any) => void) => {
         const groupId = req.params.groupId;
 
-        const group = await this.models.GroupGame
+        const group = await models.GroupGame
             // .aggregate([
             //     {$unwind: "$members"},
             //     {$sort: {"members.createdAt": 1}},
@@ -62,7 +61,7 @@ export default class GameController {
     addMemberToGroup = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const relationData = matchedData(req);
 
-        const group = await this.models.GroupGame.findById(relationData.groupId);
+        const group = await models.GroupGame.findById(relationData.groupId);
         if (!group) {
             return next(new AppError('Grupo no encontrado', 404, 'NEXIST'));
         }
@@ -82,7 +81,7 @@ export default class GameController {
     removeMemberFromGroup = catchAsync(async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
         const relationData = matchedData(req);
 
-        let group = await this.models.GroupGame.findById(relationData.groupId);
+        let group = await models.GroupGame.findById(relationData.groupId);
         if (!group) {
             return next(new AppError('Grupo no encontrado', 404, 'NEXIST'));
         }
@@ -91,7 +90,7 @@ export default class GameController {
     });
     getPurchaseHistory = catchAsync(async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
         const userId = req.params.userId;
-        const user = await this.models.User.findById(userId);
+        const user = await models.User.findById(userId);
 
         if (!user) {
             return next(new AppError('User not found!', 404, 'UNFOUND'));
@@ -103,7 +102,7 @@ export default class GameController {
     getGroupWinnersTop = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const {quantity, groupId} = req.params;
         console.log(req.params);
-        let result = await this.models.PurchaseHistory.aggregate([
+        let result = await models.PurchaseHistory.aggregate([
             {$match: {action: 'win', groupId: new ObjectId(groupId)}}, // agregale el id del grupo si queres para mas seguridad y me confirmas o me decis que cambiar
             {$limit: +quantity},
             {$sort: {createdAt: -1}},
@@ -167,7 +166,7 @@ export default class GameController {
             sortOrder.totalWon = -1;
         }
         console.log('starting the query', sortOrder, match);
-        let result = await this.models.PurchaseHistory.aggregate([
+        let result = await models.PurchaseHistory.aggregate([
             {$match: {...match}},
             {$lookup: {from: 'users', localField: 'userId', foreignField: '_id', as: 'userInfo'}},
             {$unwind: {path: '$userInfo', preserveNullAndEmptyArrays: true}},
@@ -200,7 +199,6 @@ export default class GameController {
     private logger: Logger;
 
     constructor(server: Server) {
-        this.models = server.dbCore.models;
         this.logger = server.logger;
     }
 
@@ -215,7 +213,7 @@ export default class GameController {
 
     private getGroupsByUser = async (userId: string | ObjectID, res: Express.Response, next: NextFunction) => {
         console.log('Searching by userID: ' + userId);
-        const groups = await this.models.GroupGame.find({'members.userId': new ObjectID(userId)});
+        const groups = await models.GroupGame.find({'members.userId': new ObjectID(userId)});
         res.status(200).json(groups);
     };
 }

@@ -45,8 +45,8 @@ export default class Server {
         this.logger = myLogg.logger;
         this.dbCore = new Core();
         this.jwt = JWT.get(this);
-        listenSockets(this.dbCore.models);
-        listenGroupSocket(this.dbCore.models);
+        listenSockets();
+        listenGroupSocket();
     }
 
     public static get instance() {

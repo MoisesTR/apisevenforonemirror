@@ -1,6 +1,5 @@
 import socketIO from 'socket.io';
 import redisAdapter from 'socket.io-redis';
-import {IModels} from '../db/core';
 import {redisPub, redisSub} from '../redis/redis';
 import {ObjectId} from 'bson';
 import {ENotificationTypes} from '../db/models/Notification';
@@ -9,6 +8,7 @@ import {EMainEvents} from './constants/main';
 import {EGameEvents} from './constants/game';
 import DynamicKey from '../redis/keys/dynamics';
 import game from '../controllers/game';
+import models from '../db/models'
 
 export interface ISocketManagerAttributes {
     main: socketIO.Server;
@@ -27,7 +27,7 @@ mainSocket = socketIO(httpServer, {
 mainSocket.adapter(redisAdapter({pubClient: redisPub, subClient: redisSub}));
 gameGroups = mainSocket.of('groups');
 
-export const listenSockets = (models: IModels) => {
+export const listenSockets = () => {
     console.log('Listen sockets');
     mainSocket.on('connection', socket => {
         console.log('Socket principal connection', 'socket.client');
@@ -108,7 +108,7 @@ export const listenSockets = (models: IModels) => {
     // });
 };
 
-export const listenGroupSocket = (models: IModels) => {
+export const listenGroupSocket = () => {
     gameGroups = mainSocket.of('groupGames');
     gameGroups.on('connection', async socketGame => {
         // const groups = await models.GroupGame.find({});
