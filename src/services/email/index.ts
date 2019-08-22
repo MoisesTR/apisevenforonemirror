@@ -55,5 +55,6 @@ export const recoverAccountEmail = async (from: string, user: IUserDocument) => 
             userName: user.userName,
         },
     };
-    const resp = await sgMail.send(msg);
+    await sgMail.send(msg);
 };
+

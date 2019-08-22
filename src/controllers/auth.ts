@@ -1,4 +1,5 @@
 import Express, {NextFunction} from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import randomstring from 'randomstring';
 import randomNumber from 'random-number';
@@ -14,7 +15,6 @@ import {IjwtResponse} from '../services/jwt';
 import {redisPub} from '../redis/redis';
 import DynamicKeys from '../redis/keys/dynamics';
 import {recoverAccountEmail, sendConfirmationEmail} from '../services/email';
-import {ERoles} from '../db/models/Role';
 import {IRoleDocument} from '../db/interfaces/IRole';
 import {UserForLoginType} from './interfaces/UserForLoginType';
 import {ILoginResponse} from './interfaces/LoginResponse';
@@ -457,6 +457,7 @@ export class UserController {
     });
 
     getEmailByUserName = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+        // TODO: return
         const userName = req.params.userName;
 
         const user = await this.models.User.findOne({userName: userName});
@@ -466,26 +467,43 @@ export class UserController {
             return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
         }
 
-        // TODO: update that config
-        const emailResp = await recoverAccountEmail(user.email, user);
-
-        console.log('Email envado', emailResp);
         res.status(200).json({userName: userName, email: user.email});
     });
 
-    recoverAccount = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    forgotAccount = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const data = req.body;
         const condition: any = {};
+        // 1) Determine the corresponding filter to GET the user
         if (!!data.userName) {
             condition.userName = data.userName;
         } else {
             condition.email = data.email;
         }
+        // 2) Get user based on the above filter
         const user = await this.models.User.findOne({...condition});
+
         if (!user) {
             return next(new AppError('User not found!', 404, 'UNFOUND'));
         }
-        //TODO: Regresar
+        // 3) Generate the random token and set it on the secretToken field of user, and return it (the not hashed)
+        const resetToken = user.createPasswordResetToken();
+        await user.save({ validateBeforeSave: false});
+        console.log('Auth controller. forgot password', resetToken)
+
+        // 4) Send it to user's email
+        try {
+            await recoverAccountEmail(user.email, user);
+
+            res.status(200)
+                .json({
+                    status: 'success',
+                    message: 'Success, recover email successfully sent'
+                })
+        } catch( err ) {
+            user.secretToken = undefined;
+            user.passwordResetExp = undefined;
+            await user.save({ validateBeforeSave: false})
+        }
     });
 
     getActivityTypes = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -545,6 +563,36 @@ export class UserController {
         };
     };
 }
+
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+    //TODO: return
+    // 1) Get user based on the token
+    const hashedToken = crypto
+        .createHash('sha256')
+        .update(req.params.token)
+        .digest('hex');
+
+    const user = await User.findOne({
+        secretToken: hashedToken,
+        passwordResetExp: { $gt: Date.now() }
+    });
+
+    // 2) If token has not expired, and there is user, set the new oassword
+    if (!user) {
+        return next(new AppError('Token is invalid or has expired!', 400));
+    }
+
+    user.passwordHash = req.body.password;
+    user.secretToken = undefined;
+    user.passwordResetExp = undefined;
+
+    // 3) Updat changedPasswordAt property for the user
+    await user.save({ validateBeforeSave: true });
+    // 4) Log the user in, send JWT
+    // createSendToken(user, 200, res);
+});
+
 
 const alreadyExist = (users: IUserDocument[], userData: any) => {
     //Si se encontro mas de un usuario

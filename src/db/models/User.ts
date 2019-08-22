@@ -3,6 +3,7 @@
 import {model, Schema, Types} from 'mongoose';
 import {IUser, IUserDocument, IUserModel} from '../interfaces/IUser';
 import {ObjectId} from 'bson';
+import crypto from 'crypto';
 
 const validGenders = {
     values: ['M', 'F'],
@@ -70,6 +71,8 @@ const userSchema = new Schema(
             type: String,
             default: 'none',
         },
+        passwordChangeAt: Date,
+        passwordResetExp: Date
     },
     {
         timestamps: true,
@@ -119,5 +122,22 @@ userSchema.methods.getPurchaseHistoryById = function(userId: string | Types.Obje
         ])
         .exec();
 };
+
+userSchema.methods.createPasswordResetToken = function() {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    this.secretToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+    // Only valid for the next hout
+    this.passwordResetExp = Date.now() + 60 * 60 * 1000;
+
+    console.log(
+        { resetToken },
+        this.passwordResetToken
+    );
+    return resetToken;
+};
+
 
 export default model<IUserDocument, IUserModel>('user', userSchema);
