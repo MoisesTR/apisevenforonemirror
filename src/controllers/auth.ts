@@ -22,6 +22,11 @@ import AppError from '../classes/AppError';
 import models from '../db/models';
 import {IJWTResponse} from '../services/interfaces/JWTResponse';
 import logger from '../services/logger';
+import {
+    createAccessToken,
+    createRefreshToken,
+    ensureAuth
+} from '../services/jwt';
 
 const saltRounds = 10;
 
@@ -43,10 +48,8 @@ const generateRandomUserName = (email: string) => {
 };
 
 export class UserController {
-    private jwt: IJWTResponse;
 
     constructor(server: Server) {
-        this.jwt = server.jwt;
     }
 
     signInFacebook = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -140,8 +143,8 @@ export class UserController {
 
         const insertInfo = await user.save();
 
-        const {_token: accessTokenGen, expiration} = await this.jwt.createAccessToken(user);
-        const {_token: refreshTokenGen, expiration: expirationRefresh} = await this.jwt.createRefreshToken(user);
+        const {_token: accessTokenGen, expiration} = await createAccessToken(user);
+        const {_token: refreshTokenGen, expiration: expirationRefresh} = await createRefreshToken(user);
 
         const userInfo = await models.User.findOne({email: socialUser.email}).populate('role');
         if (!userInfo) {
@@ -267,8 +270,8 @@ export class UserController {
 
     // GENERAL METHOD FOR GENERATE TOKEN AND REFRESH TOKEN, AND BUILD RESPONSE TO RETURN TO LOGIN
     async getResponseToSendToLogin(user: any) {
-        const {expiration: expirationRefres, _token: _tokenRefresh} = await this.jwt.createRefreshToken(user, 10, 'minutes');
-        const {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
+        const {expiration: expirationRefres, _token: _tokenRefresh} = await createRefreshToken(user, 10, 'minutes');
+        const {_token: tokenGen, expiration} = await createAccessToken(user);
 
         // TODO: come back implement the browser agent store
         await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefres), _tokenRefresh);
@@ -441,7 +444,7 @@ export class UserController {
         if (redisRefreshToken !== refreshToken) {
             return next(new AppError('El token de actualización no es valido, vuelva a iniciar sesion!', 401, 'TRNOTVAL'));
         }
-        const {_token: tokenGen, expiration} = await this.jwt.createAccessToken(user);
+        const {_token: tokenGen, expiration} = await createAccessToken(user);
         await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
 
         logger.info('New access token for ' + user.userName, {token: tokenGen, refreshToken});

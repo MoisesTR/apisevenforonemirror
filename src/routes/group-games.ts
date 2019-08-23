@@ -4,9 +4,9 @@ import * as groupValidations from '../services/validations/game';
 import Server from '../server';
 import * as GameController from '../controllers/game';
 import {app} from '../app';
+import {ensureAuth} from '../services/jwt';
 
 export const register = (server: Server) => {
-    const {ensureAuth} = server.jwt;
     const router = Express.Router();
     /* GET home page. */
     router.get('/', function(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
@@ -14,17 +14,25 @@ export const register = (server: Server) => {
     });
 
     router
-        .get('/game-groups', GameController.getGameGroups)
+        .route('/game-groups')
+        .get( GameController.getGameGroups)
+        .post( ensureAuth, groupValidations.createGroup, validsParams, GameController.createGroup)
+        .delete(ensureAuth);
+
+    router
         .get('/game-groups/:groupId', ensureAuth, groupValidations.getGroup, validsParams, GameController.getGroupMembers)
-        .post('/game-groups', ensureAuth, groupValidations.createGroup, validsParams, GameController.createGroup)
-        .post('/game-groups/members/:groupId', ensureAuth, groupValidations.addMemberToGroup, validsParams, GameController.addMemberToGroup)
+
+    router
+        .route('/game-groups/members/:groupId')
+        .post( ensureAuth, groupValidations.addMemberToGroup, validsParams, GameController.addMemberToGroup)
         .delete(
-            '/game-groups/members/:groupId',
             ensureAuth,
             groupValidations.removeMemberFromGroup,
             validsParams,
             GameController.removeMemberFromGroup,
-        )
+        );
+
+    router
         .get('/purchase-history/me', ensureAuth, GameController.getOwnPurchaseHistory)
         .get('/purchase-history/:userId', ensureAuth, groupValidations.userIdParam, validsParams, GameController.getPurchaseHistory)
         .get('/me/game-groups', ensureAuth, GameController.getMyCurrentsGroups)
@@ -43,5 +51,6 @@ export const register = (server: Server) => {
             validsParams,
             GameController.getTopWinners,
         );
+
     app.use('/api', router);
 };

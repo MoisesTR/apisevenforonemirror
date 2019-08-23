@@ -8,10 +8,10 @@ import server from '../server';
 import {UserController} from '../controllers/auth';
 import RoleController from '../controllers/roles';
 import {app} from '../app';
+import {ensureAuth} from '../services/jwt';
 //
 export const register = (server: server) => {
     const router = Express.Router();
-    const {ensureAuth} = server.jwt;
     const authController = new UserController(server);
     const roleController = new RoleController(server);
 

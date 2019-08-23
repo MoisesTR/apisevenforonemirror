@@ -1,7 +1,5 @@
 import Express, {NextFunction} from 'express';
 import envVars from './global/environment';
-import {Logger} from 'winston';
-import MyLogger from './services/logger';
 import {Core} from './db/core';
 // Internationalization
 import i18n from 'i18n';
@@ -12,11 +10,9 @@ import * as ThirdPartyMiddlewares from './middlewares/thirdparty-middlewares';
 import * as AuthRouter from './routes/authRoutes';
 import * as GroupGamesRouter from './routes/group-games';
 import * as PaypalRouter from './routes/paypal';
-import * as JWT from './services/jwt';
 // Socket
 import {app, httpServer} from './app';
 import {listenGroupSocket, listenSockets} from './sockets/socket';
-import {IJWTResponse} from './services/interfaces/JWTResponse';
 
 const debug = require('debug')('sevenforoneapi:server');
 
@@ -37,11 +33,9 @@ export default class Server {
     private static _intance: Server;
 
     public dbCore: Core;
-    public jwt: IJWTResponse;
 
     private constructor() {
         this.dbCore = new Core();
-        this.jwt = JWT.get(this);
         listenSockets();
         listenGroupSocket();
     }

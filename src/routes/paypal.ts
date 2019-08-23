@@ -4,10 +4,10 @@ import * as paypalValidations from '../services/validations/paypal';
 import * as paypalController from '../controllers/paypal';
 import Server from '../server';
 import {app} from '../app';
+import {ensureAuth} from '../services/jwt';
 
 export const register = (server: Server) => {
     const router = Express.Router();
-    const {ensureAuth} = server.jwt;
     /* GET home page. */
     router.get('/', function(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
         res.render('index', {title: 'Express'});
