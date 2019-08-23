@@ -22,5 +22,6 @@ export interface IGroupGame {
 export interface IGroupGameDocument extends Document, IGroupGame {
     addMember: (memberData: IMember, payReference: string) => Promise<any>;
     removeMember: (memberId: Types.ObjectId) => Promise<IGroupGameDocument>;
+    changeActiveState: (enabled: boolean) => void;
 }
 export interface IGroupGameModel extends Model<IGroupGameDocument> {}

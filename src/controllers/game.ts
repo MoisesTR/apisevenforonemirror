@@ -7,6 +7,8 @@ import {IPurchaseHistoryDocument} from '../db/interfaces/IPurchaseHistory';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../classes/AppError';
 import models from '../db/models';
+import {Group} from 'nodemailer/lib/addressparser';
+import GroupGame from '../db/models/GroupGame';
 import DocumentArray = Types.DocumentArray;
 
 export const getOwnPurchaseHistory = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -217,3 +219,23 @@ export const getCurrentGroups = (req: Express.Request, res: Express.Response, ne
 };
 
 
+export const changeActiveState = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    const {groupId, enabled} = matchedData(req, {
+        includeOptionals: false,
+        onlyValidData: true,
+        locations: ['params', 'query']
+    });
+
+    const group = await GroupGame.findById(groupId);
+
+    if (!group) {
+        return next(new AppError('Group not find.', 404));
+    }
+    group.changeActiveState(enabled);
+    await group.save();
+
+    res.status(200)
+        .json({
+            message: 'Success, the group active state has been changed!'
+        })
+});

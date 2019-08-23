@@ -175,4 +175,12 @@ groupSchema.methods.addMember = async function(memberData: IMember, payReference
     }
 };
 
+groupSchema.methods.changeActiveState = function( enabled: boolean ) {
+    if ((this.members.length > 0) && !enabled) {
+        throw new AppError('This action cannot be performed first, get the group members empty.', 403);
+    }
+    this.enabled = enabled;
+    this.updatedAt = new Date();
+};
+
 export default model<IGroupGameDocument>('GroupGame', groupSchema);

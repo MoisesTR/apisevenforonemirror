@@ -5,6 +5,7 @@ import Server from '../server';
 import * as GameController from '../controllers/game';
 import {app} from '../app';
 import {ensureAuth} from '../services/jwt';
+import {changeActiveStateMw} from '../services/validations';
 
 export const register = (server: Server) => {
     const router = Express.Router();
@@ -17,10 +18,11 @@ export const register = (server: Server) => {
         .route('/game-groups')
         .get( GameController.getGameGroups)
         .post( ensureAuth, groupValidations.createGroup, validsParams, GameController.createGroup)
-        .delete(ensureAuth);
 
     router
-        .get('/game-groups/:groupId', ensureAuth, groupValidations.getGroup, validsParams, GameController.getGroupMembers)
+        .route('/game-groups/:groupId')
+        .get(ensureAuth, groupValidations.getGroup, validsParams, GameController.getGroupMembers)
+        .delete(ensureAuth, changeActiveStateMw('groupId'), validsParams, GameController.changeActiveState);
 
     router
         .route('/game-groups/members/:groupId')

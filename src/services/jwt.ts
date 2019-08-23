@@ -78,7 +78,7 @@ async function verifyToken(token: string, secret: string) {
 
 export const containToken = (req: Express.Request, res: Express.Response, next: NextFunction) => {
     if (!req.headers.authorization) {
-        return next(new AppError('The request has no authentication header', 401, 'NAUTH'));
+        return next(new AppError('The request hasn\'t got authentication header', 401, 'NAUTH'));
     }
     next();
 };
@@ -92,7 +92,7 @@ export const containToken = (req: Express.Request, res: Express.Response, next: 
  */
 export const ensureAuth = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     if (!req.headers.authorization) {
-        return next(new AppError('The request has no authentication header', 401, 'NAUTH'));
+        return next(new AppError('The request hasn\'t got authentication header', 401, 'NAUTH'));
     }
     const token = req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
 
