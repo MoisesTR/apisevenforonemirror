@@ -35,7 +35,7 @@ export const register = (server: server) => {
         .post('/recover', validations.recoverAccount, authController.forgotAccount)
         .get('/email/:userName', validations.getEmail, authController.getEmailByUserName)
         .post('/admin', ensureAuth, validations.createAdmin, validsParams, authController.createAdminUser)
-        .get('/getImage/:folder/:img', authController.getImage);
-        // .post('/upload', ensureAuth, authController.upload);
+        .get('/getImage/:folder/:img', ensureAuth, authController.getImage)
+        .put('/upload/:folder/:id', ensureAuth, validations.uploadImage, validsParams , authController.upload);
     app.use('/api/auth', router);
 };
