@@ -22,11 +22,9 @@ import AppError from '../classes/AppError';
 import models from '../db/models';
 import {IJWTResponse} from '../services/interfaces/JWTResponse';
 import logger from '../services/logger';
-import {
-    createAccessToken,
-    createRefreshToken,
-    ensureAuth
-} from '../services/jwt';
+import {createAccessToken, createRefreshToken, ensureAuth} from '../services/jwt';
+import {ECookies} from './interfaces/ECookies';
+import moment = require('moment');
 
 const saltRounds = 10;
 
@@ -48,9 +46,7 @@ const generateRandomUserName = (email: string) => {
 };
 
 export class UserController {
-
-    constructor(server: Server) {
-    }
+    constructor(server: Server) {}
 
     signInFacebook = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req);
@@ -60,7 +56,7 @@ export class UserController {
             '/me',
             {
                 fields: 'id,name,email,first_name,last_name,picture.width(300).height(300){url}',
-                access_token: userData.accessToken
+                access_token: userData.accessToken,
             },
             async (response?: any) => {
                 if (!response || response.error) {
@@ -108,14 +104,17 @@ export class UserController {
             } else if (user.provider === 'facebook') {
                 return next(new AppError('Este correo ya se encuentra asociado a una cuenta de facebook!!!', 400, 'AUTHNOR'));
             } else {
-                const response = await this.getResponseToSendToLogin(user);
+                const response = await this.getResponseToSendToLogin(res, user);
                 res.status(200).json(response);
             }
         } else {
-            const dataLogin = await this.createUserWithSocialLogin({
-                ...userData,
-                role: req.app.locals.roleUser._id
-            }, googleUser);
+            const dataLogin = await this.createUserWithSocialLogin(
+                {
+                    ...userData,
+                    role: req.app.locals.roleUser._id,
+                },
+                googleUser,
+            );
 
             logger.info('Sending info to login');
             res.status(200).json(dataLogin);
@@ -240,13 +239,27 @@ export class UserController {
         logger.info('Login usuario');
 
         // find user by username or email
-        let user: IUserDocument | null = await models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]}).populate('role').select('+passwordHash');
+        let user: IUserDocument | null = await models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]})
+            .populate('role')
+            .select('+passwordHash');
         if (!!user) {
             if (user.provider === 'google') {
-                return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL, utiliza el login correspondiente!`, 400, 'AUTHNOR'));
+                return next(
+                    new AppError(
+                        `El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL, utiliza el login correspondiente!`,
+                        400,
+                        'AUTHNOR',
+                    ),
+                );
             }
             if (user.provider === 'facebook') {
-                return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de Facebook, utiliza el login correspondiente!`, 400, 'AUTHNOR'));
+                return next(
+                    new AppError(
+                        `El correo ${user.email} ya se encuentra asociado a una cuenta de Facebook, utiliza el login correspondiente!`,
+                        400,
+                        'AUTHNOR',
+                    ),
+                );
             }
             const isequal = await bcrypt.compare(userData.password, user.passwordHash);
 
@@ -257,7 +270,7 @@ export class UserController {
                 if (!user.enabled) {
                     return next(new AppError('Tu usuario ha sido deshabilitado!', 403, 'UDISH'));
                 }
-                const response = await this.getResponseToSendToLogin(user);
+                const response = await this.getResponseToSendToLogin(res, user);
                 res.status(200).json(response);
             } else {
                 next(new AppError('Contraseña erronea.', 401, 'EPASSW'));
@@ -269,10 +282,20 @@ export class UserController {
     });
 
     // GENERAL METHOD FOR GENERATE TOKEN AND REFRESH TOKEN, AND BUILD RESPONSE TO RETURN TO LOGIN
-    async getResponseToSendToLogin(user: any) {
+    async getResponseToSendToLogin(res: Express.Response, user: any) {
         const {expiration: expirationRefres, _token: _tokenRefresh} = await createRefreshToken(user, 10, 'minutes');
         const {_token: tokenGen, expiration} = await createAccessToken(user);
 
+        res.cookie(ECookies._AccessToken, tokenGen, {
+            expires: moment.unix(expiration).toDate(),
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+        });
+        res.cookie(ECookies._RefreshToken, _tokenRefresh, {
+            expires: moment.unix(expirationRefres).toDate(),
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+        });
         // TODO: come back implement the browser agent store
         await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefres), _tokenRefresh);
         await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
@@ -306,10 +329,7 @@ export class UserController {
     getUsers = catchAsync(async (req: Express.Request, res: Express.Response) => {
         // const filters = matchedData(req, {locations: ['query']});
 
-        const result = await models.User.find(
-            {},
-            'firstName lastName userName email role birthDate gender isVerified enabled createdAt',
-        )
+        const result = await models.User.find({}, 'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
             .populate('role')
             .exec();
         res.status(200).json(result);
@@ -368,7 +388,7 @@ export class UserController {
         // const adminRole: IRoleDocument | null = await models.Role.findOne({name: ERoles.ADMIN});
         const adminRole: IRoleDocument = req.app.locals.adminRole;
         if (!adminRole) {
-            return next(new AppError('The admin role doesn\'t exist!', 500, 'NAROLE'));
+            return next(new AppError("The admin role doesn't exist!", 500, 'NAROLE'));
         }
 
         if (!user.role.equals(adminRole._id)) {
@@ -506,11 +526,10 @@ export class UserController {
         try {
             await recoverAccountEmail(user.email, user);
 
-            res.status(200)
-                .json({
-                    status: 'success',
-                    message: 'Success, recover email successfully sent'
-                });
+            res.status(200).json({
+                status: 'success',
+                message: 'Success, recover email successfully sent',
+            });
         } catch (err) {
             user.secretToken = undefined;
             user.passwordResetExp = undefined;
@@ -549,13 +568,16 @@ export class UserController {
             } else if (user.provider === 'google') {
                 return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL.`, 400, 'AUTHNOR'));
             }
-            const response = await this.getResponseToSendToLogin(user);
+            const response = await this.getResponseToSendToLogin(res, user);
             res.status(200).json(response);
         } else {
-            const dataLogin = await this.createUserWithSocialLogin({
-                ...userData,
-                role: req.app.locals.roleUser._id
-            }, facebookUser);
+            const dataLogin = await this.createUserWithSocialLogin(
+                {
+                    ...userData,
+                    role: req.app.locals.roleUser._id,
+                },
+                facebookUser,
+            );
 
             logger.info('Sending info to login');
             res.status(200).json(dataLogin);
@@ -579,7 +601,6 @@ export class UserController {
     };
 }
 
-
 exports.resetPassword = catchAsync(async (req, res, next) => {
     //TODO: return
     // 1) Get user based on the token
@@ -590,7 +611,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
     const user = await User.findOne({
         secretToken: hashedToken,
-        passwordResetExp: {$gt: Date.now()}
+        passwordResetExp: {$gt: Date.now()},
     });
 
     // 2) If token has not expired, and there is user, set the new oassword
@@ -607,7 +628,6 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     // 4) Log the user in, send JWT
     // createSendToken(user, 200, res);
 });
-
 
 const alreadyExist = (users: IUserDocument[], userData: any) => {
     //Si se encontro mas de un usuario
