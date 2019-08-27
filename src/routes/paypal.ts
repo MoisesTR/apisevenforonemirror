@@ -22,6 +22,7 @@ export const register = (server: Server) => {
             paypalController.createPaypalTransaction,
         )
         .post('/authorize-paypal-transaction', ensureAuth, paypalController.createAuthorizationTransaction)
+        .post('/payout', ensureAuth, paypalValidations.createPayout, validsParams, paypalController.payout)
         .post('/capture-authorization', ensureAuth, paypalController.captureAuthorization);
     app.use('/api', router);
 };

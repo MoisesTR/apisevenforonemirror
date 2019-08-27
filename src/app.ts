@@ -1,7 +1,6 @@
 import Express from 'express';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
-import xss from 'xss';
 import ENV from './global/environment';
 import http from 'http';
 import {debug} from 'winston';

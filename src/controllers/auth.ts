@@ -26,8 +26,8 @@ import logger from '../services/logger';
 import {createAccessToken, createRefreshToken, ensureAuth} from '../services/jwt';
 import {ECookies} from './interfaces/ECookies';
 import moment = require('moment');
-import {ProviderEnum} from '../db/enums/ProvidersEnum';
 import shortid  from 'shortid';
+import {ProviderEnum} from '../db/enums/ProvidersEnum';
 const saltRounds = 10;
 
 // Using require() in ES5
