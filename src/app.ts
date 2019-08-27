@@ -11,7 +11,7 @@ const app = Express();
 app.set('port', ENV.SERVER_PORT);
 
 // Limit Request from same API
-const limiter = rateLimit({
+const limiter = new rateLimit({
     max: 600,
     windowMs: 60 * 60 * 1000,
     message: 'Too many request from this IP, please try again in an hour!'
@@ -21,7 +21,7 @@ app.use('/api', limiter);
 // Data sanitization against noSQL query injection
 app.use(mongoSanitize());
 // Data sanitization against XSS
-app.use(xss());
+// app.use(xss());
 
 /**
  * Event listener for HTTP server "listening" event.

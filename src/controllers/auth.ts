@@ -19,13 +19,15 @@ import User from '../db/models/User';
 import catchAsync from '../utils/catchAsync';
 import FB from 'fb';
 import AppError from '../classes/AppError';
+import fs from 'fs';
+import path from 'path';
 import models from '../db/models';
-import {IJWTResponse} from '../services/interfaces/JWTResponse';
 import logger from '../services/logger';
 import {createAccessToken, createRefreshToken, ensureAuth} from '../services/jwt';
 import {ECookies} from './interfaces/ECookies';
 import moment = require('moment');
-
+import {ProviderEnum} from '../db/enums/ProvidersEnum';
+import shortid  from 'shortid';
 const saltRounds = 10;
 
 // Using require() in ES5
@@ -418,6 +420,106 @@ export class UserController {
         alreadyExist(users, userData);
     });
 
+    upload = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+
+        const folder = req.params.folder;
+        const id = req.params.id;
+
+        // @ts-ignore
+        const files = req.files;
+
+        if (!files) {
+            return next(new AppError('Debes seleccionar una imagen', 400, 'ERRIMG'));
+        }
+
+        // VALID FOLDER IMAGES
+        const validsFolder = ['user', 'temp'];
+
+        if (validsFolder.indexOf(folder) < 0) {
+            return next(new AppError('El folder de la imagen no es valido!', 400, 'ERRIMG'));
+        }
+
+        // GET NAME FILE
+        const file : any = files.image;
+        const splitNameFile = file.name.split('.');
+        const fileExt = splitNameFile[splitNameFile.length - 1].toLowerCase();
+
+        // VALID EXTENSIONS FOR FILE
+        const validExtensions = ['png', 'jpg', 'jpeg'];
+
+        if (validExtensions.indexOf(fileExt) < 0) {
+            return next(new AppError('Las extensiones validas son ' + validExtensions.join(' , '), 400, 'ERRIMG'));
+        }
+
+        // CUSTOM NAME
+        const nameFile = shortid.generate() + '.' + fileExt;
+
+        // MOVE FILE TO TEMPORAL PATH
+        const path = `src/uploads/${ folder }/${ nameFile }`;
+        const pathViejo = `src/uploads/${ folder }/`;
+
+        file.mv(path, async (err: any) => {
+
+            if (err) {
+                return next(new AppError('Error al mover el archivo', 500, 'ERRIMG'));
+            }
+
+            const user: IUserDocument | null = await models.User.findById(id);
+            if (user == null) {
+                return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
+            }
+
+            if (user.provider === ProviderEnum.NONE) {
+                if (user.image) {
+                    fs.access(pathViejo + user.image, fs.constants.F_OK, (err) => {
+                        if (err) {
+                            console.log('ACCESS PATH ', err);
+                            return next(new AppError('Ha ocurrido un error al eliminar la imagen anterior!', 400, 'ERRIMGDEL'));
+                        }
+
+                        fs.unlink(pathViejo + user.image, async (err) => {
+                            console.log('DELETE IMAGE', err);
+
+                            if (err) {
+                                return next(new AppError('Ha ocurrido un error al eliminar la imagen anterior!', 400, 'ERRIMGDEL'));
+                            }
+
+                            user.image = nameFile;
+                            await user.save();
+                            res.status(200).json({message: 'La imagen ha sido actualizada correctamente!', image: nameFile});
+                        });
+                    });
+                } else {
+                    user.image = nameFile;
+                    await user.save();
+                    res.status(200).json({message: 'La imagen ha sido actualizada correctamente!', image: nameFile});
+                }
+            } else {
+                return next(new AppError('Solo usuarios que no esten asociados con redes sociales pueden actualizar la imagen de perfil!', 400, 'ERRUPDATEIMG'));
+            }
+        })
+    });
+
+    /**
+     * FOLDER --folder where the image is located
+     * IMG -- name of image to find
+     * @param req
+     * @param res
+     */
+    getImage = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+        const folder = req.params.folder;
+        const img = req.params.img;
+
+        const pathImage = path.resolve(__dirname, `../uploads/${folder}/${img}`);
+
+        if (fs.existsSync(pathImage)) {
+            res.sendFile(pathImage);
+        } else {
+            const pathNoImage = path.resolve(__dirname, '../uploads/temp/no-img.jpg');
+            res.sendFile(pathNoImage);
+        }
+    });
+
     changePassword = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const userData = matchedData(req, {locations: ['body', 'params']});
 
@@ -499,6 +601,10 @@ export class UserController {
             return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
         }
 
+        // TODO: update that config
+        const emailResp = await recoverAccountEmail(user.email, user);
+
+        console.log('Email envado', emailResp);
         res.status(200).json({userName: userName, email: user.email});
     });
 

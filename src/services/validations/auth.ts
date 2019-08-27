@@ -105,6 +105,8 @@ export const createRole = [
     }),
 ];
 
+export const uploadImage = [param('id').custom(isObjectId)];
+
 function getMessageMinMaxChar(obj: string, min: number, max: number) {
     return obj + ' contener un minimo de ' + min + ' y máximo de ' + max + ' caracteres!';
 }
