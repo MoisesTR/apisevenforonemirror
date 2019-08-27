@@ -3,15 +3,15 @@ import Express from 'express';
 import * as validations from '../services/validations/auth';
 // Utils
 import {validsParams} from '../utils/genericsValidations';
-import server from "../server";
+import server from '../server';
 // Controllers
-import {UserController} from '../controllers/auth'
-import RoleController from '../controllers/roles'
+import {UserController} from '../controllers/auth';
+import RoleController from '../controllers/roles';
 import {app} from '../app';
+import {ensureAuth} from '../services/jwt';
 //
 export const register = (server: server) => {
     const router = Express.Router();
-    const {ensureAuth} = server.jwt;
     const authController = new UserController(server);
     const roleController = new RoleController(server);
 
@@ -29,11 +29,11 @@ export const register = (server: server) => {
         .post('/verifyemail/:token', authController.verifyEmail)
         .get('/me', ensureAuth, authController.getAuthenticateUserInfo)
         .delete('/users/:userId', validations.changeStateUser, validsParams, authController.changeStateUser)
-        .post('/roles\$', validations.createRole, validsParams, roleController.createRole)
-        .get('/roles\$', roleController.getRoles)
+        .post('/roles$', validations.createRole, validsParams, roleController.createRole)
+        .get('/roles$', roleController.getRoles)
         .get('/roles/:roleId', roleController.getRole)
-        .post('/recover',   validations.recoverAccount, authController.recoverAccount)
+        .post('/recover', validations.recoverAccount, authController.forgotAccount)
         .get('/email/:userName', validations.getEmail, authController.getEmailByUserName)
         .post('/admin', ensureAuth, validations.createAdmin, validsParams, authController.createAdminUser);
     app.use('/api/auth', router);
-}
+};

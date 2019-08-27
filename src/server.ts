@@ -1,7 +1,5 @@
 import Express, {NextFunction} from 'express';
 import envVars from './global/environment';
-import {Logger} from 'winston';
-import MyLogger from './services/logger';
 import {Core} from './db/core';
 // Internationalization
 import i18n from 'i18n';
@@ -12,8 +10,6 @@ import * as ThirdPartyMiddlewares from './middlewares/thirdparty-middlewares';
 import * as AuthRouter from './routes/authRoutes';
 import * as GroupGamesRouter from './routes/group-games';
 import * as PaypalRouter from './routes/paypal';
-import * as JWT from './services/jwt';
-import {IjwtResponse} from './services/jwt';
 // Socket
 import {app, httpServer} from './app';
 import {listenGroupSocket, listenSockets} from './sockets/socket';
@@ -34,21 +30,14 @@ i18n.configure({
 });
 
 export default class Server {
-
     private static _intance: Server;
 
-    public logger: Logger;
     public dbCore: Core;
-    public jwt: IjwtResponse;
 
     private constructor() {
-
-        const myLogg = new MyLogger(__dirname);
-        this.logger = myLogg.logger;
         this.dbCore = new Core();
-        this.jwt = JWT.get(this);
-        listenSockets(this.dbCore.models);
-        listenGroupSocket(this.dbCore.models);
+        listenSockets();
+        listenGroupSocket();
     }
 
     public static get instance() {
@@ -59,8 +48,10 @@ export default class Server {
         //Configuracion cabeceras y cors
         app.use((req: Express.Request, res: Express.Response, next: NextFunction) => {
             res.header('Access-Control-Allow-Origin', '*');
-            res.header('Access-Control-Allow-Headers', 'Authorization, X-API-KEY, Origin, ' +
-                'X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method');
+            res.header(
+                'Access-Control-Allow-Headers',
+                'Authorization, X-API-KEY, Origin, ' + 'X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method',
+            );
             res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
             res.header('Allow', 'GET, POST, OPTIONS, PUT, DELETE');
             next();
@@ -83,7 +74,6 @@ export default class Server {
     }
 
     private escucharSockets() {
-
         console.log('Escuchando conexiones - sockets');
 
         // this.io.on('connection', cliente => {
@@ -102,7 +92,5 @@ export default class Server {
         //
         //
         // });
-
     }
-
 }

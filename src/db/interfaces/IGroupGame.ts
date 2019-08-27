@@ -1,4 +1,4 @@
-import {Document, Model, Types} from "mongoose";
+import {Document, Model, Types} from 'mongoose';
 import ObjectId = Types.ObjectId;
 
 export interface IMember {
@@ -6,10 +6,9 @@ export interface IMember {
     userName: string;
     image: string;
 }
-export interface IMemberDocument extends IMember,Document{}
+export interface IMemberDocument extends IMember, Document {}
 
-export interface IMemberModel extends Model<IMemberDocument>{
-}
+export interface IMemberModel extends Model<IMemberDocument> {}
 
 export interface IGroupGame {
     initialInvestment: number;
@@ -21,8 +20,8 @@ export interface IGroupGame {
     enabled: boolean;
 }
 export interface IGroupGameDocument extends Document, IGroupGame {
-    addMember: (memberData: IMember, payReference: string) => Promise<any>,
-    removeMember: (memberId: Types.ObjectId) => Promise<IGroupGameDocument>
+    addMember: (memberData: IMember, payReference: string) => Promise<any>;
+    removeMember: (memberId: Types.ObjectId) => Promise<IGroupGameDocument>;
+    changeActiveState: (enabled: boolean) => void;
 }
-export interface IGroupGameModel extends Model<IGroupGameDocument>{
-}
+export interface IGroupGameModel extends Model<IGroupGameDocument> {}

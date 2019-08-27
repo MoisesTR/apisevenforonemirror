@@ -12,5 +12,4 @@ export interface INotification {
 
 export interface INotificationDocument extends IRole, Document {}
 
-export interface INotificationModel extends Model<INotificationDocument>{
-}
+export interface INotificationModel extends Model<INotificationDocument> {}

@@ -1,24 +1,18 @@
-export class ErrorREST extends Error {
-    public status?: number;
-    public response: { status: number; message: string; detail: string };
-
-    constructor(error: { status: number, message: string }, detail: string = '', ...args: any) {
-        super(...args);
-        this.response = {status: error.status, message: error.message, detail: detail};
-    }
-}
-
 export const Errors = {
     BadRequest: {
         status: 400,
-        message: "La solicitud tiene formato incorrecto!"
+        message: 'La solicitud tiene formato incorrecto!',
+    },
+    NotFound: {
+        status: 404,
+        message: 'Route not found!'
     },
     Unauthorized: {
         status: 401,
-        message: "Credenciales de autenticación no validas!"
+        message: 'Credenciales de autenticación no validas!',
     },
     Forbidden: {
         status: 403,
-        message: "You're missing permission to execute this request."
-    }
+        message: "You're missing permission to execute this request.",
+    },
 };

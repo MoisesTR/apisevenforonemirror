@@ -9,12 +9,13 @@ import compression from 'compression';
 
 export const apply = (app: express.Application, baseDir: string) => {
     app.use(logger('dev'));
+    // Set security HTTP Headers
     app.use(helmet());
     app.use(compression());
-    app.use(express.json());
+    // Body parser, reading data from body into req.body
+    app.use(express.json({ limit: '1kb'}));
     app.use(express.urlencoded({extended: false}));
     app.use(cookieParser());
-    app.use(express.static(path.join(baseDir,'..','public')));
-}
-
-
+    // Serving statics files
+    app.use(express.static(path.join(baseDir, '..', 'public')));
+};

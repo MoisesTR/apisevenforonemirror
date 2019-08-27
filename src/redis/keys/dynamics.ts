@@ -4,9 +4,7 @@ const socketsUser = (username: string) => `sockets-${username}`;
 
 export default class DynamicKey {
     private static _instance: DynamicKey;
-    private constructor( ) {
-
-    }
+    private constructor() {}
     // public static get instance() {
     //     if ( !this._instance)
     //         this._instance = new DynamicKey();
@@ -16,13 +14,13 @@ export default class DynamicKey {
     public static get set() {
         return {
             refreshKey,
-            accessTokenKey
-        }
+            accessTokenKey,
+        };
     }
 
     public static get hash() {
         return {
             socketsUser,
-        }
+        };
     }
 }

@@ -9,4 +9,4 @@ export type UserForLoginType = {
     role: ObjectId;
     email: string;
     image: string;
-}
+};

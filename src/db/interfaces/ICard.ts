@@ -1,4 +1,4 @@
-import {Document, Model} from "mongoose";
+import {Document, Model} from 'mongoose';
 
 export interface ICardAttributes {
     cardNumber: string;
@@ -8,9 +8,6 @@ export interface ICardAttributes {
     createdAt: Date;
     UpdatedAt: Date;
 }
-export interface ICardDocument extends Document, ICardAttributes{
-}
+export interface ICardDocument extends Document, ICardAttributes {}
 
-export interface ICardModel extends Model<ICardDocument> {
-}
-
+export interface ICardModel extends Model<ICardDocument> {}
