@@ -1,5 +1,6 @@
 import {model, Schema} from 'mongoose';
 import {IPurchaseHistory, IPurchaseHistoryDocument, IPurchaseHistoryModel} from '../interfaces/IPurchaseHistory';
+import {ETableNames} from '../interfaces/ETableNames';
 export enum EPurchaseHistoryAction {
     WIN = 'win',
     INVEST = 'invest',
@@ -9,12 +10,12 @@ const purchaseHistory = new Schema(
     {
         userId: {
             type: Schema.Types.ObjectId,
-            ref: 'User',
+            ref: ETableNames.User,
             required: true,
         },
         groupId: {
             type: Schema.Types.ObjectId,
-            ref: 'GroupGame',
+            ref: ETableNames.GroupGame,
             required: true,
         },
         action: {
@@ -43,4 +44,4 @@ const purchaseHistory = new Schema(
     },
 );
 
-export default model<IPurchaseHistoryDocument>('purchaseHistory', purchaseHistory);
+export default model<IPurchaseHistoryDocument>(ETableNames.PurchaseHistory, purchaseHistory);

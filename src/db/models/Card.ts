@@ -3,10 +3,11 @@
 import * as mongoose from 'mongoose';
 import {Schema} from 'mongoose';
 import {ICardDocument, ICardModel} from '../interfaces/ICard';
+import {ETableNames} from '../interfaces/ETableNames';
 
 export const cardSchema = new Schema(
     {
-        user: {type: Schema.Types.ObjectId, ref: 'User'},
+        user: {type: Schema.Types.ObjectId, ref: ETableNames.User},
         cardNumber: {type: String, index: {unique: true}},
         cardType: ['Pending Types'],
         expirationDate: Date,
@@ -23,4 +24,4 @@ export const cardSchema = new Schema(
     },
 );
 
-export default mongoose.model<ICardDocument, ICardModel>('card', cardSchema);
+export default mongoose.model<ICardDocument, ICardModel>(ETableNames.Card, cardSchema);
