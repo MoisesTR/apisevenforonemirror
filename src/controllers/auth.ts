@@ -26,7 +26,6 @@ import logger from '../services/logger';
 import {createAccessToken, createRefreshToken, ensureAuth} from '../services/jwt';
 import {ECookies} from './interfaces/ECookies';
 import moment = require('moment');
-import shortid  from 'shortid';
 import {ProviderEnum} from '../db/enums/ProvidersEnum';
 const saltRounds = 10;
 
@@ -452,7 +451,7 @@ export class UserController {
         }
 
         // CUSTOM NAME
-        const nameFile = shortid.generate() + '.' + fileExt;
+        const nameFile = crypto.randomBytes(15).toString('hex') + '.' + fileExt;
 
         // MOVE FILE TO TEMPORAL PATH
         const path = `src/uploads/${ folder }/${ nameFile }`;
