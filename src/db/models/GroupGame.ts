@@ -10,14 +10,14 @@ import {IUserDocument} from '../interfaces/IUser';
 import {EGameEvents} from '../../sockets/constants/game';
 import {EMainEvents} from '../../sockets/constants/main';
 import DynamicKey from '../../redis/keys/dynamics';
-import {userIdParam} from '../../services/validations/game';
 import AppError from '../../classes/AppError';
+import {EModelNames} from '../interfaces/EModelNames';
 
 export const memberSchema: Schema = new Schema(
     {
         userId: {
             type: ObjectId,
-            ref: 'User',
+            ref: EModelNames.User,
         },
         userName: {
             type: Schema.Types.String,
@@ -183,4 +183,4 @@ groupSchema.methods.changeActiveState = function( enabled: boolean ) {
     this.updatedAt = new Date();
 };
 
-export default model<IGroupGameDocument>('GroupGame', groupSchema);
+export default model<IGroupGameDocument>(EModelNames.GroupGame, groupSchema);

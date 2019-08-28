@@ -1,13 +1,14 @@
 'use strict';
 import {model, Schema} from 'mongoose';
 import {IUserActivityLogDocument} from '../interfaces/IUserActivityLog';
+import {EModelNames} from '../interfaces/EModelNames';
 
 const userActivitySchema = new Schema(
     {
         userId: {
             type: Schema.Types.ObjectId,
             required: true,
-            ref: 'User',
+            ref: EModelNames.User,
         },
         userSnapshot: {
             type: Object,
@@ -15,7 +16,7 @@ const userActivitySchema = new Schema(
         },
         activityId: {
             type: Schema.Types.ObjectId,
-            ref: 'ActivityTypes',
+            ref: EModelNames.ActivityTypes,
             required: true,
         },
     },
@@ -31,4 +32,4 @@ userActivitySchema.statics.byUser = function(userId: string) {
     return this.model.find({userId: userId});
 };
 
-export default model<IUserActivityLogDocument>('UserActivityLog', userActivitySchema);
+export default model<IUserActivityLogDocument>(EModelNames.UserActivity, userActivitySchema);

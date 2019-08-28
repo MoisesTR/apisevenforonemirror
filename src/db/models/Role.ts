@@ -2,6 +2,7 @@
 
 import {model, Schema} from 'mongoose';
 import {IRoleDocument, IRoleModel} from '../interfaces/IRole';
+import {EModelNames} from '../interfaces/EModelNames';
 
 export enum ERoles {
     ADMIN = 'ADMIN',
@@ -31,4 +32,4 @@ const roleModel = new Schema(
     },
 );
 
-export default model<IRoleDocument, IRoleModel>('Role', roleModel);
+export default model<IRoleDocument, IRoleModel>(EModelNames.Role, roleModel);

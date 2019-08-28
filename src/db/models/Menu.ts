@@ -2,6 +2,7 @@
 
 import {model, Schema} from 'mongoose';
 import {IMenuDocument} from '../interfaces/IMenu';
+import {EModelNames} from '../interfaces/EModelNames';
 
 const menuSchema: Schema = new Schema(
     {
@@ -31,4 +32,4 @@ const menuSchema: Schema = new Schema(
     },
 );
 
-export default model<IMenuDocument>('menu', menuSchema);
+export default model<IMenuDocument>(EModelNames.Menu, menuSchema);

@@ -4,6 +4,7 @@ import {model, Schema, Types} from 'mongoose';
 import {IUser, IUserDocument, IUserModel} from '../interfaces/IUser';
 import {ObjectId} from 'bson';
 import crypto from 'crypto';
+import {EModelNames} from '../interfaces/EModelNames';
 
 const validGenders = {
     values: ['M', 'F'],
@@ -53,7 +54,7 @@ const userSchema = new Schema(
         role: {
             type: Schema.Types.ObjectId,
             required: true,
-            ref: 'Role',
+            ref: EModelNames.Role,
         },
         image: {
             type: String,
@@ -140,4 +141,4 @@ userSchema.methods.createPasswordResetToken = function() {
 };
 
 
-export default model<IUserDocument, IUserModel>('user', userSchema);
+export default model<IUserDocument, IUserModel>(EModelNames.User, userSchema);
