@@ -1,4 +1,5 @@
 import Express from 'express';
+import crypto from 'crypto';
 // 1a. Import the SDK package
 // @ts-ignore
 import paypal from '@paypal/checkout-server-sdk';
@@ -11,11 +12,9 @@ import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
  */
 import envVars from '../global/environment';
 import {client} from '../paypalClient';
-import server from '../server';
 import AppError from '../classes/AppError';
 import catchAsync from '../utils/catchAsync';
 import requestPaypal from 'request';
-import shortid from 'shortid';
 //NAME ERROR PAYPAL
 const INSUFFICIENT_FUNDS = 'INSUFFICIENT_FUNDS';
 import logger from '../services/logger';
@@ -163,7 +162,7 @@ export const payout = catchAsync(async (req: Express.Request, res: Express.Respo
           envVars.ENVIRONMENT === 'production'
             ? 'https://api.paypal.com/v1/payments/payouts'
             : 'https://api.sandbox.paypal.com/v1/payments/payouts';
-        const senderBatchId = shortid.generate();
+        const senderBatchId = crypto.randomBytes(12).toString('hex');
         const bodyParsed = JSON.parse(body);
         requestPaypal.post(
           {
