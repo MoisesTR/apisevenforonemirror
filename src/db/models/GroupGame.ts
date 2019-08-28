@@ -11,13 +11,13 @@ import {EGameEvents} from '../../sockets/constants/game';
 import {EMainEvents} from '../../sockets/constants/main';
 import DynamicKey from '../../redis/keys/dynamics';
 import AppError from '../../classes/AppError';
-import {ETableNames} from '../interfaces/ETableNames';
+import {EModelNames} from '../interfaces/EModelNames';
 
 export const memberSchema: Schema = new Schema(
     {
         userId: {
             type: ObjectId,
-            ref: ETableNames.User,
+            ref: EModelNames.User,
         },
         userName: {
             type: Schema.Types.String,
@@ -183,4 +183,4 @@ groupSchema.methods.changeActiveState = function( enabled: boolean ) {
     this.updatedAt = new Date();
 };
 
-export default model<IGroupGameDocument>(ETableNames.GroupGame, groupSchema);
+export default model<IGroupGameDocument>(EModelNames.GroupGame, groupSchema);

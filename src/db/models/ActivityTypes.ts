@@ -2,7 +2,7 @@
 
 import {model, Schema} from 'mongoose';
 import {IActivityTypesDocument} from '../interfaces/IActivityTypes';
-import {ETableNames} from '../interfaces/ETableNames';
+import {EModelNames} from '../interfaces/EModelNames';
 
 const activityTypesSchema = new Schema(
     {
@@ -23,4 +23,4 @@ const activityTypesSchema = new Schema(
     },
 );
 
-export default model<IActivityTypesDocument>(ETableNames.ActivityTypes, activityTypesSchema);
+export default model<IActivityTypesDocument>(EModelNames.ActivityTypes, activityTypesSchema);

@@ -1,5 +1,5 @@
 import {Schema, model, Types} from 'mongoose';
-import {ETableNames} from '../interfaces/ETableNames';
+import {EModelNames} from '../interfaces/EModelNames';
 const {ObjectId, Decimal128} = Types;
 
 const paymentsSchema = new Schema({
@@ -19,7 +19,7 @@ const paymentsSchema = new Schema({
     user: {
         type: ObjectId,
         required: true,
-        ref: ETableNames.User
+        ref: EModelNames.User
     },
     requestedQuantity: {
         type: Decimal128,
@@ -36,4 +36,4 @@ const paymentsSchema = new Schema({
     }
 });
 
-export default model(ETableNames.Payments, paymentsSchema);
+export default model(EModelNames.Payments, paymentsSchema);

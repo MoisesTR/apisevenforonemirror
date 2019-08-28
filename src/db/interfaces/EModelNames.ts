@@ -1,4 +1,4 @@
-export enum ETableNames {
+export enum EModelNames {
     User = 'user',
     Payments = 'Payments',
     GroupGame = 'GroupGame',

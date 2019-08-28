@@ -1,7 +1,7 @@
 import mongoose, {model, Schema} from 'mongoose';
 import {INotification, INotificationDocument, INotificationModel} from '../interfaces/INotification';
 import {ObjectId} from 'bson';
-import {ETableNames} from '../interfaces/ETableNames';
+import {EModelNames} from '../interfaces/EModelNames';
 
 export enum ENotificationTypes {
     DEFAULT = 'DEFAULT',
@@ -15,7 +15,7 @@ const NotificationSchema = new Schema(
         userId: {
             type: ObjectId,
             required: true,
-            ref: ETableNames.User,
+            ref: EModelNames.User,
         },
         notificationType: {
             type: String,
@@ -40,7 +40,7 @@ const NotificationSchema = new Schema(
         groupId: {
             type: ObjectId,
             required: false,
-            ref: ETableNames.GroupGame,
+            ref: EModelNames.GroupGame,
         },
     },
     {
@@ -48,4 +48,4 @@ const NotificationSchema = new Schema(
     },
 );
 
-export default model<INotificationDocument, INotificationModel>(ETableNames.Notification, NotificationSchema);
+export default model<INotificationDocument, INotificationModel>(EModelNames.Notification, NotificationSchema);
