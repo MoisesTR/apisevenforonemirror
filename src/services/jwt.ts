@@ -92,7 +92,7 @@ export const containToken = (req: Express.Request, res: Express.Response, next: 
  */
 export const ensureAuth = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     if (!req.headers.authorization) {
-        return next(new AppError('The request hasn\'t got authentication header', 401, 'NAUTH'));
+        return next(new AppError('The request hasn\'t got authentication header', 400, 'NAUTH'));
     }
     const token = req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
 
@@ -104,7 +104,7 @@ export const ensureAuth = async (req: Express.Request, res: Express.Response, ne
         //Si encontramos el usuario
         if (user.enabled === false) {
             //si el usuario se encuentra deshabilitado
-            return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
+            return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 400, 'EPUSER'));
         }
         if (decode.isExpired) {
             return next(new AppError('Access token expired, refresh please!', 401, 'TOKENEXPIRED'));
