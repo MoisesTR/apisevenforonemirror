@@ -23,10 +23,13 @@ import fs from 'fs';
 import path from 'path';
 import models from '../db/models';
 import logger from '../services/logger';
-import {createAccessToken, createRefreshToken, ensureAuth} from '../services/jwt';
+import {createAccessToken, createRefreshToken} from '../services/jwt';
 import {ECookies} from './interfaces/ECookies';
-import moment = require('moment');
 import {ProviderEnum} from '../db/enums/ProvidersEnum';
+import {sendMessageToConnectedUser} from '../sockets/socket';
+import {EMainEvents} from '../sockets/constants/main';
+import moment = require('moment');
+
 const saltRounds = 10;
 
 // Using require() in ES5
@@ -559,6 +562,8 @@ export class UserController {
         // get token username
         const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
         if (!redisRefreshToken) {
+            //TODO: FIgure out
+            await sendMessageToConnectedUser(user.userName, EMainEvents.CLOSE_SESSION,{});
             return next(new AppError('Tu token de actualización ha expirado!', 401, 'ETOKEN'));
         }
 
@@ -582,7 +587,7 @@ export class UserController {
 
         const user = await models.User.findById(
             userId,
-            'firstName lastName userName email role birthDate isVerified phones enabledcreatedAt updatedAt',
+            'firstName lastName userName email role birthDate isVerified phones enabled createdAt updatedAt',
         )
             .populate('role')
             .exec();
