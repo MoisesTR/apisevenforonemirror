@@ -78,20 +78,6 @@ export const listenSockets = () => {
     // On read action change notification state
     mainSocket.on('read-notification', (notifiactionId: ObjectId) => {});
 
-    // Watch changes on notification collection
-    models.Notification.watch({}).on('change', async newNotification => {
-        if (newNotification.operationType === 'insert') {
-            console.log('Notifiacion insert', newNotification);
-            const user = await models.User.findById(newNotification.fullDocument.userId);
-            if (!user) return;
-            const socketWinner = await redisPub.hget(DynamicKey.hash.socketsUser(user.userName), 'main');
-            if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
-                mainSocket.to(socketWinner).emit(EMainEvents.NOTIFICATION, {notificationId: newNotification.fullDocument._id});
-            }
-        } else {
-            console.log('Notification change', newNotification);
-        }
-    });
 
     // Watch changes on Users collection
     // models.User.watch({}).on('change', user => {
