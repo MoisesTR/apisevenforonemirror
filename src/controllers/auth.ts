@@ -439,7 +439,7 @@ export class UserController {
         }
 
         // GET NAME FILE
-        const file : any = files.image;
+        const file : any = files.data;
         const splitNameFile = file.name.split('.');
         const fileExt = splitNameFile[splitNameFile.length - 1].toLowerCase();
 
