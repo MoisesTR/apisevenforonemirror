@@ -1,33 +1,33 @@
-import Express, { NextFunction } from "express";
-import crypto from "crypto";
-import bcrypt from "bcryptjs";
-import randomstring from "randomstring";
-import randomNumber from "random-number";
-import { matchedData, remainigTimeInSeconds, resultOrNotFound } from "../utils/defaultImports";
-import { OAuth2Client } from "google-auth-library";
-import Server from "../server";
-import { IUserDocument } from "../db/interfaces/IUser";
-import { IActivityTypesDocument } from "../db/interfaces/IActivityTypes";
-import envVars from "../global/environment";
-import { redisPub } from "../redis/redis";
-import DynamicKeys from "../redis/keys/dynamics";
-import { recoverAccountEmail, sendConfirmationEmail } from "../services/email";
-import { IRoleDocument } from "../db/interfaces/IRole";
-import { UserForLoginType } from "./interfaces/UserForLoginType";
-import { ILoginResponse } from "./interfaces/LoginResponse";
-import User from "../db/models/User";
-import catchAsync from "../utils/catchAsync";
-import FB from "fb";
-import AppError from "../classes/AppError";
-import fs from "fs";
-import path from "path";
-import models from "../db/models";
-import logger from "../services/logger";
-import { createAccessToken, createRefreshToken } from "../services/jwt";
-import { ECookies } from "./interfaces/ECookies";
-import { ProviderEnum } from "../db/enums/ProvidersEnum";
-import moment = require("moment");
-
+import Express, {NextFunction} from 'express';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import randomstring from 'randomstring';
+import randomNumber from 'random-number';
+import {matchedData, remainigTimeInSeconds, resultOrNotFound} from '../utils/defaultImports';
+import {OAuth2Client} from 'google-auth-library';
+import Server from '../server';
+import {IUserDocument} from '../db/interfaces/IUser';
+import {IActivityTypesDocument} from '../db/interfaces/IActivityTypes';
+import envVars from '../global/environment';
+import {redisPub} from '../redis/redis';
+import DynamicKeys from '../redis/keys/dynamics';
+import {recoverAccountEmail, sendConfirmationEmail} from '../services/email';
+import {IRoleDocument} from '../db/interfaces/IRole';
+import {UserForLoginType} from './interfaces/UserForLoginType';
+import {ILoginResponse} from './interfaces/LoginResponse';
+import User from '../db/models/User';
+import catchAsync from '../utils/catchAsync';
+import FB from 'fb';
+import AppError from '../classes/AppError';
+import fs from 'fs';
+import path from 'path';
+import models from '../db/models';
+import logger from '../services/logger';
+import {createAccessToken, createRefreshToken, ensureAuth} from '../services/jwt';
+import {ECookies} from './interfaces/ECookies';
+import moment = require('moment');
+import {ProviderEnum} from '../db/enums/ProvidersEnum';
+import {EMainEvents} from '../sockets/constants/main';
 const saltRounds = 10;
 
 // Using require() in ES5
@@ -560,6 +560,8 @@ export class UserController {
         // get token username
         const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
         if (!redisRefreshToken) {
+            //TODO: FIgure out
+            await sendMessageToConnectedUser(user.userName, EMainEvents.CLOSE_SESSION,{});
             return next(new AppError('Tu token de actualización ha expirado!', 401, 'ETOKEN'));
         }
 
@@ -583,7 +585,7 @@ export class UserController {
 
         const user = await models.User.findById(
             userId,
-            'firstName lastName userName email role birthDate isVerified phones enabledcreatedAt updatedAt',
+            'firstName lastName userName email role birthDate isVerified phones enabled createdAt updatedAt',
         )
             .populate('role')
             .exec();
@@ -602,10 +604,15 @@ export class UserController {
         }
 
         // TODO: update that config
-        const emailResp = await recoverAccountEmail(user.email, user);
+        try {
+            await recoverAccountEmail(user, '');
 
-        console.log('Email envado', emailResp);
-        res.status(200).json({userName: userName, email: user.email});
+            console.log('Email envado');
+            res.status(200).json({userName: userName, email: user.email});
+
+        } catch( _err ) {
+            throw _err
+        }
     });
 
     forgotAccount = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -630,7 +637,8 @@ export class UserController {
 
         // 4) Send it to user's email
         try {
-            await recoverAccountEmail(user.email, user);
+            //TODO: return
+            await recoverAccountEmail(user, '');
 
             res.status(200).json({
                 status: 'success',

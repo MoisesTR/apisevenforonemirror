@@ -171,7 +171,7 @@ export const getTopWinners = catchAsync(async (req: Express.Request, res: Expres
     } else {
         sortOrder.totalWon = -1;
     }
-    console.log('starting the query', sortOrder, match);
+
     let result = await models.PurchaseHistory.aggregate([
         {$match: {...match}},
         {$lookup: {from: 'users', localField: 'userId', foreignField: '_id', as: 'userInfo'}},

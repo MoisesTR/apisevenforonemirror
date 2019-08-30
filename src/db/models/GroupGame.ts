@@ -12,6 +12,7 @@ import {EMainEvents} from '../../sockets/constants/main';
 import DynamicKey from '../../redis/keys/dynamics';
 import AppError from '../../classes/AppError';
 import {EModelNames} from '../interfaces/EModelNames';
+import {winnerNotificationMail} from '../../services/email';
 
 export const memberSchema: Schema = new Schema(
     {
@@ -125,6 +126,11 @@ groupSchema.methods.addMember = async function(memberData: IMember, payReference
                 content: `Felicitaciones ${winner.userName} usted ha sido el ganador en el grupo de $${this.initialInvertion}!`,
                 groupId: this.groupId,
             });
+            try {
+                await winnerNotificationMail(winner, this.initialInvestment.toFixed(), '')
+            } catch( _err ) {
+                //TODO: handle
+            }
             const userHistory = this.model('purchaseHistory')({
                 userId: winner.userId,
                 action: 'win',
