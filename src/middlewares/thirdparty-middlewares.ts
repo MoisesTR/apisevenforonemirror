@@ -14,10 +14,10 @@ export const apply = (app: express.Application, baseDir: string) => {
     app.use(logger('dev'));
     app.use(fileUpload());
     // Set security HTTP Headers
-    app.use(helmet());
+    app.use(helmet({noCache: true}));
     app.use(compression());
     // Body parser, reading data from body into req.body
-    app.use(express.json({ limit: '1kb'}));
+    app.use(express.json({ limit: '20kb'}));
     app.use(express.urlencoded({extended: false}));
     app.use(cookieParser());
     // Serving statics files
