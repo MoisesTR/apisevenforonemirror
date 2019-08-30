@@ -82,9 +82,9 @@ export const updateUser = [
 
 export const signIn = [body('userName').isLength({min: 4, max: 40}), body('password').isLength({min: 5, max: 25})];
 
-export const signInGoogle = [body('roleId').exists(), body('accessToken')];
+export const signInGoogle = [body('roleId').optional({nullable: true}), body('accessToken')];
 
-export const signInFacebook = [body('roleId').exists(), body('accessToken')];
+export const signInFacebook = [body('roleId').optional({nullable: true}), body('accessToken')];
 
 export const verifyUser = [query('token').isLength({min: 7}), query('userName').isLength({min: 4, max: 40})];
 
