@@ -48,7 +48,7 @@ export const listenSockets = () => {
         });
 
         socket.on('REGISTER_USER', username => {
-            console.log('Registrando user', username);
+            console.log('Registrando user', username, socket.id);
             redisPub
                 .hget(DynamicKey.hash.socketsUser(username), 'main')
                 .then(socketID => {
@@ -62,7 +62,7 @@ export const listenSockets = () => {
                     redisPub
                         .hset(DynamicKey.hash.socketsUser(username), 'main', socket.id)
                         .then(() => {
-                            console.log('Key is set');
+                            console.log('Key is set', socket.id);
                         })
                         .catch(() => {
                             console.log('no se pudo asociar el user al socket');
@@ -127,5 +127,15 @@ export const listenGroupSocket = () => {
     //     });
     // });
 };
+export const sendMessageToConnectedUser = async (userName: string, event: EMainEvents, payload: any) =>{
+    const socketID = await redisPub.hget(DynamicKey.hash.socketsUser(userName), 'main');
+    console.log('socket', socketID, 'username', userName)
+    if ( !!socketID ) {
+        mainSocket.to(socketID).emit(event, payload);
+        if (!!mainSocket.sockets.connected[socketID]) {
+            mainSocket.sockets.connected[socketID].disconnect();
+        }
+    }
+}
 
 export {mainSocket, gameGroups};
