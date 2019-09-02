@@ -26,6 +26,7 @@ export const register = (server: server) => {
         .get('/activities', ensureAuth, authController.getActivityTypes)
         .put('/users/:userId', ensureAuth, validations.updateUser, validsParams, authController.updateUser)
         .put('/users/pwd/:userId', ensureAuth, validations.changePassword, validsParams, authController.changePassword)
+        .post('/users/verifyPwd/:userId', ensureAuth, validations.verifyChangePassword, validsParams, authController.verifyChangePassword)
         .post('/verifyemail/:token', authController.verifyEmail)
         .get('/me', ensureAuth, authController.getAuthenticateUserInfo)
         .delete('/users/:userId', validations.changeStateUser, validsParams, authController.changeStateUser)

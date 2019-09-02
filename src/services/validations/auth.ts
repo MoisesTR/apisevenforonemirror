@@ -92,6 +92,7 @@ export const refreshToken = [body('refreshToken').isLength({min: 15}), body('use
 
 export const changeStateUser = [param('userId').custom(isObjectId), query('enabled').isBoolean(), sanitize('enabled').toBoolean()];
 export const changePassword = [param('userId').custom(isObjectId), ...commonPasswordAndConfirmation];
+export const verifyChangePassword = [param('userId').custom(isObjectId), body('password')];
 
 export const getUsers = [];
 
