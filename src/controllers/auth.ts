@@ -1,32 +1,33 @@
-import Express, {NextFunction} from 'express';
-import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
-import randomstring from 'randomstring';
-import randomNumber from 'random-number';
-import {matchedData, remainigTimeInSeconds, resultOrNotFound} from '../utils/defaultImports';
-import {OAuth2Client} from 'google-auth-library';
-import Server from '../server';
-import {IUserDocument} from '../db/interfaces/IUser';
-import {IActivityTypesDocument} from '../db/interfaces/IActivityTypes';
-import envVars from '../global/environment';
-import {redisPub} from '../redis/redis';
-import DynamicKeys from '../redis/keys/dynamics';
-import {recoverAccountEmail, sendConfirmationEmail} from '../services/email';
-import {IRoleDocument} from '../db/interfaces/IRole';
-import {UserForLoginType} from './interfaces/UserForLoginType';
-import {ILoginResponse} from './interfaces/LoginResponse';
-import User from '../db/models/User';
-import catchAsync from '../utils/catchAsync';
-import FB from 'fb';
-import AppError from '../classes/AppError';
-import fs from 'fs';
-import path from 'path';
-import models from '../db/models';
-import logger from '../services/logger';
-import {createAccessToken, createRefreshToken, ensureAuth} from '../services/jwt';
-import {ECookies} from './interfaces/ECookies';
-import moment = require('moment');
-import {ProviderEnum} from '../db/enums/ProvidersEnum';
+import Express, { NextFunction } from "express";
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
+import randomstring from "randomstring";
+import randomNumber from "random-number";
+import { matchedData, remainigTimeInSeconds, resultOrNotFound } from "../utils/defaultImports";
+import { OAuth2Client } from "google-auth-library";
+import Server from "../server";
+import { IUserDocument } from "../db/interfaces/IUser";
+import { IActivityTypesDocument } from "../db/interfaces/IActivityTypes";
+import envVars from "../global/environment";
+import { redisPub } from "../redis/redis";
+import DynamicKeys from "../redis/keys/dynamics";
+import { recoverAccountEmail, sendConfirmationEmail } from "../services/email";
+import { IRoleDocument } from "../db/interfaces/IRole";
+import { UserForLoginType } from "./interfaces/UserForLoginType";
+import { ILoginResponse } from "./interfaces/LoginResponse";
+import User from "../db/models/User";
+import catchAsync from "../utils/catchAsync";
+import FB from "fb";
+import AppError from "../classes/AppError";
+import fs from "fs";
+import path from "path";
+import models from "../db/models";
+import logger from "../services/logger";
+import { createAccessToken, createRefreshToken } from "../services/jwt";
+import { ECookies } from "./interfaces/ECookies";
+import { ProviderEnum } from "../db/enums/ProvidersEnum";
+import moment = require("moment");
+
 const saltRounds = 10;
 
 // Using require() in ES5
@@ -646,6 +647,37 @@ export class UserController {
         const activities: IActivityTypesDocument[] = await models.ActivityTypes.find();
         res.status(200).json(activities);
     });
+
+    verifyChangePassword = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+      const userData = matchedData(req, {locations: ['body', 'params']});
+      const user: IUserDocument | null = await models.User.findOne({_id: userData.userId})
+        .populate('role')
+        .select('+passwordHash');
+
+      if (user) {
+        await UserController.checkPassword(userData, user, res, next);
+      } else {
+        console.log('User not found!');
+        next(new AppError('Usuario no encontrado!', 404, 'NEXIST'));
+      }
+
+    });
+
+    static async checkPassword (userData: any, user: IUserDocument, res: Express.Response, next: NextFunction) {
+
+      const isequal = await bcrypt.compare(userData.password, user.passwordHash);
+      if (isequal) {
+        if (!user.isVerified) {
+          return next(new AppError('Necesitas verificar tu dirección de correo electrónico para iniciar sesión', 401, 'NVERIF'));
+        }
+        if (!user.enabled) {
+          return next(new AppError('Tu usuario ha sido deshabilitado!', 403, 'UDISH'));
+        }
+        res.status(200).json({message: 'Las contrasenia coinciden'});
+      } else {
+        next(new AppError('Contraseña erronea.', 401, 'EPASSW'));
+      }
+    }
 
     private verifyCredentialsFacebook = async (
         req: Express.Request,
