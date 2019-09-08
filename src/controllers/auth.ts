@@ -28,6 +28,7 @@ import {ECookies} from './interfaces/ECookies';
 import moment = require('moment');
 import {ProviderEnum} from '../db/enums/ProvidersEnum';
 import {EMainEvents} from '../sockets/constants/main';
+import {sendMessageToConnectedUser} from '../sockets/socket';
 const saltRounds = 10;
 
 // Using require() in ES5
