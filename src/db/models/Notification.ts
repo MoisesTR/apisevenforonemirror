@@ -2,6 +2,11 @@ import mongoose, {model, Schema} from 'mongoose';
 import {INotification, INotificationDocument, INotificationModel} from '../interfaces/INotification';
 import {ObjectId} from 'bson';
 import {EModelNames} from '../interfaces/EModelNames';
+import models from './index';
+import {redisPub} from '../../redis/redis';
+import DynamicKey from '../../redis/keys/dynamics';
+import {EMainEvents} from '../../sockets/constants/main';
+import {mainSocket} from '../../sockets/socket';
 
 export enum ENotificationTypes {
     DEFAULT = 'DEFAULT',
@@ -47,5 +52,17 @@ const NotificationSchema = new Schema(
         timestamps: true,
     },
 );
+NotificationSchema.post<INotificationDocument>('save', async function(doc, next) {
+    if (doc.isNew) {
+        console.log('Notifiacion insert', doc);
+        const user = await models.User.findById(doc.userId);
+        if (!user) return;
+        const socketWinner = await redisPub.hget(DynamicKey.hash.socketsUser(user.userName), 'main');
+        if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
+            mainSocket.to(socketWinner).emit(EMainEvents.NOTIFICATION, {notificationId: doc._id});
+        }
+    }
+    next();
+});
 
 export default model<INotificationDocument, INotificationModel>(EModelNames.Notification, NotificationSchema);

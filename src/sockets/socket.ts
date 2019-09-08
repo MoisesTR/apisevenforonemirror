@@ -48,7 +48,7 @@ export const listenSockets = () => {
         });
 
         socket.on('REGISTER_USER', username => {
-            console.log('Registrando user', username);
+            console.log('Registrando user', username, socket.id);
             redisPub
                 .hget(DynamicKey.hash.socketsUser(username), 'main')
                 .then(socketID => {
@@ -62,7 +62,7 @@ export const listenSockets = () => {
                     redisPub
                         .hset(DynamicKey.hash.socketsUser(username), 'main', socket.id)
                         .then(() => {
-                            console.log('Key is set');
+                            console.log('Key is set', socket.id);
                         })
                         .catch(() => {
                             console.log('no se pudo asociar el user al socket');
@@ -78,20 +78,6 @@ export const listenSockets = () => {
     // On read action change notification state
     mainSocket.on('read-notification', (notifiactionId: ObjectId) => {});
 
-    // Watch changes on notification collection
-    models.Notification.watch({}).on('change', async newNotification => {
-        if (newNotification.operationType === 'insert') {
-            console.log('Notifiacion insert', newNotification);
-            const user = await models.User.findById(newNotification.fullDocument.userId);
-            if (!user) return;
-            const socketWinner = await redisPub.hget(DynamicKey.hash.socketsUser(user.userName), 'main');
-            if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
-                mainSocket.to(socketWinner).emit(EMainEvents.NOTIFICATION, {notificationId: newNotification.fullDocument._id});
-            }
-        } else {
-            console.log('Notification change', newNotification);
-        }
-    });
 
     // Watch changes on Users collection
     // models.User.watch({}).on('change', user => {
@@ -141,5 +127,15 @@ export const listenGroupSocket = () => {
     //     });
     // });
 };
+export const sendMessageToConnectedUser = async (userName: string, event: EMainEvents, payload: any) =>{
+    const socketID = await redisPub.hget(DynamicKey.hash.socketsUser(userName), 'main');
+    console.log('socket', socketID, 'username', userName)
+    if ( !!socketID ) {
+        mainSocket.to(socketID).emit(event, payload);
+        if (!!mainSocket.sockets.connected[socketID]) {
+            mainSocket.sockets.connected[socketID].disconnect();
+        }
+    }
+}
 
 export {mainSocket, gameGroups};

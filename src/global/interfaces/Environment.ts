@@ -20,6 +20,9 @@ export interface IEnvironment {
     REDIS_PASSWORD: string;
     SENDGRID_KEY: string;
     ADMON_EMAIL: string;
+    WINNER_NOTIFICATION: string;
+    RECOVER_ACCOUNT: string;
+    CONFIRM_EMAIL: string;
     ACCESS_TOKEN_DURATION: number;
     ACCESS_TOKEN_MEASURE: DurationInputArg2;
     REFRESH_TOKEN_DURATION: number;

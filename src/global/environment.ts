@@ -26,8 +26,12 @@ const EnvVar: IEnvironment = {
     REDIS_HOST: process.env.REDIS_HOST || 'localhost',
     REDIS_PORT: !!process.env.REDIS_PORT ? +process.env.REDIS_PORT : 6379,
     REDIS_PASSWORD: process.env.REDIS_PASSWORD || 'jose12',
+    // Email EnvVars
     SENDGRID_KEY: process.env.SENDGRID_KEY || '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',
     ADMON_EMAIL: process.env.ADMON_EMAIL || 'atomicdevelopersnic@gmail.com',
+    WINNER_NOTIFICATION: process.env.WINNER_NOTIFICATION || "d-5bc417d2fd764bfba24331550227d732",
+    RECOVER_ACCOUNT: process.env.RECOVER_ACCOUNT || "d-72f36268236e4ef08dfef3807c9b6508",
+    CONFIRM_EMAIL: process.env.CONFIRM_EMAIL || "d-3f1db392e2b94207b174951603163934",
     // Tokens config
     ACCESS_TOKEN_DURATION: !!process.env.ACCESS_TOKEN_DURATION  ? +process.env.ACCESS_TOKEN_DURATION : 1,
     ACCESS_TOKEN_MEASURE: process.env.ACCESS_TOKEN_MEASURE as DurationInputArg2 || 'minute',

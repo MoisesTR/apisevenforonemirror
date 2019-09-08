@@ -5,10 +5,12 @@ import ENV from './global/environment';
 import http from 'http';
 import {debug} from 'winston';
 import EnvVar from './global/environment';
+import cors from 'cors';
 
 const app = Express();
 app.set('port', ENV.SERVER_PORT);
 
+app.use(cors());
 // Limit Request from same API
 const limiter = new rateLimit({
     max: 600,

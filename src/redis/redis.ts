@@ -15,3 +15,15 @@ export const redisSub = new Redis({
     password: envVars.REDIS_PASSWORD,
     connectTimeout: 25000,
 });
+
+// redisPub.on("message", function(channel, message) {
+//     // Receive message Hello world! from channel news
+//     // Receive message Hello again! from channel music
+//     console.log("Receive message %s from channel %s", message, channel);
+// });
+
+redisSub.on("message", function(channel, message) {
+    // Receive message Hello world! from channel news
+    // Receive message Hello again! from channel music
+    console.log("Receive message %s from channel %s", message, channel);
+});

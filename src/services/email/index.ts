@@ -1,60 +1,51 @@
 import envVars from '../../global/environment';
 import sgMail from '@sendgrid/mail';
-import {MailData} from '@sendgrid/helpers/classes/mail';
 import {IUserDocument} from '../../db/interfaces/IUser';
+import {EmailData} from '@sendgrid/helpers/classes/email-address';
 
-let templateIds: {confirmAccount: string; recoverAccount: string};
+let templateIds: { confirmAccount: string; recoverAccount: string; winnerNotification: string };
 templateIds = {
-    confirmAccount: 'd-3f1db392e2b94207b174951603163934',
-    recoverAccount: 'd-72f36268236e4ef08dfef3807c9b6508',
+    confirmAccount: envVars.CONFIRM_EMAIL,
+    recoverAccount: envVars.RECOVER_ACCOUNT,
+    winnerNotification: envVars.WINNER_NOTIFICATION,
 };
 
 sgMail.setApiKey(envVars.SENDGRID_KEY);
 sgMail.setSubstitutionWrappers('{{', '}}');
 
-export const sendConfirmationEmail = async (from: string, user: IUserDocument) => {
-    const msg = {
-        to: user.email,
-        from: envVars.ADMON_EMAIL,
-        // Custom Template
-        templateId: templateIds.confirmAccount,
-        // substitutionWrappers: ['{{', '}}'],
-        dynamic_template_data: {
-            subject: 'Bievenido a Seven For One! confirma tu correo!',
-            userName: user.userName,
-            url: envVars.URL_HOST + '/confirm/' + user.secretToken + '/' + user.userName,
+const sendGenericMail = async (templateId: string, subject: string, to: EmailData[], extraData: any) => {
+    await sgMail.send({
+        from: {
+            email: envVars.ADMON_EMAIL,
         },
-    };
-
-    sgMail
-        .send(msg)
-        .then(() => {
-            console.log('El correo se ha enviado correctamente!');
-        })
-        .catch(error => {
-            //Log friendly error
-            console.error(error.toString());
-
-            //Extract error msg
-            const {message, code, response} = error;
-
-            //Extract response msg
-            const {headers, body} = response;
-        });
-};
-
-export const recoverAccountEmail = async (from: string, user: IUserDocument) => {
-    const msg: MailData = {
-        to: user.email,
-        from: envVars.ADMON_EMAIL,
-        subject: 'Dont Reply! Recover your Account',
-        // Custom Template
-        templateId: templateIds.recoverAccount,
+        to: [...to],
+        dynamicTemplateData: {
+            ...extraData,
+        },
         substitutionWrappers: ['{{', '}}'],
-        substitutions: {
-            userName: user.userName,
-        },
-    };
-    await sgMail.send(msg);
+        templateId: templateId,
+        subject: subject,
+    });
 };
 
+export const sendConfirmationEmail = async (from: string, user: IUserDocument) => {
+    await sendGenericMail(templateIds.confirmAccount, 'Bievenido a Seven For One! confirma tu correo!', [{email: user.email}], {
+        userName: user.userName,
+        url: envVars.URL_HOST + '/confirm/' + user.secretToken + '/' + user.userName,
+    });
+};
+
+export const recoverAccountEmail = async (user: IUserDocument, url: string) => {
+    await sendGenericMail(templateIds.recoverAccount, 'Dont Reply! Recover your Account', [{email: user.email}], {
+        userName: user.userName,
+        url
+    });
+};
+
+export const winnerNotificationMail = async (user: IUserDocument, groupValue: number, claimPriceURL: string) => {
+    await sendGenericMail(templateIds.winnerNotification, 'Dont Reply! Congratulations you win', [{email: user.email}], {
+        userName: user.userName,
+        groupValue,
+        claimPriceURL
+    });
+};
