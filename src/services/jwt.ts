@@ -7,6 +7,7 @@ import {IUserDocument} from '../db/interfaces/IUser';
 import AppError from '../classes/AppError';
 import models from '../db/models';
 import logger from './logger';
+import {ECookies} from '../controllers/interfaces/ECookies';
 
 const createToken = async (customPayload: any, secret: string, expiration: DurationInputArg1, unitTime: DurationInputArg2) => {
     let _token;
@@ -91,10 +92,16 @@ export const containToken = (req: Express.Request, res: Express.Response, next: 
  * @param {Middleware} next
  */
 export const ensureAuth = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    if (!req.headers.authorization) {
-        return next(new AppError('The request hasn\'t got authentication header', 400, 'NAUTH'));
+    let token;
+    if ( req.headers.authorization ) {
+        token =  req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
+    } else if (req.cookies[ECookies._AccessToken]) {
+        token = req.cookies[ECookies._AccessToken];
     }
-    const token = req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
+
+    if (!token) {
+        return next(new AppError('The request hasn\'t got authentication token.', 400, 'NAUTH'));
+    }
 
     logger.info('Verificando token: ' + token, {location: 'jwt'});
     const decode = await verifyToken(token, envVars.JWT_SECRET);
