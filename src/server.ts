@@ -7,9 +7,9 @@ import i18n from 'i18n';
 import * as ErrorMiddleware from './middlewares/error-middlewares';
 import * as ThirdPartyMiddlewares from './middlewares/thirdparty-middlewares';
 // Routers
-import * as AuthRouter from './routes/authRoutes';
 import * as GroupGamesRouter from './routes/group-games';
 import * as PaypalRouter from './routes/paypal';
+import authRoutes from './routes/authRoutes';
 import rolesRoutes from './routes/rolesRoutes';
 import usersRoutes from './routes/usersRoutes';
 // Socket
@@ -66,9 +66,10 @@ export default class Server {
     }
 
     public registerRouter() {
-        AuthRouter.register(this);
         GroupGamesRouter.register(this);
         PaypalRouter.register(this);
+        //Auth routes
+        app.use('/api/auth', authRoutes);
         // User routes
         app.use('/api/auth', usersRoutes);
         // Roles routes
