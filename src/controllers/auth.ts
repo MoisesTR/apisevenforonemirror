@@ -775,6 +775,15 @@ export const resetPassword = catchAsync(async (req, res, next) => {
     // createSendToken(user, 200, res);
 });
 
+export const logout =  (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    res.clearCookie(ECookies._AccessToken);
+    res.clearCookie(ECookies._RefreshToken);
+    res.status(200)
+        .json({
+            message: 'success'
+        });
+};
+
 const alreadyExist = (users: IUserDocument[], userData: any) => {
     //Si se encontro mas de un usuario
     if (users.length > 1) {
