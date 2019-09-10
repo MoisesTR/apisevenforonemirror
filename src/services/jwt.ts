@@ -25,7 +25,7 @@ const createToken = async (customPayload: any, secret: string, expiration: Durat
     //HMAC SHA256
     _token = await jwt.sign(payload, secret);
     return {_token, expiration: payload.exp};
-}
+};
 
 export const createAccessToken = async (user: IUserDocument, expiration: number = envVars.ACCESS_TOKEN_DURATION, unitOfTime: DurationInputArg2 = envVars.ACCESS_TOKEN_MEASURE) => {
     return createToken(
@@ -93,8 +93,8 @@ export const containToken = (req: Express.Request, res: Express.Response, next: 
  */
 export const ensureAuth = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     let token;
-    if ( req.headers.authorization ) {
-        token =  req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
+    if (req.headers.authorization) {
+        token = req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
     } else if (req.cookies[ECookies._AccessToken]) {
         token = req.cookies[ECookies._AccessToken];
     }
@@ -114,6 +114,20 @@ export const ensureAuth = async (req: Express.Request, res: Express.Response, ne
             return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 400, 'EPUSER'));
         }
         if (decode.isExpired) {
+            if (req.cookies[ECookies._RefreshToken]) {
+                const refreshToken = req.cookies[ECookies._RefreshToken];
+                const decodedRefresh = await verifyToken(refreshToken, envVars.JWT_REFRESH_SECRET);
+                //TODO: figure out status code
+                if (decodedRefresh.sub !== decode.sub) {
+                    return next(new AppError('No coinciden los usuario de los tokens', 405));
+                }
+                if (decodedRefresh.isExpired) {
+                    return next(new AppError('Refresh token expired, please log again!', 401, 'TOKENEXPIRED'));
+                }
+                const {_token: tokenGen, expiration} = await createAccessToken(user);
+                res.cookie(ECookies._AccessToken, tokenGen, {});
+                next();
+            }
             return next(new AppError('Access token expired, refresh please!', 401, 'TOKENEXPIRED'));
         }
         //Si el usuario esta habilitado se procede a actualizar el username y el email
