@@ -10,6 +10,8 @@ import * as ThirdPartyMiddlewares from './middlewares/thirdparty-middlewares';
 import * as AuthRouter from './routes/authRoutes';
 import * as GroupGamesRouter from './routes/group-games';
 import * as PaypalRouter from './routes/paypal';
+import rolesRoutes from './routes/rolesRoutes';
+import usersRoutes from './routes/usersRoutes';
 // Socket
 import {app, httpServer} from './app';
 import {listenGroupSocket, listenSockets} from './sockets/socket';
@@ -67,6 +69,10 @@ export default class Server {
         AuthRouter.register(this);
         GroupGamesRouter.register(this);
         PaypalRouter.register(this);
+        // User routes
+        app.use('/api/auth', usersRoutes);
+        // Roles routes
+        app.use('/api/auth', rolesRoutes);
     }
 
     start(callback: (port: number) => void) {
