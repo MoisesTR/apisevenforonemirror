@@ -11,6 +11,7 @@ import compression from 'compression';
 import fileUpload from "express-fileupload";
 
 export const apply = (app: express.Application, baseDir: string) => {
+    app.use(cookieParser());
     app.use(logger('dev'));
     app.use(fileUpload());
     // Set security HTTP Headers
@@ -19,7 +20,6 @@ export const apply = (app: express.Application, baseDir: string) => {
     // Body parser, reading data from body into req.body
     app.use(express.json({ limit: '20kb'}));
     app.use(express.urlencoded({extended: false}));
-    app.use(cookieParser());
     // Serving statics files
     app.use(express.static(path.join(baseDir, '..', 'public')));
 };

@@ -8,6 +8,7 @@ import AppError from '../classes/AppError';
 import models from '../db/models';
 import logger from './logger';
 import {ECookies} from '../controllers/interfaces/ECookies';
+import catchAsync from '../utils/catchAsync';
 
 const createToken = async (customPayload: any, secret: string, expiration: DurationInputArg1, unitTime: DurationInputArg2) => {
     let _token;
@@ -25,7 +26,7 @@ const createToken = async (customPayload: any, secret: string, expiration: Durat
     //HMAC SHA256
     _token = await jwt.sign(payload, secret);
     return {_token, expiration: payload.exp};
-}
+};
 
 export const createAccessToken = async (user: IUserDocument, expiration: number = envVars.ACCESS_TOKEN_DURATION, unitOfTime: DurationInputArg2 = envVars.ACCESS_TOKEN_MEASURE) => {
     return createToken(
@@ -91,10 +92,10 @@ export const containToken = (req: Express.Request, res: Express.Response, next: 
  * @param {HttpResponse} res
  * @param {Middleware} next
  */
-export const ensureAuth = async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     let token;
-    if ( req.headers.authorization ) {
-        token =  req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
+    if (req.headers.authorization) {
+        token = req.headers.authorization.replace(/['"]+/g, '').replace('Bearer ', '');
     } else if (req.cookies[ECookies._AccessToken]) {
         token = req.cookies[ECookies._AccessToken];
     }
@@ -114,26 +115,41 @@ export const ensureAuth = async (req: Express.Request, res: Express.Response, ne
             return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 400, 'EPUSER'));
         }
         if (decode.isExpired) {
+            if (req.cookies[ECookies._RefreshToken]) {
+                try {
+                    const refreshToken = req.cookies[ECookies._RefreshToken];
+                    const decodedRefresh = await verifyToken(refreshToken, envVars.JWT_SECRET);
+                    //TODO: figure out status code
+                    if (decodedRefresh.sub !== decode.sub) {
+                        return next(new AppError('No coinciden los usuario de los tokens', 405));
+                    }
+                    if (decodedRefresh.isExpired) {
+                        return next(new AppError('Refresh token expired, please log again!', 401, 'TOKENEXPIRED'));
+                    }
+                    const {_token: tokenGen, expiration} = await createAccessToken(user);
+                    res.cookie(ECookies._AccessToken, tokenGen,{
+                        expires:  moment.unix(decodedRefresh.exp).toDate(),
+                        httpOnly: true,
+                        // secure: process.env.NODE_ENV === 'production',
+                    });
+                    console.log('new token was created', decodedRefresh);
+                    return next();
+
+                } catch (_e) {
+                  res.clearCookie(ECookies._AccessToken);
+                  throw _e;
+                }
+            }
             return next(new AppError('Access token expired, refresh please!', 401, 'TOKENEXPIRED'));
         }
-        //Si el usuario esta habilitado se procede a actualizar el username y el email
-        //por si ha habido un cambio en estos
-        //Verificamos que no ah habido cambio en la informacion del usuario, desde la creacion del token
-        // if( moment(user.UpdatedAt).unix() > decoded.iat ){
-        //     // si su info cambio no lo dejamos procedere
-        //     throw {
-        //             status: 401, code:'EUCHAN',
-        //             message: 'La informacion del usuario cambio por favor vuelve a iniciar sesion!'
-        //         };
-        // }
-        // //setear el valor del payload en la request, para poder acceder a esta informacion
-        //en todas la funciones de nuestros controladores
+
         req.user = user;
-        next(); //next para pasar al siguiente controlador
+        console.log('calling next middleware')
+        return next(); //next para pasar al siguiente controlador
     } else {
         return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
     }
-};
+});
 
 export const midOwnUserOrAdmon = (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const receivedId = req.params.id_user || req.body.id_user;

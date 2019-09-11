@@ -287,16 +287,17 @@ export const getResponseToSendToLogin = async (res: Express.Response, user:any) 
     const {_token: tokenGen, expiration} = await createAccessToken(user);
 
     res.cookie(ECookies._AccessToken, tokenGen, {
-        expires: moment.unix(expiration).toDate(),
+        expires:  moment.unix(expirationRefres).toDate(),
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        // secure: process.env.NODE_ENV === 'production',
     });
     res.cookie(ECookies._RefreshToken, _tokenRefresh, {
         expires: moment.unix(expirationRefres).toDate(),
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        // secure: process.env.NODE_ENV === 'production',
     });
     // TODO: come back implement the browser agent store
+    console.log(ECookies, process.env.NODE_ENV)
     await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefres), _tokenRefresh);
     await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
     const response: ILoginResponse = {
@@ -569,7 +570,7 @@ export const refreshTokenMiddleware = catchAsync(async (req: Express.Request, re
     if (redisRefreshToken !== refreshToken) {
         return next(new AppError('El token de actualización no es valido, vuelva a iniciar sesion!', 401, 'TRNOTVAL'));
     }
-    const {_token: tokenGen, expiration} = await createAccessToken(user);
+        const {_token: tokenGen, expiration} = await createAccessToken(user);
     await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
 
     logger.info('New access token for ' + user.userName, {token: tokenGen, refreshToken});
