@@ -1,22 +1,50 @@
 import Express, {NextFunction} from 'express';
-import envVars from './global/environment';
-import {Core} from './db/core';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import http from 'http';
 // Internationalization
 import i18n from 'i18n';
+import ENV from './global/environment';
+import envVars from './global/environment';
+import cors from 'cors';
+import {Core} from './db/core';
 // middlewares
 import * as ErrorMiddleware from './middlewares/error-middlewares';
 import * as ThirdPartyMiddlewares from './middlewares/thirdparty-middlewares';
 // Routers
-import * as GroupGamesRouter from './routes/group-games';
-import * as PaypalRouter from './routes/paypal';
+import GroupGamesRouter from './routes/group-games';
+import PaypalRouter from './routes/paypal';
 import authRoutes from './routes/authRoutes';
 import rolesRoutes from './routes/rolesRoutes';
 import usersRoutes from './routes/usersRoutes';
 // Socket
-import {app, httpServer} from './app';
 import {listenGroupSocket, listenSockets} from './sockets/socket';
+import {onError, onListening} from './utils/errorCallbacks';
 
-const debug = require('debug')('sevenforoneapi:server');
+const app = Express();
+app.set('port', ENV.SERVER_PORT);
+
+app.use(cors());
+// Limit Request from same API
+const limiter = new rateLimit({
+    max: 600,
+    windowMs: 60 * 60 * 1000,
+    message: 'Too many request from this IP, please try again in an hour!'
+});
+app.use('/api', limiter);
+
+// Data sanitization against noSQL query injection
+app.use(mongoSanitize());
+// Data sanitization against XSS
+// app.use(xss());
+
+
+const httpServer = new http.Server(app);
+httpServer.on('error', onError);
+httpServer.on('listening', onListening(httpServer));
+httpServer.on('close', () => console.log('closing'));
+
+// const debug = require('debug')('sevenforoneapi:server');
 
 i18n.configure({
     // setup some locales - other locales default to en silently
@@ -31,6 +59,11 @@ i18n.configure({
     cookie: 'lang',
 });
 
+export {
+    app,
+    httpServer
+};
+
 export default class Server {
     private static _intance: Server;
 
@@ -38,7 +71,7 @@ export default class Server {
 
     private constructor() {
         this.dbCore = new Core();
-        listenSockets();
+        listenSockets(httpServer);
         listenGroupSocket();
     }
 
@@ -66,8 +99,8 @@ export default class Server {
     }
 
     public registerRouter() {
-        GroupGamesRouter.register(this);
-        PaypalRouter.register(this);
+        app.use('/api', GroupGamesRouter);
+        app.use('/api', PaypalRouter);
         //Auth routes
         app.use('/api/auth', authRoutes);
         // User routes

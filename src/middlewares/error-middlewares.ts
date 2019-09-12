@@ -19,7 +19,7 @@ export const apply = (app: Express.Application) => {
     // error handler
     app.use(function (err: AppError, req: Express.Request, res: Express.Response, next: NextFunction) {
         // set locals, only providing error in development
-        console.log('Middleware errores', process.env.NODE_ENV);
+        console.log('Middleware errores', process.env.NODE_ENV, err);
         const error = {...err};
         error.message = err.message;
         res.locals.message = err.message;

@@ -2,8 +2,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 console.log('Environment', process.env.NODE_ENV)
 dotenv.config({path: path.resolve(__dirname, '../', '.env')});
-import {app, httpServer} from './app';
-import Server from './server';
+import Server, {app, httpServer} from './server';
 import Role, {ERoles} from './db/models/Role';
 import AppError from './classes/AppError';
 import logger from './services/logger';
@@ -17,9 +16,7 @@ process.on('uncaughtException', err => {
     process.exit(1);
 });
 
-console.log(path.resolve(__dirname, '../', '.env'))
 const server = Server.instance;
-console.log(path.resolve(__dirname, '..', '.env'));
 
 // That's is going to catch all the unhandled errors on the application
 // to avoid the application crash

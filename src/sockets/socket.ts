@@ -1,29 +1,30 @@
 import socketIO from 'socket.io';
 import redisAdapter from 'socket.io-redis';
+import http from 'http';
 import {redisPub, redisSub} from '../redis/redis';
 import {ObjectId} from 'bson';
-import {ENotificationTypes} from '../db/models/Notification';
-import {httpServer} from '../app';
 import {EMainEvents} from './constants/main';
 import {EGameEvents} from './constants/game';
 import DynamicKey from '../redis/keys/dynamics';
 import * as game from '../controllers/game';
-import models from '../db/models'
 
 let mainSocket: socketIO.Server;
 let gameGroups: socketIO.Namespace;
 
-mainSocket = socketIO(httpServer, {
+const options: socketIO.ServerOptions = {
     // path: envVars.SOCKETIO_PATH
     serveClient: true,
     path: '/seven/socket.io',
-});
+};
+
+mainSocket = socketIO(options);
 
 mainSocket.adapter(redisAdapter({pubClient: redisPub, subClient: redisSub}));
 gameGroups = mainSocket.of('groups');
 
-export const listenSockets = () => {
+export const listenSockets = (httpServer: http.Server) => {
     console.log('Listen sockets');
+    mainSocket.attach(httpServer);
     mainSocket.on('connection', socket => {
         console.log('Socket principal connection', 'socket.client');
         socket.on('disconnect', () => {
@@ -76,7 +77,8 @@ export const listenSockets = () => {
     });
 
     // On read action change notification state
-    mainSocket.on('read-notification', (notifiactionId: ObjectId) => {});
+    mainSocket.on('read-notification', (notifiactionId: ObjectId) => {
+    });
 
 
     // Watch changes on Users collection
@@ -105,7 +107,8 @@ export const listenGroupSocket = () => {
         });
     });
 
-    gameGroups.on(EGameEvents.JOIN_GROUP, () => {});
+    gameGroups.on(EGameEvents.JOIN_GROUP, () => {
+    });
     // Emitir siempre que el usuario gane sin importar el grupo
     gameGroups.emit('update-purchase-history-user');
 
@@ -127,15 +130,16 @@ export const listenGroupSocket = () => {
     //     });
     // });
 };
-export const sendMessageToConnectedUser = async (userName: string, event: EMainEvents, payload: any) =>{
+
+export const sendMessageToConnectedUser = async (userName: string, event: EMainEvents, payload: any) => {
     const socketID = await redisPub.hget(DynamicKey.hash.socketsUser(userName), 'main');
-    console.log('socket', socketID, 'username', userName)
-    if ( !!socketID ) {
+    console.log('socket', socketID, 'username', userName);
+    if (!!socketID) {
         mainSocket.to(socketID).emit(event, payload);
         if (!!mainSocket.sockets.connected[socketID]) {
             mainSocket.sockets.connected[socketID].disconnect();
         }
     }
-}
+};
 
 export {mainSocket, gameGroups};

@@ -5,11 +5,11 @@ import * as validations from '../services/validations/auth';
 import {validsParams} from '../utils/genericsValidations';
 // Controllers
 import * as authController from '../controllers/auth';
-import {app} from '../app';
 import {ensureAuth} from '../services/jwt';
-//
+
 const router = Express.Router();
 
+// All these routes run below the path /api/auth
 router
     .post('/signup', validations.signUp, validsParams, authController.signUp)
     .post('/login', validations.signIn, validsParams, authController.signInMiddleware)
@@ -17,8 +17,7 @@ router
     .post('/loginFacebook', validations.signInFacebook, validsParams, authController.signInFacebook)
     .post('/refreshtoken', validations.refreshToken, validsParams, authController.refreshTokenMiddleware)
     .post('/verifyemail/:token', authController.verifyEmail)
-    .post('/recover', validations.recoverAccount, authController.forgotAccount)
-    .get('/email/:userName', validations.getEmail, authController.getEmailByUserName);
+    .post('/recover', validations.recoverAccount, authController.forgotAccount);
 
 router.use(ensureAuth)
     .get('/logout', authController.logout)
@@ -26,6 +25,9 @@ router.use(ensureAuth)
     .get('/me', authController.getAuthenticateUserInfo)
     .post('/admin', validations.createAdmin, validsParams, authController.createAdminUser)
     .get('/getImage/:folder/:img', authController.getImage)
-    .put('/upload/:folder/:id', validations.uploadImage, validsParams, authController.upload);
+    .put('/upload/:folder/:id', validations.uploadImage, validsParams, authController.upload)
+    .put('/pwd/:userId', validations.changePassword, validsParams, authController.changePassword)
+    .post('/verifyPwd/:userId', validations.verifyChangePassword, validsParams, authController.verifyChangePassword);
+
 
 export default router;

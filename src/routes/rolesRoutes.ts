@@ -4,6 +4,7 @@ import {validsParams} from '../utils/genericsValidations';
 import * as roleController from '../controllers/roles';
 import {ensureAuth} from '../services/jwt';
 
+//All these routes run below the path /api/roles
 const router = Express.Router();
 
 router.use(ensureAuth);
