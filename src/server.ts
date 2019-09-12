@@ -71,9 +71,9 @@ export default class Server {
         //Auth routes
         app.use('/api/auth', authRoutes);
         // User routes
-        app.use('/api/auth', usersRoutes);
+        app.use('/api/users', usersRoutes);
         // Roles routes
-        app.use('/api/auth', rolesRoutes);
+        app.use('/api/roles', rolesRoutes);
     }
 
     start(callback: (port: number) => void) {

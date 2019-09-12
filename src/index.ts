@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+console.log('Environment', process.env.NODE_ENV)
 dotenv.config({path: path.resolve(__dirname, '../', '.env')});
 import {app, httpServer} from './app';
 import Server from './server';

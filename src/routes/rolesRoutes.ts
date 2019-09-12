@@ -8,11 +8,11 @@ const router = Express.Router();
 
 router.use(ensureAuth);
 
-router.route('/roles$')
+router.route('/$')
     .post(validations.createRole, validsParams, roleController.createRole)
     .get(roleController.getRoles);
 
-router.route('/roles/:roleId')
+router.route('/:roleId')
     .get(roleController.getRole);
 
 export default router;
