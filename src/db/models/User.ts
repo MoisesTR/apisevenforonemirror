@@ -73,7 +73,10 @@ const userSchema = new Schema(
             default: 'none',
         },
         passwordChangeAt: Date,
-        passwordResetExp: Date
+        passwordResetExp: Date,
+        paypalEmail: {
+            type: String
+        }
     },
     {
         timestamps: true,

@@ -19,6 +19,7 @@ export interface IUser {
     provider: string;
     passwordChangedAt?: Date;
     passwordResetExp?: Date;
+    paypalEmail: string;
 }
 export interface IUserDocument extends IUser, Document {
     getPurchaseHistoryById: (userId: Types.ObjectId) => Types.DocumentArray<IPurchaseHistoryDocument>;

@@ -667,6 +667,7 @@ export const dataUserForLogin: (user: IUserDocument) => UserForLoginType = user 
         gender: user.gender,
         email: user.email,
         image: user.image,
+        paypalEmail: user.paypalEmail
     };
 };
 

@@ -94,6 +94,8 @@ export const changeStateUser = [param('userId').custom(isObjectId), query('enabl
 export const changePassword = [param('userId').custom(isObjectId), ...commonPasswordAndConfirmation];
 export const verifyChangePassword = [param('userId').custom(isObjectId), body('password')];
 
+export const updatePaypalEmail = [param('userId').custom(isObjectId), body('paypalEmail')];
+
 export const getUsers = [];
 
 export const getUser = [];
