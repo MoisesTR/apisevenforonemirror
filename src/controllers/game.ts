@@ -7,7 +7,6 @@ import {IPurchaseHistoryDocument} from '../db/interfaces/IPurchaseHistory';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../classes/AppError';
 import models from '../db/models';
-import {Group} from 'nodemailer/lib/addressparser';
 import GroupGame from '../db/models/GroupGame';
 import DocumentArray = Types.DocumentArray;
 

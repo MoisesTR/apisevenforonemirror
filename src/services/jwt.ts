@@ -144,7 +144,6 @@ export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.R
         }
 
         req.user = user;
-        console.log('calling next middleware')
         return next(); //next para pasar al siguiente controlador
     } else {
         return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));

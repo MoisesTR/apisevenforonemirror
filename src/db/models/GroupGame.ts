@@ -74,7 +74,7 @@ const groupSchema: Schema = new Schema(
     },
 );
 
-groupSchema.methods.removeMember = async function(memberId: string | ObjectId) {
+groupSchema.methods.removeMember = async function (memberId: string | ObjectId) {
     console.log(this.members);
     // const memberIdObj = ( typeof memberId === "string") ? new ObjectId( memberId) : memberId;
     // console.log(Types.ObjectId(memberId));
@@ -90,7 +90,7 @@ groupSchema.methods.removeMember = async function(memberId: string | ObjectId) {
     return this.save();
 };
 
-groupSchema.methods.addMember = async function(memberData: IMember, payReference: string) {
+groupSchema.methods.addMember = async function (memberData: IMember, payReference: string) {
     const session = await mongoose.startSession();
     try {
         session.startTransaction();
@@ -127,8 +127,8 @@ groupSchema.methods.addMember = async function(memberData: IMember, payReference
                 groupId: this.groupId,
             });
             try {
-                await winnerNotificationMail(winner, this.initialInvestment.toFixed(), '')
-            } catch( _err ) {
+                await winnerNotificationMail(winner, this.initialInvestment.toFixed(), '');
+            } catch (_err) {
                 //TODO: handle
             }
             const userHistory = this.model('purchaseHistory')({
@@ -178,10 +178,11 @@ groupSchema.methods.addMember = async function(memberData: IMember, payReference
         await session.commitTransaction();
     } catch (_err) {
         await session.abortTransaction();
+        throw _err;
     }
 };
 
-groupSchema.methods.changeActiveState = function( enabled: boolean ) {
+groupSchema.methods.changeActiveState = function (enabled: boolean) {
     if ((this.members.length > 0) && !enabled) {
         throw new AppError('This action cannot be performed first, get the group members empty.', 403);
     }

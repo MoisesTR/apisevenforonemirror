@@ -32,6 +32,7 @@ const EnvVar: IEnvironment = {
     WINNER_NOTIFICATION: process.env.WINNER_NOTIFICATION || "d-5bc417d2fd764bfba24331550227d732",
     RECOVER_ACCOUNT: process.env.RECOVER_ACCOUNT || "d-72f36268236e4ef08dfef3807c9b6508",
     CONFIRM_EMAIL: process.env.CONFIRM_EMAIL || "d-3f1db392e2b94207b174951603163934",
+    NO_REPLY_EMAIL: process.env.NO_REPLY_EMAIL  || "no-reply@seven.com",
     // Tokens config
     ACCESS_TOKEN_DURATION: !!process.env.ACCESS_TOKEN_DURATION  ? +process.env.ACCESS_TOKEN_DURATION : 1,
     ACCESS_TOKEN_MEASURE: process.env.ACCESS_TOKEN_MEASURE as DurationInputArg2 || 'minute',
