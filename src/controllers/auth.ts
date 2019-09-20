@@ -135,7 +135,7 @@ export const createUserWithSocialLogin: (userData: any, socialUser: any) => Prom
         provider: socialUser.provider,
         email: socialUser.email,
         passwordHash: hashPassw,
-        role: userData.roleId,
+        role: userData.role || userData.roleId,
         isVerified: true,
         enabled: true,
     });
@@ -327,15 +327,6 @@ export const getResponseToSendToLogin = async (res: Express.Response, user:any) 
 //         .catch(err => console.log('Error Saving Log', err))
 // }
 
-export const getUsers = catchAsync(async (req: Express.Request, res: Express.Response) => {
-    // const filters = matchedData(req, {locations: ['query']});
-
-    const result = await models.User.find({}, 'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
-        .populate('role')
-        .exec();
-    res.status(200).json(result);
-});
-
 export const verifyEmail = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const data = req.params;
 
@@ -347,40 +338,6 @@ export const verifyEmail = catchAsync(async (req: Express.Request, res: Express.
     }
     const result = await user.verifyToken();
     res.status(200).json({success: 'Bienvenido a Seven For One, su correo electrónico ha sido verificado!'});
-});
-
-export const updateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    const userData = matchedData(req, {locations: ['body', 'query', 'params']});
-
-    if (userData.userId === JSON.stringify(req.user._id)) {
-        return next(new AppError('No puedes editar este usuario', 403, 'EUNAUTH'));
-    }
-    const user: IUserDocument | null = await models.User.findById(userData.userId);
-    if (user == null) {
-        return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
-    }
-    const userUpdate: IUserDocument = await user.updateUser(userData);
-    res.status(200).json({
-        status: 200,
-        message: 'Usuario actualizado',
-    });
-});
-
-export const changeStateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    const data = matchedData(req, {locations: ['query', 'params']});
-
-    console.log('Change state user');
-    console.log(data);
-    const user = await models.User.findById(data.userId);
-    if (!user) {
-        res.status(400).json({failed: 'Usuario no encontrado!'});
-        return;
-    }
-    const action = data.enabled ? 'Habilitado' : 'Deshabilitado';
-    user.secretToken = '';
-    user.enabled = data.enabled;
-    await user.save();
-    res.status(200).json({success: 'El usuario ha sido' + action});
 });
 
 export const createAdminUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
@@ -582,41 +539,6 @@ export const refreshTokenMiddleware = catchAsync(async (req: Express.Request, re
     // saveLog(user._id, {userName: user.userName},`${userName} refresh token.`)
 });
 
-export const getUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    const userId = req.params.userId;
-
-    const user = await models.User.findById(
-        userId,
-        'firstName lastName userName email role birthDate isVerified phones enabled createdAt updatedAt',
-    )
-        .populate('role')
-        .exec();
-    resultOrNotFound(res, user, 'User', next);
-});
-
-export const getEmailByUserName = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    // TODO: return
-    const userName = req.params.userName;
-
-    const user = await models.User.findOne({userName: userName});
-    if (!user) {
-        return next(new AppError('User not found!', 404, 'UNFOUND'));
-    } else if (!user.enabled) {
-        return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
-    }
-
-    // TODO: update that config
-    try {
-        await recoverAccountEmail(user, '');
-
-        console.log('Email envado');
-        res.status(200).json({userName: userName, email: user.email});
-
-    } catch (_err) {
-        throw _err;
-    }
-});
-
 export const forgotAccount = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const data = req.body;
     const condition: any = {};
@@ -718,6 +640,7 @@ const verifyCredentialsFacebook = async (
         const response = await getResponseToSendToLogin(res, user);
         res.status(200).json(response);
     } else {
+        console.log('registration', req.app.locals)
         const dataLogin = await createUserWithSocialLogin(
             {
                 ...userData,

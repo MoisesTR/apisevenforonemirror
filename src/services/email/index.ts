@@ -16,20 +16,21 @@ sgMail.setSubstitutionWrappers('{{', '}}');
 const sendGenericMail = async (templateId: string, subject: string, to: EmailData[], extraData: any) => {
     await sgMail.send({
         from: {
-            email: envVars.ADMON_EMAIL,
+            email: envVars.NO_REPLY_EMAIL,
         },
         to: [...to],
         dynamicTemplateData: {
+            subject,
             ...extraData,
         },
         substitutionWrappers: ['{{', '}}'],
         templateId: templateId,
-        subject: subject,
+        subject
     });
 };
 
 export const sendConfirmationEmail = async (from: string, user: IUserDocument) => {
-    await sendGenericMail(templateIds.confirmAccount, 'Bievenido a Seven For One! confirma tu correo!', [{email: user.email}], {
+    await sendGenericMail(templateIds.confirmAccount, 'Bienvenido a Seven For One! confirma tu correo!', [{email: user.email}], {
         userName: user.userName,
         url: envVars.URL_HOST + '/confirm/' + user.secretToken + '/' + user.userName,
     });

@@ -2,24 +2,20 @@ import Express from 'express';
 import * as validations from '../services/validations/auth';
 import {validsParams} from '../utils/genericsValidations';
 import {ensureAuth} from '../services/jwt';
-import * as authController from '../controllers/auth';
+import * as usersController from '../controllers/users';
 
+// All these routes run below the path /api/users
 const router = Express.Router();
 
+router.get('/email/:userName', validations.getEmail, usersController.getEmailByUserName);
 
 router.use(ensureAuth);
 router.route('/')
-    .get(validsParams, authController.getUsers);
-
-router.put('/pwd/:userId', validations.changePassword, validsParams, authController.changePassword);
+    .get(validsParams, usersController.getUsers);
 
 router.route('/:userId')
-    .put(validations.updateUser, validsParams, authController.updateUser)
-    .delete(validations.changeStateUser, validsParams, authController.changeStateUser)
-    .get(validations.getUser, validsParams, authController.getUser);
-
-
-router.post('/verifyPwd/:userId', validations.verifyChangePassword, validsParams, authController.verifyChangePassword);
-
+    .put(validations.updateUser, validsParams, usersController.updateUser)
+    .delete(validations.changeStateUser, validsParams, usersController.changeStateUser)
+    .get(validations.getUser, validsParams, usersController.getUser);
 
 export default router;

@@ -79,8 +79,32 @@ const userSchema = new Schema(
         timestamps: true,
     },
 );
+userSchema.pre<IUserDocument>('save', async function (next) {
+    if (!this.isModified('password')) {
+        next();
+    }
+    this.passwordChangedAt = new Date();
+    next();
+});
 
-userSchema.methods.verifyToken = function() {
+userSchema.methods.changedPasswordAfter = function (JWTTimestamp: number) {
+    if (this.passwordChangedAt) {
+        const changedTimestampt = this.passwordChangedAt.getTime() / 1000;
+
+        console.log(
+            this.passwordChangedAt,
+            changedTimestampt,
+            JWTTimestamp,
+            new Date(JWTTimestamp * 1000)
+        );
+
+        return JWTTimestamp < changedTimestampt;
+    }
+    // false Means not changed
+    return false;
+};
+
+userSchema.methods.verifyToken = function () {
     // Descomentar secretToken hasta que el metodo refresh token funcione correctamente
     // this.secretToken = "";
     this.isVerified = true;
@@ -89,7 +113,7 @@ userSchema.methods.verifyToken = function() {
     return this.save();
 };
 
-userSchema.methods.updateUser = function({firstName, lastName, phones, birthDate, gender}: IUser) {
+userSchema.methods.updateUser = function ({firstName, lastName, phones, birthDate, gender}: IUser) {
     this.firstName = firstName;
     this.lastName = lastName;
     this.phones = phones;
@@ -98,11 +122,11 @@ userSchema.methods.updateUser = function({firstName, lastName, phones, birthDate
     return this.save();
 };
 
-userSchema.methods.getPurchaseHistory = function() {
+userSchema.methods.getPurchaseHistory = function () {
     return this.model('purchaseHistory').find();
 };
 
-userSchema.methods.getPurchaseHistoryById = function(userId: string | Types.ObjectId) {
+userSchema.methods.getPurchaseHistoryById = function (userId: string | Types.ObjectId) {
     return this.model('purchaseHistory')
         .aggregate([
             {$match: {userId: new ObjectId(userId)}},
@@ -124,7 +148,7 @@ userSchema.methods.getPurchaseHistoryById = function(userId: string | Types.Obje
         .exec();
 };
 
-userSchema.methods.createPasswordResetToken = function() {
+userSchema.methods.createPasswordResetToken = function () {
     const resetToken = crypto.randomBytes(32).toString('hex');
     this.secretToken = crypto
         .createHash('sha256')
@@ -134,7 +158,7 @@ userSchema.methods.createPasswordResetToken = function() {
     this.passwordResetExp = Date.now() + 60 * 60 * 1000;
 
     console.log(
-        { resetToken },
+        {resetToken},
         this.passwordResetToken
     );
     return resetToken;
