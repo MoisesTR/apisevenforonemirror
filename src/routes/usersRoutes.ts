@@ -17,5 +17,6 @@ router.route('/:userId')
     .put(validations.updateUser, validsParams, usersController.updateUser)
     .delete(validations.changeStateUser, validsParams, usersController.changeStateUser)
     .get(validations.getUser, validsParams, usersController.getUser);
+router.put('/paypalEmail/:userId', validations.updatePaypalEmail, validsParams, usersController.updatePaypalEmail);
 
 export default router;

@@ -84,3 +84,23 @@ export const getEmailByUserName = catchAsync(async (req: Express.Request, res: E
         throw _err;
     }
 });
+
+export const updatePaypalEmail = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    const userData = matchedData(req, {locations: ['body', 'params']});
+    const user = await models.User.findById(userData.userId);
+
+    if (user) {
+        
+        await user.updateOne( { $set:
+            { "paypalEmail": userData.paypalEmail}
+         });
+        
+        res.status(200).json({
+            message: 'Correo de paypal Actualizado',
+        });
+    } else {
+        console.log('User not found!');
+        next(new AppError('Usuario no encontrado!', 404, 'NEXIST'));
+    }
+
+});
