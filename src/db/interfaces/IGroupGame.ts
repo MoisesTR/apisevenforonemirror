@@ -5,6 +5,7 @@ export interface IMember {
     userId: ObjectId;
     userName: string;
     image: string;
+    email: string;
 }
 export interface IMemberDocument extends IMember, Document {}
 

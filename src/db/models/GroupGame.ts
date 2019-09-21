@@ -27,6 +27,10 @@ export const memberSchema: Schema = new Schema(
         image: {
             type: Schema.Types.String,
         },
+        email: {
+            type: String,
+            required: false
+        }
     },
     {
         timestamps: true,
@@ -102,7 +106,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             }
         }
 
-        const user: IUserDocument = await this.model('user').findById(memberData.userId);
+        const user: IUserDocument = await this.model(EModelNames.User).findById(memberData.userId);
         // Check user existence
         if (!user) {
             throw new AppError('Usuario no encontrado', 404, 'UNFOUND');
@@ -120,16 +124,17 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                 image: winner.image,
             };
 
-            const newNotification = this.model('notification')({
+            const newNotification = this.model(EModelNames.Notification)({
                 notificationType: ENotificationTypes.WIN,
                 userId: winner.userId,
                 content: `Felicitaciones ${winner.userName} usted ha sido el ganador en el grupo de $${this.initialInvertion}!`,
                 groupId: this.groupId,
             });
             try {
-                await winnerNotificationMail(winner, this.initialInvestment.toFixed(), '');
+                await winnerNotificationMail(winner, this.initialInvertion.toFixed(), '');
             } catch (_err) {
-                //TODO: handle
+                //TODO: handle with error log file
+                console.log('Error sending email to the winner', _err);
             }
             const userHistory = this.model('purchaseHistory')({
                 userId: winner.userId,
