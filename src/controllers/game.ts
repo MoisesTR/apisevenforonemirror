@@ -191,6 +191,7 @@ export const getTopWinners = catchAsync(async (req: Express.Request, res: Expres
                 totalWon: {$sum: '$quantity'},
                 userName: {$first: '$userInfo.userName'},
                 image: {$first: '$userInfo.image'},
+                paypalEmail: {$first: '$userInfo.paypalEmail'},
                 lastWonDate: {$last: '$createdAt'},
                 wonTimes: {$sum: 1},
             },

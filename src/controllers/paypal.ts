@@ -155,7 +155,8 @@ export const captureAuthorization = catchAsync(async (req: Express.Request, res:
 
 export const payout = catchAsync(async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
     const amountMoneyToPay = req.body.amountMoneyToPay;
-    const email = 'gerencia@fumipgreen.com';
+    const emailPaypal = req.body.paypalEmail;
+    // const email = 'gerencia@fumipgreen.com';
 
     getToken(next).then((body: any) => {
         const uriPayout =
@@ -185,7 +186,7 @@ export const payout = catchAsync(async (req: Express.Request, res: Express.Respo
                               currency: 'USD',
                           },
                           note: 'Gracias por jugar!!',
-                          receiver: email,
+                          receiver: emailPaypal,
                       },
                   ],
               }),
