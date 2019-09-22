@@ -73,6 +73,7 @@ export const addMemberToGroup = catchAsync(async (req: Express.Request, res: Exp
             userId: req.user._id,
             userName: req.user.userName,
             image: req.user.image,
+            email: req.user.email
         },
         relationData.payReference,
     );
@@ -237,5 +238,5 @@ export const changeActiveState = catchAsync(async (req: Express.Request, res: Ex
     res.status(200)
         .json({
             message: 'Success, the group active state has been changed!'
-        })
+        });
 });
