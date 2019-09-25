@@ -79,7 +79,6 @@ const groupSchema: Schema = new Schema(
 );
 
 groupSchema.methods.removeMember = async function (memberId: string | ObjectId) {
-    console.log(this.members);
     // const memberIdObj = ( typeof memberId === "string") ? new ObjectId( memberId) : memberId;
     // console.log(Types.ObjectId(memberId));
     // this.members.forEach((member: IMemberDocument) => {
@@ -151,13 +150,31 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
                 groupId: this._id,
                 userId: winner._id,
             });
-            if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
-                mainSocket.to(socketWinner).emit(EMainEvents.WIN_EVENT, {
-                    userId: winner.userId,
-                    content: `Felicitaciones has sido ganador en el grupo de $${this.initialInvertion}!`,
-                    date: new Date(),
-                });
-            }
+            console.log('socket del ganador', socketWinner);
+            // @ts-ignore
+            mainSocket.of('/').adapter.clients((err, clientes) => {
+                if (!!socketWinner && clientes.includes(socketWinner)) {
+
+                    console.log(mainSocket.clients())
+                    console.log(mainSocket.sockets)
+                    mainSocket.to(socketWinner).emit(EMainEvents.WIN_EVENT, {
+                        userId: winner.userId,
+                        content: `Felicitaciones has sido ganador en el grupo de $${this.initialInvertion}!`,
+                        date: new Date(),
+                    });
+                }
+                console.log('clientes actuales', clientes);
+
+                console.log('los sids', mainSocket.of('/').adapter.sids)
+            });
+            // const clients = await promisify(mainSocket.of('/').adapter.clients)
+            // if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
+            //     mainSocket.to(socketWinner).emit(EMainEvents.WIN_EVENT, {
+            //         userId: winner.userId,
+            //         content: `Felicitaciones has sido ganador en el grupo de $${this.initialInvertion}!`,
+            //         date: new Date(),
+            //     });
+            // }
             await newNotification.save();
             await userHistory.save();
         }

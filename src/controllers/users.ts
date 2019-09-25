@@ -1,6 +1,6 @@
 import Express, {NextFunction} from 'express';
 import catchAsync from '../utils/catchAsync';
-import models from '../db/models';
+import {User} from '../db/models';
 import {resultOrNotFound} from '../utils/defaultImports';
 import {matchedData} from 'express-validator/filter';
 import AppError from '../classes/AppError';
@@ -10,7 +10,7 @@ import {recoverAccountEmail} from '../services/email';
 export const getUsers = catchAsync(async (req: Express.Request, res: Express.Response) => {
     // const filters = matchedData(req, {locations: ['query']});
 
-    const result = await models.User.find({}, 'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
+    const result = await User.find({}, 'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
         .populate('role')
         .exec();
     res.status(200).json(result);
@@ -19,7 +19,7 @@ export const getUsers = catchAsync(async (req: Express.Request, res: Express.Res
 export const getUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userId = req.params.userId;
 
-    const user = await models.User.findById(
+    const user = await User.findById(
         userId,
         'firstName lastName userName email role birthDate isVerified phones enabled createdAt updatedAt',
     )
@@ -28,20 +28,29 @@ export const getUser = catchAsync(async (req: Express.Request, res: Express.Resp
     resultOrNotFound(res, user, 'User', next);
 });
 
-export const updateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    const userData = matchedData(req, {locations: ['body', 'query', 'params']});
+export const updateMe = (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    req.params.userId = req.user._id;
+    next();
+};
 
-    if (userData.userId === JSON.stringify(req.user._id)) {
-        return next(new AppError('No puedes editar este usuario', 403, 'EUNAUTH'));
-    }
-    const user: IUserDocument | null = await models.User.findById(userData.userId);
-    if (user == null) {
+export const updateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    const userData = matchedData(req, {
+        locations: ['body', 'query', 'params'],
+        onlyValidData: true,
+        includeOptionals: false
+    });
+    console.log('updating user', userData);
+    const userUpdated: IUserDocument | null = await User.findByIdAndUpdate(userData.userId, userData, {
+        new: true,
+        runValidators: true
+    });
+    if (userUpdated == null) {
         return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
     }
-    const userUpdate: IUserDocument = await user.updateUser(userData);
     res.status(200).json({
         status: 200,
         message: 'Usuario actualizado',
+        data: userUpdated
     });
 });
 
@@ -50,7 +59,7 @@ export const changeStateUser = catchAsync(async (req: Express.Request, res: Expr
 
     console.log('Change state user');
     console.log(data);
-    const user = await models.User.findById(data.userId);
+    const user = await User.findById(data.userId);
     if (!user) {
         res.status(400).json({failed: 'Usuario no encontrado!'});
         return;
@@ -66,7 +75,7 @@ export const getEmailByUserName = catchAsync(async (req: Express.Request, res: E
     // TODO: return
     const userName = req.params.userName;
 
-    const user = await models.User.findOne({userName: userName});
+    const user = await User.findOne({userName: userName});
     if (!user) {
         return next(new AppError('User not found!', 404, 'UNFOUND'));
     } else if (!user.enabled) {
@@ -87,14 +96,15 @@ export const getEmailByUserName = catchAsync(async (req: Express.Request, res: E
 
 export const updatePaypalEmail = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req, {locations: ['body', 'params']});
-    const user = await models.User.findById(userData.userId);
+    const user = await User.findById(userData.userId);
 
     if (user) {
-        
-        await user.updateOne( { $set:
-            { "paypalEmail": userData.paypalEmail}
-         });
-        
+
+        await user.updateOne({
+            $set:
+                {'paypalEmail': userData.paypalEmail}
+        });
+
         res.status(200).json({
             message: 'Correo de paypal Actualizado',
         });

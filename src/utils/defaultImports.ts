@@ -8,7 +8,7 @@ export const resultOrNotFound = (resp: Express.Response, result: any, name: stri
     if (!result) {
         return next(new AppError(`${name} not found!`, 404, 'NEXIST'));
     }
-    resp.status(200).json(result);
+    return resp.status(200).json(result);
 };
 
 export function remainigTimeInSeconds(millisTime: number) {

@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import randomstring from 'randomstring';
 import randomNumber from 'random-number';
-import {matchedData, remainigTimeInSeconds, resultOrNotFound} from '../utils/defaultImports';
+import {matchedData, remainigTimeInSeconds} from '../utils/defaultImports';
 import {OAuth2Client} from 'google-auth-library';
 import {IUserDocument} from '../db/interfaces/IUser';
 import {IActivityTypesDocument} from '../db/interfaces/IActivityTypes';
@@ -20,13 +20,13 @@ import FB from 'fb';
 import AppError from '../classes/AppError';
 import fs from 'fs';
 import path from 'path';
-import models from '../db/models';
 import logger from '../services/logger';
 import {createAccessToken, createRefreshToken} from '../services/jwt';
 import {ECookies} from './interfaces/ECookies';
 import {ProviderEnum} from '../db/enums/ProvidersEnum';
 import {EMainEvents} from '../sockets/constants/main';
 import {sendMessageToConnectedUser} from '../sockets/socket';
+import {ActivityTypes} from '../db/models';
 import moment = require('moment');
 
 const saltRounds = 10;
@@ -93,7 +93,7 @@ export const signInGoogle = catchAsync(async (req: Express.Request, res: Express
         return next(new AppError('No fue posible authenticarse con google.', 403, 'ITOKEN'));
     }
 
-    const user = await models.User.findOne({email: googleUser.email}).populate('role');
+    const user = await User.findOne({email: googleUser.email}).populate('role');
 
     if (user) {
         if (!user.enabled) {
@@ -104,7 +104,7 @@ export const signInGoogle = catchAsync(async (req: Express.Request, res: Express
         } else if (user.provider === 'facebook') {
             return next(new AppError('Este correo ya se encuentra asociado a una cuenta de facebook!!!', 400, 'AUTHNOR'));
         } else {
-            const response = await getResponseToSendToLogin(res, user);
+            const response = await getResponseToSendToLogin(res, user, userData.returnTokens);
             res.status(200).json(response);
         }
     } else {
@@ -122,12 +122,12 @@ export const signInGoogle = catchAsync(async (req: Express.Request, res: Express
 });
 
 //funcion registro
-export const createUserWithSocialLogin: (userData: any, socialUser: any) => Promise < ILoginResponse > = async (userData, socialUser) => {
+export const createUserWithSocialLogin: (userData: any, socialUser: any) => Promise<ILoginResponse> = async (userData, socialUser) => {
     userData.password = randomstring.generate(4);
     const hashPassw = await bcrypt.hash(userData.password, saltRounds);
     const randomUserName = generateRandomUserName(socialUser.email);
 
-    const user = new models.User({
+    const user = new User({
         firstName: socialUser.firstName,
         lastName: socialUser.lastName,
         userName: randomUserName,
@@ -145,7 +145,7 @@ export const createUserWithSocialLogin: (userData: any, socialUser: any) => Prom
     const {_token: accessTokenGen, expiration} = await createAccessToken(user);
     const {_token: refreshTokenGen, expiration: expirationRefresh} = await createRefreshToken(user);
 
-    const userInfo = await models.User.findOne({email: socialUser.email}).populate('role');
+    const userInfo = await User.findOne({email: socialUser.email}).populate('role');
     if (!userInfo) {
         throw new AppError('Usuario no encontrado', 404, 'UNFOUND');
     }
@@ -190,17 +190,17 @@ const verify = async (token: string) => {
         img: payload.picture,
         provider: 'google',
     };
-}
+};
 
 export const signUp = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req);
     const hashPassw = await bcrypt.hash(userData.password, saltRounds);
 
-    const users = await models.User.find({userName: userData.userName, email: userData.email});
+    const users = await User.find({userName: userData.userName, email: userData.email});
 
     if (!users || users.length === 0) {
         const token = randomstring.generate(20);
-        const user = new models.User({
+        const user = new User({
             firstName: userData.firstName,
             lastName: userData.lastName,
             userName: userData.userName,
@@ -239,7 +239,7 @@ export const signInMiddleware = catchAsync(async (req: Express.Request, res: Exp
     logger.info('Login usuario');
 
     // find user by username or email
-    let user: IUserDocument | null = await models.User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]})
+    let user: IUserDocument | null = await User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]})
         .populate('role')
         .select('+passwordHash');
     if (!!user) {
@@ -270,7 +270,7 @@ export const signInMiddleware = catchAsync(async (req: Express.Request, res: Exp
             if (!user.enabled) {
                 return next(new AppError('Tu usuario ha sido deshabilitado!', 403, 'UDISH'));
             }
-            const response = await getResponseToSendToLogin(res, user);
+            const response = await getResponseToSendToLogin(res, user, userData.returnTokens);
             res.status(200).json(response);
         } else {
             next(new AppError('Contraseña erronea.', 401, 'EPASSW'));
@@ -282,12 +282,12 @@ export const signInMiddleware = catchAsync(async (req: Express.Request, res: Exp
 });
 
 // GENERAL METHOD FOR GENERATE TOKEN AND REFRESH TOKEN, AND BUILD RESPONSE TO RETURN TO LOGIN
-export const getResponseToSendToLogin = async (res: Express.Response, user:any) => {
+export const getResponseToSendToLogin = async (res: Express.Response, user: any, returnTokens: boolean) => {
     const {expiration: expirationRefres, _token: _tokenRefresh} = await createRefreshToken(user, 10, 'minutes');
     const {_token: tokenGen, expiration} = await createAccessToken(user);
 
     res.cookie(ECookies._AccessToken, tokenGen, {
-        expires:  moment.unix(expirationRefres).toDate(),
+        expires: moment.unix(expirationRefres).toDate(),
         httpOnly: true,
         // secure: process.env.NODE_ENV === 'production',
     });
@@ -297,24 +297,29 @@ export const getResponseToSendToLogin = async (res: Express.Response, user:any) 
         // secure: process.env.NODE_ENV === 'production',
     });
     // TODO: come back implement the browser agent store
-    console.log(ECookies, process.env.NODE_ENV)
+    console.log(ECookies, process.env.NODE_ENV);
     await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefres), _tokenRefresh);
     await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
-    const response: ILoginResponse = {
-        user: dataUserForLogin(user),
-        token: tokenGen,
-        refreshToken: _tokenRefresh,
-        expiration,
+    let response: ILoginResponse = {
+        user: dataUserForLogin(user)
     };
+    if (returnTokens) {
+        response = {
+            ...response,
+            token: tokenGen,
+            refreshToken: _tokenRefresh,
+            expiration,
+        };
+    }
     logger.info(`User ${user.userName} logged`, {access: tokenGen, refresh: _tokenRefresh});
     return response;
-}
+};
 
 //TODO: manage the tokens in the database
 // saveLog = (userId, {userName, firstName, lastName, email, role}, activity) => {
 //     console.log(userId, userName, activity);
 //
-//     const userActivity = new models.UserActivityLog({
+//     const userActivity = new UserActivityLog({
 //         userId,
 //         userSnapshot: {userName, firstName, lastName, email, role},
 //         activityName: activity
@@ -330,7 +335,7 @@ export const getResponseToSendToLogin = async (res: Express.Response, user:any) 
 export const verifyEmail = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const data = req.params;
 
-    const user: IUserDocument | null = await models.User.findOne({secretToken: data.token});
+    const user: IUserDocument | null = await User.findOne({secretToken: data.token});
     console.log(user);
 
     if (!user) {
@@ -343,7 +348,7 @@ export const verifyEmail = catchAsync(async (req: Express.Request, res: Express.
 export const createAdminUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req);
     const user: IUserDocument = req.user;
-    // const adminRole: IRoleDocument | null = await models.Role.findOne({name: ERoles.ADMIN});
+    // const adminRole: IRoleDocument | null = await Role.findOne({name: ERoles.ADMIN});
     const adminRole: IRoleDocument = req.app.locals.adminRole;
     if (!adminRole) {
         return next(new AppError('The admin role doesn\'t exist!', 500, 'NAROLE'));
@@ -352,11 +357,11 @@ export const createAdminUser = catchAsync(async (req: Express.Request, res: Expr
     if (!user.role.equals(adminRole._id)) {
         return next(new AppError('No esta autorizado para utilizar este endpoint!', 403, 'NAUT'));
     }
-    const users = await models.User.find({userName: userData.userName, email: userData.email});
+    const users = await User.find({userName: userData.userName, email: userData.email});
 
     if (!users || users.length === 0) {
         const hashPassw = await bcrypt.hash(userData.password, saltRounds);
-        const newAdmin = new models.User({
+        const newAdmin = new User({
             firstName: userData.firstName,
             lastName: userData.lastName,
             userName: userData.userName,
@@ -420,7 +425,7 @@ export const upload = catchAsync(async (req: Express.Request, res: Express.Respo
             return next(new AppError('Error al mover el archivo', 500, 'ERRIMG'));
         }
 
-        const user: IUserDocument | null = await models.User.findById(id);
+        const user: IUserDocument | null = await User.findById(id);
         if (user == null) {
             return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
         }
@@ -483,7 +488,7 @@ export const changePassword = async (req: Express.Request, res: Express.Response
     const userData = matchedData(req, {locations: ['body', 'params']});
 
     try {
-        const user = await models.User.findById(userData.userId);
+        const user = await User.findById(userData.userId);
         if (!user) {
             throw new AppError('Usuario no encontrado', 404, 'UNFOUND');
         }
@@ -508,7 +513,7 @@ export const getAuthenticateUserInfo = (req: Express.Request, res: Express.Respo
 export const refreshTokenMiddleware = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const {refreshToken, userName} = matchedData(req, {locations: ['body']});
 
-    const user = await models.User.findOne({userName: userName});
+    const user = await User.findOne({userName: userName});
 
     if (!user) {
         return next(new AppError('El token de actualización no es valido!.', 401, 'DTOKEN'));
@@ -527,7 +532,7 @@ export const refreshTokenMiddleware = catchAsync(async (req: Express.Request, re
     if (redisRefreshToken !== refreshToken) {
         return next(new AppError('El token de actualización no es valido, vuelva a iniciar sesion!', 401, 'TRNOTVAL'));
     }
-        const {_token: tokenGen, expiration} = await createAccessToken(user);
+    const {_token: tokenGen, expiration} = await createAccessToken(user);
     await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
 
     logger.info('New access token for ' + user.userName, {token: tokenGen, refreshToken});
@@ -549,7 +554,7 @@ export const forgotAccount = catchAsync(async (req: Express.Request, res: Expres
         condition.email = data.email;
     }
     // 2) Get user based on the above filter
-    const user = await models.User.findOne({...condition});
+    const user = await User.findOne({...condition});
 
     if (!user) {
         return next(new AppError('User not found!', 404, 'UNFOUND'));
@@ -576,13 +581,13 @@ export const forgotAccount = catchAsync(async (req: Express.Request, res: Expres
 });
 
 export const getActivityTypes = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    const activities: IActivityTypesDocument[] = await models.ActivityTypes.find();
+    const activities: IActivityTypesDocument[] = await ActivityTypes.find();
     res.status(200).json(activities);
 });
 
 export const verifyChangePassword = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req, {locations: ['body', 'params']});
-    const user: IUserDocument | null = await models.User.findOne({_id: userData.userId})
+    const user: IUserDocument | null = await User.findOne({_id: userData.userId})
         .populate('role')
         .select('+passwordHash');
 
@@ -595,7 +600,7 @@ export const verifyChangePassword = catchAsync(async (req: Express.Request, res:
 
 });
 
-const checkPassword = async (userData:any, user:IUserDocument, res:Express.Response, next: NextFunction) => {
+const checkPassword = async (userData: any, user: IUserDocument, res: Express.Response, next: NextFunction) => {
 
     const isequal = await bcrypt.compare(userData.password, user.passwordHash);
     if (isequal) {
@@ -609,7 +614,7 @@ const checkPassword = async (userData:any, user:IUserDocument, res:Express.Respo
     } else {
         next(new AppError('Contraseña erronea.', 401, 'EPASSW'));
     }
-}
+};
 
 const verifyCredentialsFacebook = async (
     req: Express.Request,
@@ -620,7 +625,7 @@ const verifyCredentialsFacebook = async (
 ) => {
     const facebookUser = facebookCredentials;
 
-    const user = await models.User.findOne({email: facebookUser.email}).populate('role');
+    const user = await User.findOne({email: facebookUser.email}).populate('role');
 
     if (user) {
         if (!user.enabled) {
@@ -637,10 +642,10 @@ const verifyCredentialsFacebook = async (
         } else if (user.provider === 'google') {
             return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL.`, 400, 'AUTHNOR'));
         }
-        const response = await getResponseToSendToLogin(res, user);
+        const response = await getResponseToSendToLogin(res, user, false);
         res.status(200).json(response);
     } else {
-        console.log('registration', req.app.locals)
+        console.log('registration', req.app.locals);
         const dataLogin = await createUserWithSocialLogin(
             {
                 ...userData,
@@ -700,7 +705,7 @@ export const resetPassword = catchAsync(async (req, res, next) => {
     // createSendToken(user, 200, res);
 });
 
-export const logout =  (req: Express.Request, res: Express.Response, next: NextFunction) => {
+export const logout = (req: Express.Request, res: Express.Response, next: NextFunction) => {
     res.clearCookie(ECookies._AccessToken);
     res.clearCookie(ECookies._RefreshToken);
     res.status(200)
