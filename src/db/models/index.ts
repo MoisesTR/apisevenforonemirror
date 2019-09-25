@@ -8,7 +8,7 @@ import Role from './Role';
 import UserActivityLog from './UserActivityLog';
 import User from './User';
 
-export default {
+export {
     Card,
     ActivityTypes,
     GroupGame,

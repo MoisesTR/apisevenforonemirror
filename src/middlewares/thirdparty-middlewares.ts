@@ -19,7 +19,7 @@ export const apply = (app: express.Application, baseDir: string) => {
     app.use(compression());
     // Body parser, reading data from body into req.body
     app.use(express.json({ limit: '20kb'}));
-    app.use(express.urlencoded({extended: false}));
+    app.use(express.urlencoded({extended: true}));
     // Serving statics files
     app.use(express.static(path.join(baseDir, '..', 'public')));
 };

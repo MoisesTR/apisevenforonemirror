@@ -116,14 +116,14 @@ userSchema.methods.verifyToken = function () {
     return this.save();
 };
 
-userSchema.methods.updateUser = function ({firstName, lastName, phones, birthDate, gender}: IUser) {
-    this.firstName = firstName;
-    this.lastName = lastName;
-    this.phones = phones;
-    this.birthDate = birthDate;
-    this.gender = gender;
-    return this.save();
-};
+// userSchema.methods.updateUser = function ({firstName, lastName, phones, birthDate, gender}: IUser) {
+//     this.firstName = firstName;
+//     this.lastName = lastName;
+//     this.phones = phones;
+//     this.birthDate = birthDate;
+//     this.gender = gender;
+//     return this.save();
+// };
 
 userSchema.methods.getPurchaseHistory = function () {
     return this.model('purchaseHistory').find();

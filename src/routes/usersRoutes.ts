@@ -10,11 +10,14 @@ const router = Express.Router();
 router.get('/email/:userName', validations.getEmail, usersController.getEmailByUserName);
 
 router.use(ensureAuth);
+router.route('/me')
+    .patch( usersController.updateMe, validations.updateUser, validsParams, usersController.updateUser);
+
 router.route('/')
     .get(validsParams, usersController.getUsers);
 
 router.route('/:userId')
-    .put(validations.updateUser, validsParams, usersController.updateUser)
+    .patch(validations.updateUser, validsParams, usersController.updateUser)
     .delete(validations.changeStateUser, validsParams, usersController.changeStateUser)
     .get(validations.getUser, validsParams, usersController.getUser);
 router.put('/paypalEmail/:userId', validations.updatePaypalEmail, validsParams, usersController.updatePaypalEmail);

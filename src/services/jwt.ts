@@ -5,10 +5,10 @@ import jwt from 'jsonwebtoken';
 import moment, {DurationInputArg1, DurationInputArg2} from 'moment';
 import {IUserDocument} from '../db/interfaces/IUser';
 import AppError from '../classes/AppError';
-import models from '../db/models';
 import logger from './logger';
 import {ECookies} from '../controllers/interfaces/ECookies';
 import catchAsync from '../utils/catchAsync';
+import {User} from '../db/models';
 
 const createToken = async (customPayload: any, secret: string, expiration: DurationInputArg1, unitTime: DurationInputArg2) => {
     let _token;
@@ -106,7 +106,7 @@ export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.R
 
     logger.info('Verificando token: ' + token, {location: 'jwt'});
     const decode = await verifyToken(token, envVars.JWT_SECRET);
-    const user = await models.User.findById(decode.sub);
+    const user = await User.findById(decode.sub);
     //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
     if (!!user) {
         //Si encontramos el usuario
@@ -127,8 +127,8 @@ export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.R
                         return next(new AppError('Refresh token expired, please log again!', 401, 'TOKENEXPIRED'));
                     }
                     const {_token: tokenGen, expiration} = await createAccessToken(user);
-                    res.cookie(ECookies._AccessToken, tokenGen,{
-                        expires:  moment.unix(decodedRefresh.exp).toDate(),
+                    res.cookie(ECookies._AccessToken, tokenGen, {
+                        expires: moment.unix(decodedRefresh.exp).toDate(),
                         httpOnly: true,
                         // secure: process.env.NODE_ENV === 'production',
                     });
@@ -136,8 +136,8 @@ export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.R
                     return next();
 
                 } catch (_e) {
-                  res.clearCookie(ECookies._AccessToken);
-                  throw _e;
+                    res.clearCookie(ECookies._AccessToken);
+                    throw _e;
                 }
             }
             return next(new AppError('Access token expired, refresh please!', 401, 'TOKENEXPIRED'));
