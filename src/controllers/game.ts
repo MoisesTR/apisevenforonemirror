@@ -7,8 +7,9 @@ import {IPurchaseHistoryDocument} from '../db/interfaces/IPurchaseHistory';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../classes/AppError';
 import GroupGame from '../db/models/GroupGame';
-import DocumentArray = Types.DocumentArray;
 import {PurchaseHistory, User} from '../db/models';
+import {createOne} from './factory';
+import DocumentArray = Types.DocumentArray;
 
 export const getOwnPurchaseHistory = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     console.log(req.user);
@@ -16,15 +17,16 @@ export const getOwnPurchaseHistory = catchAsync(async (req: Express.Request, res
     res.status(200).json(history);
 });
 
-export const createGroup = catchAsync(async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
-    const groupData = matchedData(req, {locations: ['body']});
-
-    const groupGame = new GroupGame({...groupData});
-
-    const group = await groupGame.save();
-
-    res.status(201).json({message: 'Group created!!'});
-});
+// export const createGroup = catchAsync(async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
+//     const groupData = matchedData(req, {locations: ['body']});
+//
+//     const groupGame = new GroupGame({...groupData});
+//
+//     const group = await groupGame.save();
+//
+//     res.status(201).json({message: 'Group created!!'});
+// });
+export const createGroup = createOne<IGroupGameDocument>(GroupGame, true);
 
 export const getGameGroups = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const groups: Types.DocumentArray<IGroupGameDocument> = await GroupGame.aggregate([

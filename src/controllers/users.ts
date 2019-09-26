@@ -9,7 +9,6 @@ import {recoverAccountEmail} from '../services/email';
 import {createOne} from './factory';
 
 export const getUsers = catchAsync(async (req: Express.Request, res: Express.Response) => {
-    // const filters = matchedData(req, {locations: ['query']});
 
     const result = await User.find({}, 'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
         .populate('role')
