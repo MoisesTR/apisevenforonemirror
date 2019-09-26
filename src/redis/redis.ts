@@ -21,9 +21,10 @@ export const redisSub = new Redis({
 //     // Receive message Hello again! from channel music
 //     console.log("Receive message %s from channel %s", message, channel);
 // });
-
-redisSub.on("message", function(channel, message) {
-    // Receive message Hello world! from channel news
-    // Receive message Hello again! from channel music
-    console.log("Receive message %s from channel %s", message, channel);
-});
+if (process.env.NODE_ENV === 'development') {
+    redisSub.on('message', function(channel, message) {
+        // Receive message Hello world! from channel news
+        // Receive message Hello again! from channel music
+        console.log('Receive message %s from channel %s', message, channel);
+    });
+}

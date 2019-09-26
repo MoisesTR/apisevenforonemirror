@@ -1,5 +1,5 @@
 'use strict';
-import Express, {NextFunction} from 'express';
+import Express, {NextFunction, RequestHandler} from 'express';
 import envVars from '../global/environment';
 import jwt from 'jsonwebtoken';
 import moment, {DurationInputArg1, DurationInputArg2} from 'moment';
@@ -9,6 +9,7 @@ import logger from './logger';
 import {ECookies} from '../controllers/interfaces/ECookies';
 import catchAsync from '../utils/catchAsync';
 import {User} from '../db/models';
+import {ObjectId} from 'bson';
 
 const createToken = async (customPayload: any, secret: string, expiration: DurationInputArg1, unitTime: DurationInputArg2) => {
     let _token;
@@ -108,7 +109,9 @@ export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.R
     const decode = await verifyToken(token, envVars.JWT_SECRET);
     const user = await User.findById(decode.sub);
     //en caso de encontrarlo refrescaremos su informacion por si ha habido un cambio
-    if (!!user) {
+    if (!user) {
+        return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
+    } else {
         //Si encontramos el usuario
         if (user.enabled === false) {
             //si el usuario se encuentra deshabilitado
@@ -145,8 +148,6 @@ export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.R
 
         req.user = user;
         return next(); //next para pasar al siguiente controlador
-    } else {
-        return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
     }
 });
 
@@ -165,4 +166,14 @@ export const midOwnUserOrAdmon = (req: Express.Request, res: Express.Response, n
         });
     }
     next();
+};
+export const isAdmin: RequestHandler = (req, res, next) => {
+    return isInRole(req.app.locals.roleAdmin._id)(req, res, next);
+};
+export const isInRole = (...roles: ObjectId[]) => (req: Express.Request, res: Express.Response, next: NextFunction) => {
+    console.log('isInRole', req.user.role, roles);
+    if (!!roles.find(r => r.equals(req.user.role))) {
+        return next();
+    }
+    next(new AppError('You dont have permission to perform that action!', 403));
 };

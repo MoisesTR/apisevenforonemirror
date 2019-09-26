@@ -20,6 +20,7 @@ import usersRoutes from './routes/usersRoutes';
 // Socket
 import {listenGroupSocket, listenSockets} from './sockets/socket';
 import {onError, onListening} from './utils/errorCallbacks';
+import * as mongoose from 'mongoose';
 
 const app = Express();
 app.set('port', ENV.SERVER_PORT);
@@ -111,6 +112,14 @@ export default class Server {
 
     start(callback: (port: number) => void) {
         httpServer.listen(envVars.SERVER_PORT, () => callback(envVars.SERVER_PORT));
+        process.on('SIGTERM', () => {
+            console.log('SIGTERM CATCHED: closing server..');
+            httpServer.close(() => {
+                mongoose.disconnect(() => {
+                    process.exit(0);
+                });
+            });
+        });
     }
 
     private escucharSockets() {
