@@ -6,9 +6,9 @@ import {matchedData} from 'express-validator/filter';
 import AppError from '../classes/AppError';
 import {IUserDocument} from '../db/interfaces/IUser';
 import {recoverAccountEmail} from '../services/email';
+import {createOne} from './factory';
 
 export const getUsers = catchAsync(async (req: Express.Request, res: Express.Response) => {
-    // const filters = matchedData(req, {locations: ['query']});
 
     const result = await User.find({}, 'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
         .populate('role')
@@ -114,3 +114,5 @@ export const updatePaypalEmail = catchAsync(async (req: Express.Request, res: Ex
     }
 
 });
+
+export const createUser = createOne<IUserDocument>(User);

@@ -4,9 +4,12 @@ import {isObjectId} from '../../utils/genericsValidations';
 export const getGroup = [param('groupId').custom(isObjectId)];
 
 // body('userId').custom(isObjectId),
-export const createGroup = [body('initialInvertion').isInt(), sanitize('initialInvertion').toInt()];
+export const createGroup = [body('initialInvertion').isInt(), body('uniqueChange').isBoolean(), sanitize('initialInvertion').toInt()];
 
-export const addMemberToGroup = [param('groupId').custom(isObjectId), body('payReference').isLength({min: 5, max: 150})];
+export const addMemberToGroup = [param('groupId').custom(isObjectId), body('payReference').isLength({
+    min: 5,
+    max: 150
+})];
 export const userIdParam = [
     param('userId')
         .isLength({min: 10})
