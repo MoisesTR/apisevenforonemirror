@@ -3,6 +3,7 @@ import {matchedData} from 'express-validator/filter';
 import {Role} from '../db/models';
 import {resultOrNotFound} from '../utils/defaultImports';
 import catchAsync from '../utils/catchAsync';
+import {getAll} from './factory';
 
 export const createRole = catchAsync(async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
     const roleData = matchedData(req, {locations: ['body']});
@@ -16,11 +17,7 @@ export const createRole = catchAsync(async (req: Express.Request, res: Express.R
     });
 });
 
-export const getRoles = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    const roles = await Role.find();
-
-    res.status(200).json(roles);
-});
+export const getRoles = getAll(Role);
 
 export const getRole = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const roleId = req.params.roleId;

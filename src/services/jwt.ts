@@ -133,7 +133,7 @@ export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.R
                     res.cookie(ECookies._AccessToken, tokenGen, {
                         expires: moment.unix(decodedRefresh.exp).toDate(),
                         httpOnly: true,
-                        // secure: process.env.NODE_ENV === 'production',
+                        secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
                     });
                     console.log('new token was created', decodedRefresh);
                     return next();

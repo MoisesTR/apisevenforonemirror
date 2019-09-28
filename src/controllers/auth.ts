@@ -104,7 +104,7 @@ export const signInGoogle = catchAsync(async (req: Express.Request, res: Express
         } else if (user.provider === 'facebook') {
             return next(new AppError('Este correo ya se encuentra asociado a una cuenta de facebook!!!', 400, 'AUTHNOR'));
         } else {
-            const response = await getResponseToSendToLogin(res, user, userData.returnTokens);
+            const response = await getResponseToSendToLogin(req, res, user, userData.returnTokens);
             res.status(200).json(response);
         }
     } else {
@@ -270,7 +270,7 @@ export const signInMiddleware = catchAsync(async (req: Express.Request, res: Exp
             if (!user.enabled) {
                 return next(new AppError('Tu usuario ha sido deshabilitado!', 403, 'UDISH'));
             }
-            const response = await getResponseToSendToLogin(res, user, userData.returnTokens);
+            const response = await getResponseToSendToLogin(req, res, user, userData.returnTokens);
             res.status(200).json(response);
         } else {
             next(new AppError('Contraseña erronea.', 401, 'EPASSW'));
@@ -282,19 +282,19 @@ export const signInMiddleware = catchAsync(async (req: Express.Request, res: Exp
 });
 
 // GENERAL METHOD FOR GENERATE TOKEN AND REFRESH TOKEN, AND BUILD RESPONSE TO RETURN TO LOGIN
-export const getResponseToSendToLogin = async (res: Express.Response, user: any, returnTokens: boolean) => {
+export const getResponseToSendToLogin = async (req: Express.Request, res: Express.Response, user: any, returnTokens: boolean) => {
     const {expiration: expirationRefres, _token: _tokenRefresh} = await createRefreshToken(user, 10, 'minutes');
     const {_token: tokenGen, expiration} = await createAccessToken(user);
 
     res.cookie(ECookies._AccessToken, tokenGen, {
         expires: moment.unix(expirationRefres).toDate(),
         httpOnly: true,
-        // secure: process.env.NODE_ENV === 'production',
+        secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
     });
     res.cookie(ECookies._RefreshToken, _tokenRefresh, {
         expires: moment.unix(expirationRefres).toDate(),
         httpOnly: true,
-        // secure: process.env.NODE_ENV === 'production',
+        secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
     });
     // TODO: come back implement the browser agent store
     console.log(ECookies, process.env.NODE_ENV);
@@ -642,7 +642,7 @@ const verifyCredentialsFacebook = async (
         } else if (user.provider === 'google') {
             return next(new AppError(`El correo ${user.email} ya se encuentra asociado a una cuenta de GMAIL.`, 400, 'AUTHNOR'));
         }
-        const response = await getResponseToSendToLogin(res, user, false);
+        const response = await getResponseToSendToLogin(req, res, user, false);
         res.status(200).json(response);
     } else {
         console.log('registration', req.app.locals);

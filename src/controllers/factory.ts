@@ -3,6 +3,7 @@ import AppError from '../classes/AppError';
 import * as mongoose from 'mongoose';
 import {Document, QueryPopulateOptions} from 'mongoose';
 import APIFeatures from '../utils/APIFeatures';
+import {matchedData} from 'express-validator/filter';
 
 export const deleteOne = <T extends Document>(Model: mongoose.Model<T>) =>
     catchAsync(async (req, res, next) => {
@@ -33,8 +34,11 @@ export const updateOne = <T extends Document>(Model: mongoose.Model<T>) =>
         });
     });
 
-export const createOne = <T extends Document>(Model: mongoose.Model<T>) =>
+export const createOne = <T extends Document>(Model: mongoose.Model<T>, express?: boolean) =>
     catchAsync(async (req, res, next) => {
+        if (express) {
+            req.body = matchedData(req, {locations: ['body']});
+        }
         const doc = await Model.create(req.body);
 
         res.status(201).json({
@@ -63,7 +67,7 @@ export const getOne = <T extends Document>(Model: mongoose.Model<T>, popOptions:
         });
     });
 
-export const getAll = <T extends Document>(Model: mongoose.Model<T>) =>
+export const getAll = <T extends Document>(Model: mongoose.Model<T>, long?: boolean) =>
     catchAsync(async (req, res, next) => {
         // To allow for nested GET reviews on tour (hack)
         let filter = {};
@@ -78,6 +82,9 @@ export const getAll = <T extends Document>(Model: mongoose.Model<T>) =>
             .paginate();
         const doc = await features.query;
 
+        if (!long) {
+            return res.status(200).json(doc);
+        }
         res.status(200).json({
             status: 'success',
             results: doc.length,
