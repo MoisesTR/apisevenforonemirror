@@ -23,9 +23,12 @@ import {onError, onListening} from './utils/errorCallbacks';
 import * as mongoose from 'mongoose';
 
 const app = Express();
+app.enable('trust proxy');
 app.set('port', ENV.SERVER_PORT);
 
 app.use(cors());
+
+app.options('*', cors());
 // Limit Request from same API
 const limiter = new rateLimit({
     max: 600,
