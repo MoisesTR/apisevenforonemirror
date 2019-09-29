@@ -26,9 +26,14 @@ const app = Express();
 app.enable('trust proxy');
 app.set('port', ENV.SERVER_PORT);
 
-app.use(cors());
+app.use(cors(
+  {
+      origin: 'http://localhost:4200',
+      credentials: true
+  }
+));
 
-app.options('*', cors());
+// app.options('*', cors());
 // Limit Request from same API
 const limiter = new rateLimit({
     max: 600,
@@ -86,7 +91,7 @@ export default class Server {
     public basicMiddlewares() {
         //Configuracion cabeceras y cors
         app.use((req: Express.Request, res: Express.Response, next: NextFunction) => {
-            res.header('Access-Control-Allow-Origin', '*');
+            res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
             res.header(
                 'Access-Control-Allow-Headers',
                 'Authorization, X-API-KEY, Origin, ' + 'X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method',
