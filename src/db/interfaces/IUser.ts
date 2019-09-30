@@ -14,6 +14,7 @@ export interface IUser {
     isVerified: boolean;
     role: ObjectId;
     image: string;
+    thumbnail?: string;
     passwordHash: string;
     enabled: boolean;
     provider: string;

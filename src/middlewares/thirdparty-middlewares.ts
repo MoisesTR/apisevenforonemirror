@@ -9,13 +9,9 @@ import helmet from 'helmet';
 // Compress Response
 import compression from 'compression';
 
-// FILE UPLOAD
-import fileUpload from "express-fileupload";
-
 export const apply = (app: express.Application, baseDir: string) => {
     app.use(cookieParser());
     app.use(logger('dev'));
-    app.use(fileUpload());
     // Set security HTTP Headers
     app.use(helmet({noCache: true}));
     app.use(compression());

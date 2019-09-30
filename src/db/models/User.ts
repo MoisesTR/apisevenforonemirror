@@ -1,7 +1,7 @@
 'use strict';
 
 import {model, Schema, Types} from 'mongoose';
-import {IUser, IUserDocument, IUserModel} from '../interfaces/IUser';
+import {IUserDocument, IUserModel} from '../interfaces/IUser';
 import {ObjectId} from 'bson';
 import crypto from 'crypto';
 import {EModelNames} from '../interfaces/EModelNames';
@@ -56,13 +56,23 @@ const userSchema = new Schema(
             required: true,
             ref: EModelNames.Role,
         },
+        isExternalImage: {
+            type: Boolean,
+            required: true,
+            default: false,
+        },
         image: {
             type: String,
+            required: true,
+        },
+        thumbnail: {
+            type: String,
+            required: false,
         },
         passwordHash: {
             type: String,
             required: true,
-            select: false
+            select: false,
         },
         enabled: {
             type: Boolean,
@@ -75,14 +85,14 @@ const userSchema = new Schema(
         passwordChangeAt: Date,
         passwordResetExp: Date,
         paypalEmail: {
-            type: String
-        }
+            type: String,
+        },
     },
     {
         timestamps: true,
     },
 );
-userSchema.pre<IUserDocument>('save', async function (next) {
+userSchema.pre<IUserDocument>('save', async function(next) {
     if (!this.isModified('password')) {
         next();
     }
@@ -90,16 +100,11 @@ userSchema.pre<IUserDocument>('save', async function (next) {
     next();
 });
 
-userSchema.methods.changedPasswordAfter = function (JWTTimestamp: number) {
+userSchema.methods.changedPasswordAfter = function(JWTTimestamp: number) {
     if (this.passwordChangedAt) {
         const changedTimestampt = this.passwordChangedAt.getTime() / 1000;
 
-        console.log(
-            this.passwordChangedAt,
-            changedTimestampt,
-            JWTTimestamp,
-            new Date(JWTTimestamp * 1000)
-        );
+        console.log(this.passwordChangedAt, changedTimestampt, JWTTimestamp, new Date(JWTTimestamp * 1000));
 
         return JWTTimestamp < changedTimestampt;
     }
@@ -107,7 +112,7 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp: number) {
     return false;
 };
 
-userSchema.methods.verifyToken = function () {
+userSchema.methods.verifyToken = function() {
     // Descomentar secretToken hasta que el metodo refresh token funcione correctamente
     // this.secretToken = "";
     this.isVerified = true;
@@ -125,11 +130,11 @@ userSchema.methods.verifyToken = function () {
 //     return this.save();
 // };
 
-userSchema.methods.getPurchaseHistory = function () {
+userSchema.methods.getPurchaseHistory = function() {
     return this.model('purchaseHistory').find();
 };
 
-userSchema.methods.getPurchaseHistoryById = function (userId: string | Types.ObjectId) {
+userSchema.methods.getPurchaseHistoryById = function(userId: string | Types.ObjectId) {
     return this.model('purchaseHistory')
         .aggregate([
             {$match: {userId: new ObjectId(userId)}},
@@ -151,7 +156,7 @@ userSchema.methods.getPurchaseHistoryById = function (userId: string | Types.Obj
         .exec();
 };
 
-userSchema.methods.createPasswordResetToken = function () {
+userSchema.methods.createPasswordResetToken = function() {
     const resetToken = crypto.randomBytes(32).toString('hex');
     this.secretToken = crypto
         .createHash('sha256')
@@ -160,12 +165,8 @@ userSchema.methods.createPasswordResetToken = function () {
     // Only valid for the next hout
     this.passwordResetExp = Date.now() + 60 * 60 * 1000;
 
-    console.log(
-        {resetToken},
-        this.passwordResetToken
-    );
+    console.log({resetToken}, this.passwordResetToken);
     return resetToken;
 };
-
 
 export default model<IUserDocument, IUserModel>(EModelNames.User, userSchema);

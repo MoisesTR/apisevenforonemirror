@@ -136,6 +136,7 @@ export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.R
                         secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
                     });
                     console.log('new token was created', decodedRefresh);
+                    req.user = user;
                     return next();
 
                 } catch (_e) {

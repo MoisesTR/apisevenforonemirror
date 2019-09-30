@@ -54,15 +54,17 @@ const NotificationSchema = new Schema(
 );
 NotificationSchema.post<INotificationDocument>('save', async function (doc, next) {
     if (doc.isNew) {
-        console.log('Notifiacion insert', doc);
         const user = await User.findById(doc.userId);
         if (!user) {
             return;
         }
         const socketWinner = await redisPub.hget(DynamicKey.hash.socketsUser(user.userName), 'main');
-        if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
-            mainSocket.to(socketWinner).emit(EMainEvents.NOTIFICATION, {notificationId: doc._id});
-        }
+        // @ts-ignore
+        mainSocket.of('/').adapter.clients((err, clientes) => {
+            if (!!socketWinner && clientes.includes(socketWinner)) {
+                mainSocket.to(socketWinner).emit(EMainEvents.NOTIFICATION, {notificationId: doc._id});
+            }
+        });
     }
     next();
 });

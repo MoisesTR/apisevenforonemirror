@@ -1,6 +1,8 @@
 import {DurationInputArg2} from 'moment';
 import {IEnvironment} from './interfaces/Environment';
 
+const numberEnvVar = (posible: string | undefined, defaultVal: number) => (!!posible ? +posible : 3000);
+
 const EnvVar: IEnvironment = {
     SERVER_PORT: !!process.env.PORT ? +process.env.PORT : 3000,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '380320064033-bs2uivmdsj2fs5v68h2kg57p5k9kgtv7.apps.googleusercontent.com',
@@ -19,7 +21,7 @@ const EnvVar: IEnvironment = {
     MONGO_DB_QUERY_PARAMS: process.env.MONGO_DB_QUERY_PARAMS || 'retryWrites=true',
 
     // RULE GAME 7X1
-    MAX_MEMBERS_PER_GROUP: !!process.env.MAX_MEMBERS_PER_GROUP ? +process.env.MAX_MEMBERS_PER_GROUP : 6,
+    MAX_MEMBERS_PER_GROUP: numberEnvVar(process.env.MAX_MEMBERS_PER_GROUP, 6),
     // Custom Path from sockets
     SOCKETIO_PATH: process.env.SOCKETIO_PATH || '/socket10',
     // Redis host and Credentias
@@ -29,15 +31,17 @@ const EnvVar: IEnvironment = {
     // Email EnvVars
     SENDGRID_KEY: process.env.SENDGRID_KEY || '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',
     ADMON_EMAIL: process.env.ADMON_EMAIL || 'atomicdevelopersnic@gmail.com',
-    WINNER_NOTIFICATION: process.env.WINNER_NOTIFICATION || "d-5bc417d2fd764bfba24331550227d732",
-    RECOVER_ACCOUNT: process.env.RECOVER_ACCOUNT || "d-72f36268236e4ef08dfef3807c9b6508",
-    CONFIRM_EMAIL: process.env.CONFIRM_EMAIL || "d-3f1db392e2b94207b174951603163934",
-    NO_REPLY_EMAIL: process.env.NO_REPLY_EMAIL  || "no-reply@seven.com",
+    WINNER_NOTIFICATION: process.env.WINNER_NOTIFICATION || 'd-5bc417d2fd764bfba24331550227d732',
+    RECOVER_ACCOUNT: process.env.RECOVER_ACCOUNT || 'd-72f36268236e4ef08dfef3807c9b6508',
+    CONFIRM_EMAIL: process.env.CONFIRM_EMAIL || 'd-3f1db392e2b94207b174951603163934',
+    NO_REPLY_EMAIL: process.env.NO_REPLY_EMAIL || 'no-reply@seven.com',
     // Tokens config
-    ACCESS_TOKEN_DURATION: !!process.env.ACCESS_TOKEN_DURATION  ? +process.env.ACCESS_TOKEN_DURATION : 1,
-    ACCESS_TOKEN_MEASURE: process.env.ACCESS_TOKEN_MEASURE as DurationInputArg2 || 'minute',
-    REFRESH_TOKEN_DURATION:!!process.env.REFRESH_TOKEN_DURATION  ? +process.env.REFRESH_TOKEN_DURATION : 2,
-    REFRESH_TOKEN_MEASURE: process.env.REFRESH_TOKEN_MEASURE as DurationInputArg2  || 'minutes'
+    ACCESS_TOKEN_DURATION: numberEnvVar(process.env.ACCESS_TOKEN_DURATION, 1),
+    ACCESS_TOKEN_MEASURE: (process.env.ACCESS_TOKEN_MEASURE as DurationInputArg2) || 'minute',
+    REFRESH_TOKEN_DURATION: numberEnvVar(process.env.REFRESH_TOKEN_DURATION, 2),
+    REFRESH_TOKEN_MEASURE: (process.env.REFRESH_TOKEN_MEASURE as DurationInputArg2) || 'minutes',
+    THUMBNAIL_PIC_DIMENSION: numberEnvVar(process.env.THUMBNAIL_PIC_DIMENSION, 93),
+    PRINCIPAL_PIC_DIMENSION: numberEnvVar(process.env.PRINCIPAL_PIC_DIMENSION, 500),
 };
 
 export default EnvVar;

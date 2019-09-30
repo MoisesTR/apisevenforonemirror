@@ -1,14 +1,15 @@
 {
   "delay": "1500",
   "verbose": true,
-  "ignore": [
-    "dist",
-    "build",
-    "src/logs"
-  ],
   "watch": [
     "src/**/*.ts",
     "config"
+  ],
+  "ignore": [
+    "dist",
+    "build",
+    "src/logs",
+    "src/uploads/"
   ],
   "env": {
     "NODE_ENV": "development"
