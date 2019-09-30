@@ -9,6 +9,5 @@ export enum EModelNames {
     UserActivity =  'userActivityLog',
     PaymentRequest = 'paymentRequest',
     ActivityTypes = 'activityTypes',
-    Card = 'card',
     CreditGame = 'creditGame'
 }
