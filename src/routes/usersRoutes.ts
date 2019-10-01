@@ -3,6 +3,7 @@ import * as validations from '../services/validations/auth';
 import {validsParams} from '../utils/genericsValidations';
 import {ensureAuth, isAdmin} from '../services/jwt';
 import * as usersController from '../controllers/users';
+import {resizeUserImages, uploadUserImage} from '../controllers/users';
 
 // All these routes run below the path /api/users
 const router = Express.Router();
@@ -11,7 +12,7 @@ router.get('/email/:userName', validations.getEmail, usersController.getEmailByU
 
 router.use(ensureAuth);
 router.route('/me')
-    .patch(usersController.updateMe, validations.updateUser, validsParams, usersController.updateUser);
+    .patch(usersController.updateMe, validations.updateUser, validsParams, uploadUserImage, resizeUserImages, usersController.updateUser);
 
 router.route('/')
     .post(isAdmin, usersController.createUser)

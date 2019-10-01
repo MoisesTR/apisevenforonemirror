@@ -25,7 +25,6 @@ router.use(ensureAuth)
     .get('/me', authController.getAuthenticateUserInfo)
     .post('/admin', validations.createAdmin, validsParams, authController.createAdminUser)
     .get('/getImage/:folder/:img', authController.getImage)
-    .put('/upload/:folder/:id', validations.uploadImage, validsParams, authController.upload)
     .put('/pwd/:userId', validations.changePassword, validsParams, authController.changePassword)
     .post('/verifyPwd/:userId', validations.verifyChangePassword, validsParams, authController.verifyChangePassword);
 

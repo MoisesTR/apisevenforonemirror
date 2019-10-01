@@ -73,6 +73,10 @@ const updateUserCommon = [
         min: 3,
         max: 150,
     }).optional({nullable: true}),
+    body('email', getMessageMinMaxChar('El email debe ', 3, 150)).isEmail().isLength({
+        min: 3,
+        max: 150,
+    }).optional({nullable: true}),
     body('phones', 'Debe ser un array de strings!')
         .isArray()
         .optional({nullable: true}),

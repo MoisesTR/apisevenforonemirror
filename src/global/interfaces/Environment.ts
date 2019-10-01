@@ -28,4 +28,6 @@ export interface IEnvironment {
     ACCESS_TOKEN_MEASURE: DurationInputArg2;
     REFRESH_TOKEN_DURATION: number;
     REFRESH_TOKEN_MEASURE: DurationInputArg2;
+    THUMBNAIL_PIC_DIMENSION: number;
+    PRINCIPAL_PIC_DIMENSION: number;
 }
