@@ -50,13 +50,13 @@ export const getGroupMembers = catchAsync(async (req: Express.Request, res: Expr
     const groupId = req.params.groupId;
 
     const group = await GroupGame
-    // .aggregate([
-    //     {$unwind: "$members"},
-    //     {$sort: {"members.createdAt": 1}},
-    //     {$group: {_id: "$_id", totalInvested: {$first: "totalInvested"}, winners: {$first: "$winners"}, totalMembers: { $sum: 1 }, initialInvertion: {$first: "$initialInvertion"},members: {$push: "$members"}}},
-    //     // {$addFields: {"members.$[].position": {$sum: 1}}},
-    //     // {$group:{_id:{age: "$age"}, allHobbies: {$push: "$hobbies"}}},
-    // ])
+        // .aggregate([
+        //     {$unwind: "$members"},
+        //     {$sort: {"members.createdAt": 1}},
+        //     {$group: {_id: "$_id", totalInvested: {$first: "totalInvested"}, winners: {$first: "$winners"}, totalMembers: { $sum: 1 }, initialInvertion: {$first: "$initialInvertion"},members: {$push: "$members"}}},
+        //     // {$addFields: {"members.$[].position": {$sum: 1}}},
+        //     // {$group:{_id:{age: "$age"}, allHobbies: {$push: "$hobbies"}}},
+        // ])
         .findById(groupId);
 
     resultOrNotFound(res, group, 'Group', next);
@@ -69,19 +69,18 @@ export const addMemberToGroup = catchAsync(async (req: Express.Request, res: Exp
     if (!group) {
         return next(new AppError('Grupo no encontrado', 404, 'NEXIST'));
     }
-    console.log(group);
-    const result = await group.addMember(
+
+    await group.addMember(
         {
             userId: req.user._id,
             userName: req.user.userName,
             image: req.user.image,
-            email: req.user.email
+            email: req.user.email,
         },
         relationData.payReference,
     );
 
     res.status(201).json({message: 'Miembro añadido exitosamente!'});
-    // TODO: validate group member moviment
 });
 export const removeMemberFromGroup = catchAsync(async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
     const relationData = matchedData(req);
@@ -221,12 +220,11 @@ export const getCurrentGroups = (req: Express.Request, res: Express.Response, ne
     getGroupsByUser(userId, res, next);
 };
 
-
 export const changeActiveState = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const {groupId, enabled} = matchedData(req, {
         includeOptionals: false,
         onlyValidData: true,
-        locations: ['params', 'query']
+        locations: ['params', 'query'],
     });
 
     const group = await GroupGame.findById(groupId);
@@ -237,8 +235,7 @@ export const changeActiveState = catchAsync(async (req: Express.Request, res: Ex
     group.changeActiveState(enabled);
     await group.save();
 
-    res.status(200)
-        .json({
-            message: 'Success, the group active state has been changed!'
-        });
+    res.status(200).json({
+        message: 'Success, the group active state has been changed!',
+    });
 });

@@ -17,15 +17,18 @@ router
     .post('/loginFacebook', validations.signInFacebook, validsParams, authController.signInFacebook)
     .post('/refreshtoken', validations.refreshToken, validsParams, authController.refreshTokenMiddleware)
     .post('/verifyemail/:token', authController.verifyEmail)
-    .post('/recover', validations.recoverAccount, authController.forgotAccount);
+    .post('/forgotPasswd', validations.forgotPassword, validsParams, authController.forgotPassword)
+    .patch('/resetPasswd/:token', validations.resetPassword, validsParams, authController.resetPassword);
 
-router.use(ensureAuth)
+router.use(ensureAuth);
+
+router
     .get('/logout', authController.logout)
     .get('/activities', authController.getActivityTypes)
     .get('/me', authController.getAuthenticateUserInfo)
     .post('/admin', validations.createAdmin, validsParams, authController.createAdminUser)
     .get('/getImage/:folder/:img', authController.getImage)
-    .put('/pwd/:userId', validations.changePassword, validsParams, authController.changePassword)
+    .patch('/pwd/:userId', validations.changePassword, validsParams, authController.changePassword)
     .post('/verifyPwd/:userId', validations.verifyChangePassword, validsParams, authController.verifyChangePassword);
 
 

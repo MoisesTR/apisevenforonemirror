@@ -155,8 +155,6 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             mainSocket.of('/').adapter.clients((err, clientes) => {
                 if (!!socketWinner && clientes.includes(socketWinner)) {
 
-                    console.log(mainSocket.clients())
-                    console.log(mainSocket.sockets)
                     mainSocket.to(socketWinner).emit(EMainEvents.WIN_EVENT, {
                         userId: winner.userId,
                         content: `Felicitaciones has sido ganador en el grupo de $${this.initialInvertion}!`,
@@ -167,14 +165,6 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
 
                 console.log('los sids', mainSocket.of('/').adapter.sids)
             });
-            // const clients = await promisify(mainSocket.of('/').adapter.clients)
-            // if (!!socketWinner && !!mainSocket.sockets.connected[socketWinner]) {
-            //     mainSocket.to(socketWinner).emit(EMainEvents.WIN_EVENT, {
-            //         userId: winner.userId,
-            //         content: `Felicitaciones has sido ganador en el grupo de $${this.initialInvertion}!`,
-            //         date: new Date(),
-            //     });
-            // }
             await newNotification.save();
             await userHistory.save();
         }

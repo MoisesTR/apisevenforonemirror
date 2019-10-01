@@ -23,14 +23,14 @@ import path from 'path';
 import logger from '../services/logger';
 import {createAccessToken, createRefreshToken} from '../services/jwt';
 import {ECookies} from './interfaces/ECookies';
-import {ProviderEnum} from '../db/enums/ProvidersEnum';
 import {EMainEvents} from '../sockets/constants/main';
-import {sendMessageToConnectedUser} from '../sockets/socket';
+import {mainSocket, sendMessageToConnectedUser} from '../sockets/socket';
 import {ActivityTypes} from '../db/models';
 import moment = require('moment');
+import DynamicKey from '../redis/keys/dynamics';
 
 const saltRounds = 10;
-
+// TODO: come back to perform refactor
 // Using require() in ES5
 
 // GOOGLE AUTHENTICATION
@@ -105,7 +105,7 @@ export const signInGoogle = catchAsync(async (req: Express.Request, res: Express
             return next(new AppError('Este correo ya se encuentra asociado a una cuenta de facebook!!!', 400, 'AUTHNOR'));
         } else {
             const response = await getResponseToSendToLogin(req, res, user, userData.returnTokens);
-            res.status(200).json(response);
+            return res.status(200).json(response);
         }
     } else {
         const dataLogin = await createUserWithSocialLogin(
@@ -239,7 +239,7 @@ export const signInMiddleware = catchAsync(async (req: Express.Request, res: Exp
     logger.info('Login usuario');
 
     // find user by username or email
-    let user: IUserDocument | null = await User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]})
+    const user: IUserDocument | null = await User.findOne({$or: [{userName: userData.userName}, {email: userData.userName}]})
         .populate('role')
         .select('+passwordHash');
     if (!!user) {
@@ -301,7 +301,7 @@ export const getResponseToSendToLogin = async (req: Express.Request, res: Expres
     await redisPub.setex(DynamicKeys.set.refreshKey(user.userName), remainigTimeInSeconds(expirationRefres), _tokenRefresh);
     await redisPub.setex(DynamicKeys.set.accessTokenKey(user.userName), remainigTimeInSeconds(expiration), tokenGen);
     let response: ILoginResponse = {
-        user: dataUserForLogin(user)
+        user: dataUserForLogin(user),
     };
     if (returnTokens) {
         response = {
@@ -351,7 +351,7 @@ export const createAdminUser = catchAsync(async (req: Express.Request, res: Expr
     // const adminRole: IRoleDocument | null = await Role.findOne({name: ERoles.ADMIN});
     const adminRole: IRoleDocument = req.app.locals.adminRole;
     if (!adminRole) {
-        return next(new AppError('The admin role doesn\'t exist!', 500, 'NAROLE'));
+        return next(new AppError("The admin role doesn't exist!", 500, 'NAROLE'));
     }
 
     if (!user.role.equals(adminRole._id)) {
@@ -405,15 +405,20 @@ export const changePassword = async (req: Express.Request, res: Express.Response
     const userData = matchedData(req, {locations: ['body', 'params']});
 
     try {
+        // 1) Search the corresponding user
         const user = await User.findById(userData.userId);
+
+        // 2) If the user doesn't exist, throw and 404
         if (!user) {
             throw new AppError('Usuario no encontrado', 404, 'UNFOUND');
         }
+
+        // 3) Hash the password
         const hashPassw = await bcrypt.hash(userData.password, saltRounds);
+        // 4) Update the password hash in the user
         user.passwordHash = hashPassw;
         await user.save();
-        // TODO: search if the user has logged
-        // mainSocket.to().emit(CLOSE_SESSION, )
+
         res.status(200).json({
             message: 'Contraseña cambiada!',
         });
@@ -441,7 +446,6 @@ export const refreshTokenMiddleware = catchAsync(async (req: Express.Request, re
     // get token username
     const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
     if (!redisRefreshToken) {
-        //TODO: FIgure out
         await sendMessageToConnectedUser(user.userName, EMainEvents.CLOSE_SESSION, {});
         return next(new AppError('Tu token de actualización ha expirado!', 401, 'ETOKEN'));
     }
@@ -461,7 +465,7 @@ export const refreshTokenMiddleware = catchAsync(async (req: Express.Request, re
     // saveLog(user._id, {userName: user.userName},`${userName} refresh token.`)
 });
 
-export const forgotAccount = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
+export const forgotPassword = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const data = req.body;
     const condition: any = {};
     // 1) Determine the corresponding filter to GET the user
@@ -483,8 +487,7 @@ export const forgotAccount = catchAsync(async (req: Express.Request, res: Expres
 
     // 4) Send it to user's email
     try {
-        //TODO: return
-        await recoverAccountEmail(user, '');
+        await recoverAccountEmail(user, `${envVars.CLIENT_HOST}/recover/${resetToken}`);
 
         res.status(200).json({
             status: 'success',
@@ -514,11 +517,9 @@ export const verifyChangePassword = catchAsync(async (req: Express.Request, res:
         console.log('User not found!');
         next(new AppError('Usuario no encontrado!', 404, 'NEXIST'));
     }
-
 });
 
 const checkPassword = async (userData: any, user: IUserDocument, res: Express.Response, next: NextFunction) => {
-
     const isequal = await bcrypt.compare(userData.password, user.passwordHash);
     if (isequal) {
         if (!user.isVerified) {
@@ -589,46 +590,63 @@ export const dataUserForLogin: (user: IUserDocument) => UserForLoginType = user 
         gender: user.gender,
         email: user.email,
         image: user.image,
-        paypalEmail: user.paypalEmail
+        paypalEmail: user.paypalEmail,
     };
 };
 
-
 export const resetPassword = catchAsync(async (req, res, next) => {
-    //TODO: return
-    // 1) Get user based on the token
+    // 1) Hash the provided token
     const hashedToken = crypto
         .createHash('sha256')
         .update(req.params.token)
         .digest('hex');
 
+    // 2) Get user based on the token provided
     const user = await User.findOne({
         secretToken: hashedToken,
         passwordResetExp: {$gt: Date.now()},
     });
 
-    // 2) If token has not expired, and there is user, set the new oassword
+    // 3) If the token is not valid or expired, throw 400 error
     if (!user) {
         return next(new AppError('Token is invalid or has expired!', 400));
     }
 
-    user.passwordHash = req.body.password;
+    // 4) If token has not expired, and there is user, set the new password
+    // 5) Hash the password
+    user.passwordHash = await bcrypt.hash(req.body.password, saltRounds);
     user.secretToken = undefined;
     user.passwordResetExp = undefined;
 
-    // 3) Updat changedPasswordAt property for the user
-    await user.save({validateBeforeSave: true});
+    // 5) Search for socket id of the user
+    const socket = await redisPub.hget(DynamicKey.hash.socketsUser(user.userName), 'main');
+
+    // 6) If the user has a recent socket session id
+    if (!!socket) {
+        // 6) Check if the user is currently logged
+        // @ts-ignore
+        mainSocket.of('/').adapter.clients((err, clientes) => {
+            if (clientes.includes(socket)) {
+                //TODO: implement logger
+                // 7) Close session
+                mainSocket.to(socket).emit(EMainEvents.CLOSE_SESSION);
+            }
+        });
+    }
+
+    // 7) Update the user data
+    await user.save({validateBeforeSave: false});
     // 4) Log the user in, send JWT
-    // createSendToken(user, 200, res);
+    const response = await getResponseToSendToLogin(req, res, user, false);
+    res.status(200).json(response);
 });
 
 export const logout = (req: Express.Request, res: Express.Response, next: NextFunction) => {
     res.clearCookie(ECookies._AccessToken);
     res.clearCookie(ECookies._RefreshToken);
-    res.status(200)
-        .json({
-            message: 'success'
-        });
+    res.status(200).json({
+        message: 'success',
+    });
 };
 
 const alreadyExist = (users: IUserDocument[], userData: any) => {

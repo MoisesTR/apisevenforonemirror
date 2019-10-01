@@ -5,7 +5,7 @@ import {oneOf} from 'express-validator/check';
 const commonPasswordAndConfirmation = [
     body('password', 'La contraseña debe contener un minimo de 5 y un máximo de 25 caracteres!').isLength({
         min: 5,
-        max: 25
+        max: 25,
     }),
     body('passwordConfirm').custom((value, {req}) => {
         if (value !== req.body.password) {
@@ -14,19 +14,22 @@ const commonPasswordAndConfirmation = [
         return value;
     }),
 ];
-export const recoverAccount = [
+export const forgotPassword = [
     oneOf([
         body('userName', 'El nombre de usuario debe contener un minimo de 3 y maximo de 40 caracteres!').isLength({
             min: 4,
-            max: 40
+            max: 40,
         }),
         body('email', 'Debe ingresar un correo valido!').isEmail(),
     ]),
 ];
+
+export const resetPassword = [param('token').isLength({min: 4, max: 100}), ...commonPasswordAndConfirmation];
+
 export const getEmail = [
     body('userName', 'El nombre de usuario debe contener un minimo de 3 y maximo de 40 caracteres').isLength({
         min: 4,
-        max: 40
+        max: 40,
     }),
 ];
 const commonUserVal = [
@@ -44,7 +47,9 @@ const commonUserVal = [
         max: 40,
     }),
     body('email', 'Debe ser un correo válido!').isEmail(),
-    body('roleId').optional({nullable: true}).custom(isObjectId),
+    body('roleId')
+        .optional({nullable: true})
+        .custom(isObjectId),
 ];
 
 export const createAdmin = commonUserVal;
@@ -65,18 +70,25 @@ export const signUp = [
     ...commonUserVal,
 ];
 const updateUserCommon = [
-    body('firstName', getMessageMinMaxChar('Los nombres deben', 3, 150)).isLength({
-        min: 3,
-        max: 150,
-    }).optional({nullable: true}),
-    body('lastName', getMessageMinMaxChar('Los apellidos deben', 3, 150)).isLength({
-        min: 3,
-        max: 150,
-    }).optional({nullable: true}),
-    body('email', getMessageMinMaxChar('El email debe ', 3, 150)).isEmail().isLength({
-        min: 3,
-        max: 150,
-    }).optional({nullable: true}),
+    body('firstName', getMessageMinMaxChar('Los nombres deben', 3, 150))
+        .isLength({
+            min: 3,
+            max: 150,
+        })
+        .optional({nullable: true}),
+    body('lastName', getMessageMinMaxChar('Los apellidos deben', 3, 150))
+        .isLength({
+            min: 3,
+            max: 150,
+        })
+        .optional({nullable: true}),
+    body('email', getMessageMinMaxChar('El email debe ', 3, 150))
+        .isEmail()
+        .isLength({
+            min: 3,
+            max: 150,
+        })
+        .optional({nullable: true}),
     body('phones', 'Debe ser un array de strings!')
         .isArray()
         .optional({nullable: true}),
@@ -92,15 +104,14 @@ const updateUserCommon = [
 ];
 
 export const updateMe = [...updateUserCommon];
-export const updateUser = [
-    param('userId').custom(isObjectId),
-    ...updateUserCommon
-];
+export const updateUser = [param('userId').custom(isObjectId), ...updateUserCommon];
 
 export const signIn = [
     body('userName').isLength({min: 4, max: 40}),
     body('password').isLength({min: 5, max: 25}),
-    body('returnTokens').isBoolean().optional({nullable: true})
+    body('returnTokens')
+        .isBoolean()
+        .optional({nullable: true}),
 ];
 
 export const signInGoogle = [body('roleId').optional({nullable: true}), body('accessToken')];

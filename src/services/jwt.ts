@@ -154,10 +154,6 @@ export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.R
 
 export const midOwnUserOrAdmon = (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const receivedId = req.params.id_user || req.body.id_user;
-    /**
-     * TODO: Obtener el rol de administrador al desplegar la aplicacion
-     */
-    // console.log(global.roleAdmon, req.user.id_role);
     // @ts-ignore
     if (req.user._id !== +receivedId || req.user.role !== global.roleAdmon) {
         return next({

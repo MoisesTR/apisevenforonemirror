@@ -71,7 +71,7 @@ export const updateUser = catchAsync(async (req: Express.Request, res: Express.R
         onlyValidData: true,
         includeOptionals: false,
     });
-    console.log('user data', userData)
+    console.log('user data', userData);
     // Detect is image is coming
     if (req.file) {
         const oldPrimaryPath = path.resolve(__dirname, `../uploads/user/${req.user.image}`);
@@ -132,7 +132,6 @@ export const changeStateUser = catchAsync(async (req: Express.Request, res: Expr
 });
 
 export const getEmailByUserName = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    // TODO: return
     const userName = req.params.userName;
 
     const user = await User.findOne({userName: userName});
@@ -141,12 +140,7 @@ export const getEmailByUserName = catchAsync(async (req: Express.Request, res: E
     } else if (!user.enabled) {
         return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 403, 'EPUSER'));
     }
-
-    // TODO: update that config
     try {
-        await recoverAccountEmail(user, '');
-
-        console.log('Email envado');
         res.status(200).json({userName: userName, email: user.email});
     } catch (_err) {
         throw _err;

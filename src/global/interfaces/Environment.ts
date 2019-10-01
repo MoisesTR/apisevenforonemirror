@@ -30,4 +30,5 @@ export interface IEnvironment {
     REFRESH_TOKEN_MEASURE: DurationInputArg2;
     THUMBNAIL_PIC_DIMENSION: number;
     PRINCIPAL_PIC_DIMENSION: number;
+    CLIENT_HOST: string;
 }
