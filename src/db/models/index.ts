@@ -1,4 +1,3 @@
-import Card from './Card';
 import ActivityTypes from './ActivityTypes';
 import GroupGame from './GroupGame';
 import Menu from './Menu';
@@ -9,7 +8,6 @@ import UserActivityLog from './UserActivityLog';
 import User from './User';
 
 export {
-    Card,
     ActivityTypes,
     GroupGame,
     Menu,
