@@ -17,6 +17,7 @@ const sendGenericMail = async (templateId: string, subject: string, to: EmailDat
     await sgMail.send({
         from: {
             email: envVars.NO_REPLY_EMAIL,
+            name: 'Seven for One'
         },
         to: [...to],
         dynamicTemplateData: {
@@ -39,7 +40,8 @@ export const sendConfirmationEmail = async (from: string, user: IUserDocument) =
 export const recoverAccountEmail = async (user: IUserDocument, url: string) => {
     await sendGenericMail(templateIds.recoverAccount, 'Dont Reply! Recover your Account', [{email: user.email}], {
         userName: user.userName,
-        url
+        url,
+        lifeTime: 10
     });
 };
 
