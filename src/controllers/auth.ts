@@ -487,7 +487,7 @@ export const forgotPassword = catchAsync(async (req: Express.Request, res: Expre
 
     // 4) Send it to user's email
     try {
-        await recoverAccountEmail(user, `${envVars.CLIENT_HOST}/recover/${resetToken}`);
+        await recoverAccountEmail(user, `${envVars.CLIENT_HOST}/recover-account/${resetToken}`);
 
         res.status(200).json({
             status: 'success',
@@ -497,6 +497,7 @@ export const forgotPassword = catchAsync(async (req: Express.Request, res: Expre
         user.secretToken = undefined;
         user.passwordResetExp = undefined;
         await user.save({validateBeforeSave: false});
+        throw err;
     }
 });
 
