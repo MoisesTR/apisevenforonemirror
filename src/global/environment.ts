@@ -42,6 +42,7 @@ const EnvVar: IEnvironment = {
     REFRESH_TOKEN_MEASURE: (process.env.REFRESH_TOKEN_MEASURE as DurationInputArg2) || 'minutes',
     THUMBNAIL_PIC_DIMENSION: numberEnvVar(process.env.THUMBNAIL_PIC_DIMENSION, 93),
     PRINCIPAL_PIC_DIMENSION: numberEnvVar(process.env.PRINCIPAL_PIC_DIMENSION, 500),
+    CLIENT_HOST: process.env.CLIENT_HOST || 'http://localhost:4200'
 };
 
 export default EnvVar;
