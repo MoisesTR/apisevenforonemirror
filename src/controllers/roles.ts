@@ -1,9 +1,9 @@
-import Express, {NextFunction} from 'express';
+import Express from 'express';
 import {matchedData} from 'express-validator/filter';
 import {Role} from '../db/models';
-import {resultOrNotFound} from '../utils/defaultImports';
 import catchAsync from '../utils/catchAsync';
-import {getAll} from './factory';
+import {getAll, getOne} from './factory';
+import {IRoleDocument} from '../db/interfaces/IRole';
 
 export const createRole = catchAsync(async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
     const roleData = matchedData(req, {locations: ['body']});
@@ -19,8 +19,4 @@ export const createRole = catchAsync(async (req: Express.Request, res: Express.R
 
 export const getRoles = getAll(Role);
 
-export const getRole = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    const roleId = req.params.roleId;
-    let role = await Role.findById(roleId);
-    resultOrNotFound(res, role, 'Role', next);
-});
+export const getRole = getOne<IRoleDocument>(Role);

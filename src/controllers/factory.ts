@@ -49,7 +49,7 @@ export const createOne = <T extends Document>(Model: mongoose.Model<T>, express?
         });
     });
 
-export const getOne = <T extends Document>(Model: mongoose.Model<T>, popOptions: QueryPopulateOptions | QueryPopulateOptions[]) =>
+export const getOne = <T extends Document>(Model: mongoose.Model<T>, popOptions?: QueryPopulateOptions | QueryPopulateOptions[]) =>
     catchAsync(async (req, res, next) => {
         let query = Model.findById(req.params.id);
         if (popOptions) {
@@ -61,9 +61,7 @@ export const getOne = <T extends Document>(Model: mongoose.Model<T>, popOptions:
         }
         res.status(200).json({
             status: 'success',
-            data: {
-                data: doc,
-            },
+            data: doc,
         });
     });
 
