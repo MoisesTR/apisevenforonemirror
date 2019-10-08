@@ -427,10 +427,16 @@ export const changePassword = async (req: Express.Request, res: Express.Response
     }
 };
 
-export const getAuthenticateUserInfo = (req: Express.Request, res: Express.Response) => {
+export const getAuthenticateUserInfo = catchAsync(async (req: Express.Request, res: Express.Response) => {
+    await req.user.populate({
+        path: 'role',
+        select: 'name description'
+    }).execPopulate();
     delete req.user.passwordHash;
+    delete req.user.secretToken;
+
     res.status(200).json(req.user);
-};
+});
 
 export const refreshTokenMiddleware = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const {refreshToken, userName} = matchedData(req, {locations: ['body']});
