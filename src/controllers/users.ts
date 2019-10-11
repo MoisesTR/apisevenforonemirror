@@ -9,29 +9,16 @@ import {resultOrNotFound} from '../utils/defaultImports';
 import {matchedData} from 'express-validator/filter';
 import AppError from '../classes/AppError';
 import {IUserDocument} from '../db/interfaces/IUser';
-import {recoverAccountEmail} from '../services/email';
-import {createOne} from './factory';
+import {createOne, getAll, getOne} from './factory';
 import {upload} from '../routes/image-loader';
 import {promisify} from 'util';
 
-export const getUsers = catchAsync(async (req: Express.Request, res: Express.Response) => {
-    const result = await User.find({}, 'firstName lastName userName email role birthDate gender isVerified enabled createdAt')
-        .populate('role')
-        .exec();
-    res.status(200).json(result);
-});
+export const getUsers = getAll(User);
 
-export const getUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
-    const userId = req.params.userId;
-
-    const user = await User.findById(
-        userId,
-        'firstName lastName userName email role birthDate isVerified phones enabled createdAt updatedAt',
-    )
-        .populate('role')
-        .exec();
-    resultOrNotFound(res, user, 'User', next);
-});
+export const getUser = getOne(User, {
+    path: 'role',
+    select: 'name description'
+}, 'firstName lastName userName email role birthDate isVerified phones enabled createdAt updatedAt');
 
 export const updateMe = (req: Express.Request, res: Express.Response, next: NextFunction) => {
     req.params.userId = req.user._id;

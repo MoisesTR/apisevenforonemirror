@@ -13,7 +13,7 @@ router.route('/$')
     .post(validations.createRole, validsParams, roleController.createRole)
     .get(roleController.getRoles);
 
-router.route('/:roleId')
+router.route('/:id')
     .get(roleController.getRole);
 
 export default router;
