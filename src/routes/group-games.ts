@@ -6,23 +6,18 @@ import {ensureAuth} from '../services/jwt';
 import {changeActiveStateMw} from '../services/validations';
 
 const router = Express.Router();
-/* GET home page. */
-router.get('/', function (req: Express.Request, res: Express.Response, next: Express.NextFunction) {
-    res.send('<h1>API REST 7X1</h1>');
-});
-
 router
-    .route('/game-groups')
+    .route('/')
     .get(GameController.getGameGroups)
     .post(ensureAuth, groupValidations.createGroup, validsParams, GameController.createGroup);
 
 router
-    .route('/game-groups/:groupId')
+    .route('/:groupId')
     .get(ensureAuth, groupValidations.getGroup, validsParams, GameController.getGroupMembers)
     .delete(ensureAuth, changeActiveStateMw('groupId'), validsParams, GameController.changeActiveState);
 
 router
-    .route('/game-groups/members/:groupId')
+    .route('/members/:groupId')
     .post(ensureAuth, groupValidations.addMemberToGroup, validsParams, GameController.addMemberToGroup)
     .delete(
         ensureAuth,
@@ -34,8 +29,8 @@ router
 router
     .get('/purchase-history/me', ensureAuth, GameController.getOwnPurchaseHistory)
     .get('/purchase-history/:userId', ensureAuth, groupValidations.userIdParam, validsParams, GameController.getPurchaseHistory)
-    .get('/me/game-groups', ensureAuth, GameController.getMyCurrentsGroups)
-    .get('/game-groups/current/:userId', ensureAuth, groupValidations.userIdParam, validsParams, GameController.getCurrentGroups)
+    .get('/me', ensureAuth, GameController.getMyCurrentsGroups)
+    .get('/current/:userId', ensureAuth, groupValidations.userIdParam, validsParams, GameController.getCurrentGroups)
     .get(
         '/winners/last/:quantity(\\d+)/:groupId(\\w+)',
         ensureAuth,

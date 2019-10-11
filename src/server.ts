@@ -108,8 +108,16 @@ export default class Server {
     }
 
     public registerRouter() {
-        app.use('/api', GroupGamesRouter);
+        app.get('/$|/api$', function (req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+            res.status(200).json({
+                message: 'Welcome to 7x1'
+            });
+        });
+
+        //Paypal routes
         app.use('/api', PaypalRouter);
+        //Group Games Routes
+        app.use('/api/game-groups', GroupGamesRouter);
         //Auth routes
         app.use('/api/auth', authRoutes);
         // User routes
