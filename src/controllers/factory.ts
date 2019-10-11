@@ -49,30 +49,43 @@ export const createOne = <T extends Document>(Model: mongoose.Model<T>, express?
         });
     });
 
-export const getOne = <T extends Document>(Model: mongoose.Model<T>, popOptions: QueryPopulateOptions | QueryPopulateOptions[]) =>
+export const getOne = <T extends Document>(
+    Model: mongoose.Model<T>,
+    popOptions?: QueryPopulateOptions | QueryPopulateOptions[],
+    projection?: any,
+) =>
     catchAsync(async (req, res, next) => {
-        let query = Model.findById(req.params.id);
+        if (req.params.userId) {
+            req.params.id = req.params.userId;
+        }
+        let query = Model.findById(req.params.id, projection);
         if (popOptions) {
             query = query.populate(popOptions);
         }
+
         const doc = await query;
         if (!doc) {
             return next(new AppError('No document found with that ID', 404));
         }
-        res.status(200).json({
-            status: 'success',
-            data: {
-                data: doc,
-            },
-        });
+
+        res.status(200).json(doc);
+        // Decide if is needed
+        // res.status(200).json({
+        //     status: 'success',
+        //     data: doc,
+        // });
     });
 
 export const getAll = <T extends Document>(Model: mongoose.Model<T>, long?: boolean) =>
     catchAsync(async (req, res, next) => {
-        // To allow for nested GET reviews on tour (hack)
-        let filter = {};
-        if (req.params.tourId) {
-            filter = {tour: req.params.tourId};
+        // To allow role population (hack)
+        let populateRole = false;
+
+        console.log('query', req.query);
+        const filter = {};
+        if (req.query.populateRole) {
+            if (req.query.populateRole === 'true') populateRole = true;
+            delete req.query.populateRole;
         }
 
         const features = new APIFeatures(Model.find(filter), req.query)
@@ -80,8 +93,9 @@ export const getAll = <T extends Document>(Model: mongoose.Model<T>, long?: bool
             .sort()
             .limitFields()
             .paginate();
-        const doc = await features.query;
+        if (populateRole) features.query.populate('role');
 
+        const doc = await features.query;
         if (!long) {
             return res.status(200).json(doc);
         }

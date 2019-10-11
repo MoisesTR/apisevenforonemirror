@@ -5,11 +5,6 @@ import * as paypalController from '../controllers/paypal';
 import {ensureAuth} from '../services/jwt';
 
 const router = Express.Router();
-/* GET home page. */
-router.get('/', function (req: Express.Request, res: Express.Response, next: Express.NextFunction) {
-    res.render('index', {title: 'Express'});
-});
-
 router
     .post(
         '/create-paypal-transaction',
