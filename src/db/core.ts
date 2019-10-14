@@ -1,15 +1,11 @@
 import mongoose, {Mongoose} from 'mongoose';
 import dbConfig from '../global/config/database';
-import path from 'path';
 import logger from '../services/logger';
-
-const basename = path.basename(__filename);
 
 export class Core {
     public mongoose?: Mongoose;
 
-    constructor() {
-    }
+    constructor() {}
 
     private static _instance: Core;
 
@@ -22,8 +18,10 @@ export class Core {
 
     async connect() {
         console.log(dbConfig.mongoURI);
-        this.mongoose = await mongoose
-            .connect(dbConfig.mongoURI, {useNewUrlParser: true, useCreateIndex: true});
+        this.mongoose = await mongoose.connect(dbConfig.mongoURI, {
+            useNewUrlParser: true,
+            useCreateIndex: true,
+        });
         logger.info('Mongo is Connected');
         process.on('SIGINT', () => {
             logger.error('The signal has been interrupt!');
@@ -32,20 +30,5 @@ export class Core {
                 process.exit(1);
             });
         });
-        // this.models.User.find({})
-        //     .then(admins => {
-        //         if (admins) {
-        //             admins.forEach(admon => {
-        //                 // console.log(admon);
-        //                 // redisPub.lpush('admins', admon);
-        //             });
-        //         }
-        //     })
-        //     .catch(err => console.log(err));
-            // .catch(err => {
-            //     console.log(err);
-            //     logger.error('Cannot be established a connection with the MongoDb server!', {metadata: {boot: true}});
-            //     process.exit();
-            // });
     }
 }

@@ -1,4 +1,7 @@
 {
+  "extends": [
+    "tslint-config-prettier"
+  ],
   "rules": {
     "class-name": true,
     "forin": true,
@@ -30,14 +33,7 @@
       "allow-leading-underscore",
       "ban-keywords"
     ],
-    "whitespace": [
-      true,
-      "check-branch",
-      "check-decl",
-      "check-operator",
-      "check-separator",
-      "check-type"
-    ],
-    "prefer-const": true
+    "prefer-const": true,
+    "prettier": true
   }
 }

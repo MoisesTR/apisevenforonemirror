@@ -14,14 +14,16 @@ router.use(ensureAuth);
 router.route('/me')
     .patch(usersController.updateMe, validations.updateUser, validsParams, uploadUserImage, resizeUserImages, usersController.updateUser);
 
-router.route('/')
+router.route('/$')
     .post(isAdmin, usersController.createUser)
     .get(validsParams, usersController.getUsers);
 
+
 router.route('/:userId')
-    .patch(validations.updateUser, validsParams, usersController.updateUser)
-    .delete(validations.changeStateUser, validsParams, usersController.changeStateUser)
+    .patch(isAdmin, validations.updateUser, validsParams, usersController.updateUser)
+    .delete(isAdmin, validations.changeStateUser, validsParams, usersController.changeStateUser)
     .get(validations.getUser, validsParams, usersController.getUser);
+
 router.put('/paypalEmail/:userId', validations.updatePaypalEmail, validsParams, usersController.updatePaypalEmail);
 
 export default router;
