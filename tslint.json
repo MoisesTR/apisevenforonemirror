@@ -1,7 +1,12 @@
 {
   "extends": [
+    "tslint:recommended",
     "tslint-config-prettier"
   ],
+    "linterOptions": {
+    "exclude": ["node_modules/**","node_modules/**/*","public/**/*"]
+    },
+  "rulesDirectory": ["tslint-plugin-prettier"],
   "rules": {
     "class-name": true,
     "forin": true,

@@ -5,12 +5,17 @@ const numberEnvVar = (posible: string | undefined, defaultVal: number) => (!!pos
 
 const EnvVar: IEnvironment = {
     SERVER_PORT: !!process.env.PORT ? +process.env.PORT : 3000,
-    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '380320064033-bs2uivmdsj2fs5v68h2kg57p5k9kgtv7.apps.googleusercontent.com',
+    GOOGLE_CLIENT_ID:
+        process.env.GOOGLE_CLIENT_ID ||
+        '380320064033-bs2uivmdsj2fs5v68h2kg57p5k9kgtv7.apps.googleusercontent.com',
     JWT_SECRET: process.env.JWT_SECRET || 'NIC@R46U@',
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'R3@CT_Cl13nt_7X0ne',
-    PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID || 'AZhi6Hy8TF46gXXeLiUZmtFIPhQRQx1-x9M4T1jDMUtHqHNO5iahzV6kzL6SBJxHgudgYafDeBoSECs8',
+    PAYPAL_CLIENT_ID:
+        process.env.PAYPAL_CLIENT_ID ||
+        'AZhi6Hy8TF46gXXeLiUZmtFIPhQRQx1-x9M4T1jDMUtHqHNO5iahzV6kzL6SBJxHgudgYafDeBoSECs8',
     PAYPAL_CLIENT_SECRET:
-        process.env.PAYPAL_CLIENT_SECRET || 'EIIUo6JixXN5Oc0Bs07Ap0OYE_CSFWz_ur7xjqDfH8a24QO3y_nm4SzxV0F1abvXq8-le6Zy1sbQIAA2',
+        process.env.PAYPAL_CLIENT_SECRET ||
+        'EIIUo6JixXN5Oc0Bs07Ap0OYE_CSFWz_ur7xjqDfH8a24QO3y_nm4SzxV0F1abvXq8-le6Zy1sbQIAA2',
     ENVIRONMENT: process.env.ENVIRONMENT || 'development',
     URL_HOST: process.env.URL_HOST || 'http://localhost:4200',
 
@@ -29,7 +34,8 @@ const EnvVar: IEnvironment = {
     REDIS_PORT: !!process.env.REDIS_PORT ? +process.env.REDIS_PORT : 6379,
     REDIS_PASSWORD: process.env.REDIS_PASSWORD || 'jose12',
     // Email EnvVars
-    SENDGRID_KEY: process.env.SENDGRID_KEY || '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',
+    SENDGRID_KEY:
+        process.env.SENDGRID_KEY || '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',
     ADMON_EMAIL: process.env.ADMON_EMAIL || 'atomicdevelopersnic@gmail.com',
     WINNER_NOTIFICATION: process.env.WINNER_NOTIFICATION || 'd-5bc417d2fd764bfba24331550227d732',
     RECOVER_ACCOUNT: process.env.RECOVER_ACCOUNT || 'd-72f36268236e4ef08dfef3807c9b6508',
@@ -42,7 +48,7 @@ const EnvVar: IEnvironment = {
     REFRESH_TOKEN_MEASURE: (process.env.REFRESH_TOKEN_MEASURE as DurationInputArg2) || 'minutes',
     THUMBNAIL_PIC_DIMENSION: numberEnvVar(process.env.THUMBNAIL_PIC_DIMENSION, 93),
     PRINCIPAL_PIC_DIMENSION: numberEnvVar(process.env.PRINCIPAL_PIC_DIMENSION, 500),
-    CLIENT_HOST: process.env.CLIENT_HOST || 'http://localhost:4200'
+    CLIENT_HOST: process.env.CLIENT_HOST || 'http://localhost:4200',
 };
 
 export default EnvVar;

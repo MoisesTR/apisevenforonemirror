@@ -29,7 +29,11 @@ router
     .post('/admin', validations.createAdmin, validsParams, authController.createAdminUser)
     .get('/getImage/:folder/:img', authController.getImage)
     .patch('/pwd/:userId', validations.changePassword, validsParams, authController.changePassword)
-    .post('/verifyPwd/:userId', validations.verifyChangePassword, validsParams, authController.verifyChangePassword);
-
+    .post(
+        '/verifyPwd/:userId',
+        validations.verifyChangePassword,
+        validsParams,
+        authController.verifyChangePassword,
+    );
 
 export default router;
