@@ -14,6 +14,7 @@ import * as ThirdPartyMiddlewares from './middlewares/thirdparty-middlewares';
 // Routers
 import GroupGamesRouter from './routes/group-games';
 import PaypalRouter from './routes/paypal';
+import PurchaseHistory from './routes/purchase-history';
 import authRoutes from './routes/authRoutes';
 import rolesRoutes from './routes/rolesRoutes';
 import usersRoutes from './routes/usersRoutes';
@@ -118,6 +119,8 @@ export default class Server {
         app.use('/api', PaypalRouter);
         //Group Games Routes
         app.use('/api/game-groups', GroupGamesRouter);
+        //Group Games Routes
+        app.use('/api/purchase-history', PurchaseHistory);
         //Auth routes
         app.use('/api/auth', authRoutes);
         // User routes

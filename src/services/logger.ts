@@ -11,7 +11,8 @@ const logger = createLogger({
         format.colorize(),
         format.timestamp(),
         format.printf(
-            ({timestamp, level, message, ...rest}) => `[${timestamp}] ${level} ${message} \n meta: ${JSON.stringify(rest)}`,
+            ({timestamp, level, message, ...rest}) =>
+                `[${timestamp}] ${level} ${message} \n meta: ${JSON.stringify(rest)}`,
         ),
     ),
     transports: [
