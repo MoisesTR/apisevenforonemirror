@@ -1,5 +1,0 @@
-{
-    "hooks": {
-        "pre-commit": "run-s tslint:fix"
-    }
-}
