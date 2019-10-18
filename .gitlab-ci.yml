@@ -1,0 +1,18 @@
+image: node:10.15.3
+
+stages:
+  - build
+
+build stage:
+  stage: build
+  cache:
+    paths:
+      - node_modules/
+      - .yarn
+  only: 
+    - merge_requests
+  before_script:
+    - yarn config set cache-folder .yarn
+    - yarn install --ignore-scripts --ignore-engines
+  script:
+    - yarn run build
