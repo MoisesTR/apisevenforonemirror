@@ -27,6 +27,10 @@
         "prettier": true,
         "object-literal-sort-keys": {
             "severity": "warn"
-        }
+        },
+        "ordered-imports": {
+            "severity": "off"
+        },
+        "only-arrow-functions": false
     }
 }

@@ -13,7 +13,13 @@ router
 
 router
     .get('/me', ensureAuth, GameController.getMyCurrentsGroups)
-    .get('/current/:userId', ensureAuth, groupValidations.userIdParam, validsParams, GameController.getCurrentGroups)
+    .get(
+        '/current/:userId',
+        ensureAuth,
+        groupValidations.userIdParam,
+        validsParams,
+        GameController.getCurrentGroups,
+    )
     .get(
         '/winners/last/:quantity(\\d+)/:groupId(\\w+)',
         ensureAuth,
@@ -43,6 +49,12 @@ router
 router
     .route('/:groupId')
     .get(ensureAuth, groupValidations.getGroup, validsParams, GameController.getGroupMembers)
-    .delete(ensureAuth, isAdmin, changeActiveStateMw('groupId'), validsParams, GameController.changeActiveState);
+    .delete(
+        ensureAuth,
+        isAdmin,
+        changeActiveStateMw('groupId'),
+        validsParams,
+        GameController.changeActiveState,
+    );
 
 export default router;

@@ -12,11 +12,11 @@ const PaymentSchema = new Schema(
         userId: {
             type: ObjectId,
             required: true,
-            ref: EModelNames.User
+            ref: EModelNames.User,
         },
         state: {
             type: String,
-            required: true
+            required: true,
         },
     },
     {
@@ -27,4 +27,4 @@ const PaymentSchema = new Schema(
     },
 );
 
-export default model(EModelNames.PaymentRequest, PaymentSchema)
+export default model(EModelNames.PaymentRequest, PaymentSchema);
