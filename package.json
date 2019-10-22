@@ -9,7 +9,9 @@
     "start:dev": "nodemon --config  ./nodemon.json -L",
     "start-watch": "NODE_ENV=production nodemon ./build/index.js",
     "build": "NODE_ENV=production  tsc",
-    "debug": "ndb yarn ts-node --project ./tsconfig.json  --files ./src/index.ts"
+    "debug": "ndb yarn ts-node --project ./tsconfig.json  --files ./src/index.ts",
+    "preData:dev": "ts-node --project ./tsconfig.json  --files ./src/pref-data/index.ts",
+    "preData": "tnode --project ./tsconfig.json  --files ./build/pref-data/index.ts"
   },
   "husky": {
     "hooks": {

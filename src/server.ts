@@ -27,19 +27,19 @@ const app = Express();
 app.enable('trust proxy');
 app.set('port', ENV.SERVER_PORT);
 
-app.use(cors(
-  {
-      origin: 'http://localhost:4200',
-      credentials: true
-  }
-));
+app.use(
+    cors({
+        origin: 'http://localhost:4200',
+        credentials: true,
+    }),
+);
 
 // app.options('*', cors());
 // Limit Request from same API
 const limiter = new rateLimit({
     max: 600,
     windowMs: 60 * 60 * 1000,
-    message: 'Too many request from this IP, please try again in an hour!'
+    message: 'Too many request from this IP, please try again in an hour!',
 });
 app.use('/api', limiter);
 
@@ -47,7 +47,6 @@ app.use('/api', limiter);
 app.use(mongoSanitize());
 // Data sanitization against XSS
 // app.use(xss());
-
 
 const httpServer = new http.Server(app);
 httpServer.on('error', onError);
@@ -69,10 +68,7 @@ i18n.configure({
     cookie: 'lang',
 });
 
-export {
-    app,
-    httpServer
-};
+export {app, httpServer};
 
 export default class Server {
     private static _intance: Server;
@@ -90,12 +86,13 @@ export default class Server {
     }
 
     public basicMiddlewares() {
-        //Configuracion cabeceras y cors
+        // Configuracion cabeceras y cors
         app.use((req: Express.Request, res: Express.Response, next: NextFunction) => {
             res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
             res.header(
                 'Access-Control-Allow-Headers',
-                'Authorization, X-API-KEY, Origin, ' + 'X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method',
+                'Authorization, X-API-KEY, Origin, ' +
+                    'X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method',
             );
             res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
             res.header('Allow', 'GET, POST, OPTIONS, PUT, DELETE');
@@ -109,19 +106,23 @@ export default class Server {
     }
 
     public registerRouter() {
-        app.get('/$|/api$', function (req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+        app.get('/$|/api$', function(
+            req: Express.Request,
+            res: Express.Response,
+            next: Express.NextFunction,
+        ) {
             res.status(200).json({
-                message: 'Welcome to 7x1'
+                message: 'Welcome to 7x1',
             });
         });
 
-        //Paypal routes
+        // Paypal routes
         app.use('/api', PaypalRouter);
-        //Group Games Routes
+        // Group Games Routes
         app.use('/api/game-groups', GroupGamesRouter);
-        //Group Games Routes
+        // Group Games Routes
         app.use('/api/purchase-history', PurchaseHistory);
-        //Auth routes
+        // Auth routes
         app.use('/api/auth', authRoutes);
         // User routes
         app.use('/api/users', usersRoutes);
@@ -129,7 +130,7 @@ export default class Server {
         app.use('/api/roles', rolesRoutes);
     }
 
-    start(callback: (port: number) => void) {
+    public start(callback: (port: number) => void) {
         httpServer.listen(envVars.SERVER_PORT, () => callback(envVars.SERVER_PORT));
         process.on('SIGTERM', () => {
             console.log('SIGTERM CATCHED: closing server..');

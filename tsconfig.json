@@ -79,7 +79,7 @@
 
     "typeRoots": [
       "./src/types"
-    ]
+    ],
     /* List of folders to include type definitions from. */
     /* Source Map Options */
     // "sourceRoot": "",                      /* Specify the location where debugger should locate TypeScript files instead of source locations. */
@@ -93,8 +93,9 @@
     //    "exclude": [
     //      "node_modules"
     //    ]
+  "resolveJsonModule": true
   },
-  "include": [
+    "include": [
     "src/**/*.ts",
     "./src/types"
   ],
