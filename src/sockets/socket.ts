@@ -12,9 +12,8 @@ let mainSocket: socketIO.Server;
 let gameGroups: socketIO.Namespace;
 
 const options: socketIO.ServerOptions = {
-    // path: envVars.SOCKETIO_PATH
     serveClient: true,
-    path: '/seven/socket.io',
+    path: process.env.SOCKETIO_PATH || '/seven/socket.io',
 };
 
 mainSocket = socketIO(options);
@@ -37,6 +36,7 @@ export const listenSockets = (httpServer: http.Server) => {
             socket.leave('ADMIN');
         });
 
+        // An admin has recently connected
         socket.on(EMainEvents.JOIN_ADMIN_ROOM, () => {
             console.log('Se unio un administrador!');
             socket.join('ADMIN');
@@ -48,7 +48,7 @@ export const listenSockets = (httpServer: http.Server) => {
             mainSocket.emit(EMainEvents.PLAYERS_ONLINE, {quantity: clients.length});
         });
 
-        socket.on('REGISTER_USER', username => {
+        socket.on(EMainEvents.REGISTER_USER, username => {
             console.log('Registrando user', username, socket.id);
             redisPub
                 .hget(DynamicKey.hash.socketsUser(username), 'main')
@@ -56,8 +56,8 @@ export const listenSockets = (httpServer: http.Server) => {
                     if (!!socketID) {
                         // Esto es emitido solo a la ventana anterior
                         socket.to(socketID).emit(EMainEvents.CLOSE_SESSION);
-                        if (!!mainSocket.sockets.connected[socketID] && socketID != socket.id) {
-                            !!mainSocket.sockets.connected[socketID].disconnect();
+                        if (!!mainSocket.sockets.connected[socketID] && socketID !== socket.id) {
+                            mainSocket.sockets.connected[socketID].disconnect();
                         }
                     }
                     redisPub
@@ -76,10 +76,9 @@ export const listenSockets = (httpServer: http.Server) => {
         });
     });
 
+    // TODO: fix all before that
     // On read action change notification state
-    mainSocket.on('read-notification', (notifiactionId: ObjectId) => {
-    });
-
+    // mainSocket.on('read-notification', (notifiactionId: ObjectId) => {});
 
     // Watch changes on Users collection
     // models.User.watch({}).on('change', user => {
@@ -94,35 +93,40 @@ export const listenSockets = (httpServer: http.Server) => {
 export const listenGroupSocket = () => {
     gameGroups = mainSocket.of('groupGames');
     gameGroups.on('connection', async socketGame => {
-        // const groups = await models.GroupGame.find({});
-        console.log('Sockect game connectado', socketGame.id);
-        const gameSocketId = await redisPub.hget(DynamicKey.hash.socketsUser(socketGame.handshake.query.userName), 'game');
+        console.log('Socket game connectado', socketGame.id);
+        const gameSocketId = await redisPub.hget(
+            DynamicKey.hash.socketsUser(socketGame.handshake.query.userName),
+            'game',
+        );
         if (!!gameSocketId && !!gameGroups.sockets[gameSocketId]) {
             gameGroups.sockets[gameSocketId].disconnect(true);
             console.log('Ya tenes una sesion abierta', gameSocketId, gameGroups.sockets);
         }
-        await redisPub.hset(DynamicKey.hash.socketsUser(socketGame.handshake.query.userName), 'game', socketGame.id);
+        await redisPub.hset(
+            DynamicKey.hash.socketsUser(socketGame.handshake.query.userName),
+            'game',
+            socketGame.id,
+        );
         socketGame.on('disconnect', () => {
             console.log('Desconectado del socket de juegos');
         });
     });
 
-    gameGroups.on(EGameEvents.JOIN_GROUP, () => {
-    });
+    // gameGroups.on(EGameEvents.JOIN_GROUP, () => {});
     // Emitir siempre que el usuario gane sin importar el grupo
     gameGroups.emit('update-purchase-history-user');
 
     // emitir ganadores en el momento
     gameGroups.emit('top-winners-globals');
 
-    //cuando un usuario se registra en un grupo emitir un evento al cliente
+    // cuando un usuario se registra en un grupo emitir un evento al cliente
     //  con el recien ingresado
 
-    //una solo pestana por user
+    // una solo pestana por user
     gameGroups.emit('');
 
-    //marcar notifiaciones como leidas
-    //notificacion
+    // marcar notifiaciones como leidas
+    // notificacion
     // gameGroups.emit('confetti-celebration')
     // this.gameGroups.emit('winGame', () => {
     //     mainSocket.emit('notification', () => {
@@ -133,12 +137,17 @@ export const listenGroupSocket = () => {
 
 export const sendMessageToConnectedUser = async (userName: string, event: EMainEvents, payload: any) => {
     const socketID = await redisPub.hget(DynamicKey.hash.socketsUser(userName), 'main');
-    console.log('socket', socketID, 'username', userName);
     if (!!socketID) {
-        mainSocket.to(socketID).emit(event, payload);
-        if (!!mainSocket.sockets.connected[socketID]) {
-            mainSocket.sockets.connected[socketID].disconnect();
-        }
+        // @ts-ignore
+        mainSocket.of('/').adapter.clients((err, clients) => {
+            if (!!socketID && clients.includes(socketID)) {
+                if (event === EMainEvents.CLOSE_SESSION) {
+                    mainSocket.sockets.connected[socketID].disconnect(true);
+                } else {
+                    mainSocket.to(socketID).emit(event, payload);
+                }
+            }
+        });
     }
 };
 
