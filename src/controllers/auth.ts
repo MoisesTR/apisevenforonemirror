@@ -10,6 +10,7 @@ import {IActivityTypesDocument} from '../db/interfaces/IActivityTypes';
 import envVars from '../global/environment';
 import {redisPub} from '../redis/redis';
 import DynamicKeys from '../redis/keys/dynamics';
+import DynamicKey from '../redis/keys/dynamics';
 import {recoverAccountEmail, sendConfirmationEmail} from '../services/email';
 import {IRoleDocument} from '../db/interfaces/IRole';
 import {UserForLoginType} from './interfaces/UserForLoginType';
@@ -24,10 +25,9 @@ import logger from '../services/logger';
 import {createAccessToken, createRefreshToken} from '../services/jwt';
 import {ECookies} from './interfaces/ECookies';
 import {EMainEvents} from '../sockets/constants/main';
-import {mainSocket, sendMessageToConnectedUser} from '../sockets/socket';
+import {sendMessageToConnectedUser} from '../sockets/socket';
 import {ActivityTypes} from '../db/models';
 import moment = require('moment');
-import DynamicKey from '../redis/keys/dynamics';
 
 const saltRounds = 10;
 // TODO: come back to perform refactor
@@ -137,7 +137,7 @@ export const signInGoogle = catchAsync(
     },
 );
 
-//funcion registro
+// funcion registro
 export const createUserWithSocialLogin: (userData: any, socialUser: any) => Promise<ILoginResponse> = async (
     userData,
     socialUser,
@@ -187,7 +187,7 @@ export const createUserWithSocialLogin: (userData: any, socialUser: any) => Prom
         user: userInfo,
         token: accessTokenGen,
         refreshToken: refreshTokenGen,
-        expiration: expiration,
+        expiration,
     };
 };
 
@@ -196,16 +196,16 @@ const verify = async (token: string) => {
         idToken: token,
         audience: envVars.GOOGLE_CLIENT_ID, // Specify the CLIENT_ID of the app that accesses the backend
         // Or, if multiple clients access the backend:
-        //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
+        // [CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
     });
 
     const payload = ticket.getPayload();
     if (!payload) {
         throw new AppError('Ocurrio un error con la obtencion de tu informacion!', 403);
     }
-    const userid = payload['sub'];
+    const userid = payload.sub;
     // If request specified a G Suite domain:
-    //const domain = payload['hd'];
+    // const domain = payload['hd'];
     // TODO: descomment
     // logger.info('Payload google user: ' + payload);
     console.log(payload);
@@ -369,7 +369,7 @@ export const getResponseToSendToLogin = async (
     return response;
 };
 
-//TODO: manage the tokens in the database
+// TODO: manage the tokens in the database
 // saveLog = (userId, {userName, firstName, lastName, email, role}, activity) => {
 //     console.log(userId, userName, activity);
 //
@@ -506,7 +506,7 @@ export const refreshTokenMiddleware = catchAsync(
     async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const {refreshToken, userName} = matchedData(req, {locations: ['body']});
 
-        const user = await User.findOne({userName: userName});
+        const user = await User.findOne({userName});
 
         if (!user) {
             return next(new AppError('El token de actualización no es valido!.', 401, 'DTOKEN'));
@@ -724,21 +724,8 @@ export const resetPassword = catchAsync(async (req, res, next) => {
     user.secretToken = undefined;
     user.passwordResetExp = undefined;
 
-    // 5) Search for socket id of the user
-    const socket = await redisPub.hget(DynamicKey.hash.socketsUser(user.userName), 'main');
-
-    // 6) If the user has a recent socket session id
-    if (!!socket) {
-        // 6) Check if the user is currently logged
-        // @ts-ignore
-        mainSocket.of('/').adapter.clients((err, clientes) => {
-            if (clientes.includes(socket)) {
-                //TODO: implement logger
-                // 7) Close session
-                mainSocket.to(socket).emit(EMainEvents.CLOSE_SESSION);
-            }
-        });
-    }
+    // 6) Disconnect user if is currently logged in
+    await sendMessageToConnectedUser(user.userName, EMainEvents.CLOSE_SESSION, {});
 
     // 7) Update the user data
     await user.save({validateBeforeSave: false});
@@ -756,7 +743,7 @@ export const logout = (req: Express.Request, res: Express.Response, next: NextFu
 };
 
 const alreadyExist = (users: IUserDocument[], userData: any) => {
-    //Si se encontro mas de un usuario
+    // Si se encontro mas de un usuario
     if (users.length > 1) {
         throw new AppError(
             'Usuario no registrado, correo electronico y nombre de usuario ya estan registrados!',

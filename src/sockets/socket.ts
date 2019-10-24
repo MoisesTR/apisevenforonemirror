@@ -2,11 +2,11 @@ import socketIO from 'socket.io';
 import redisAdapter from 'socket.io-redis';
 import http from 'http';
 import {redisPub, redisSub} from '../redis/redis';
-import {ObjectId} from 'bson';
 import {EMainEvents} from './constants/main';
-import {EGameEvents} from './constants/game';
 import DynamicKey from '../redis/keys/dynamics';
 import * as game from '../controllers/game';
+import {promisify} from 'util';
+import logger from '../services/logger';
 
 let mainSocket: socketIO.Server;
 let gameGroups: socketIO.Namespace;
@@ -19,6 +19,8 @@ const options: socketIO.ServerOptions = {
 mainSocket = socketIO(options);
 
 mainSocket.adapter(redisAdapter({pubClient: redisPub, subClient: redisSub}));
+// @ts-ignore
+mainSocket.of('/').adapter.clients = promisify(mainSocket.of('/').adapter.clients);
 gameGroups = mainSocket.of('groups');
 
 export const listenSockets = (httpServer: http.Server) => {
@@ -138,16 +140,20 @@ export const listenGroupSocket = () => {
 export const sendMessageToConnectedUser = async (userName: string, event: EMainEvents, payload: any) => {
     const socketID = await redisPub.hget(DynamicKey.hash.socketsUser(userName), 'main');
     if (!!socketID) {
-        // @ts-ignore
-        mainSocket.of('/').adapter.clients((err, clients) => {
-            if (!!socketID && clients.includes(socketID)) {
+        try {
+            // @ts-ignore
+            const clients = await mainSocket.of('/').adapter.clients;
+            if (clients.includes(socketID)) {
                 if (event === EMainEvents.CLOSE_SESSION) {
+                    mainSocket.to(socketID).emit(EMainEvents.CLOSE_SESSION);
                     mainSocket.sockets.connected[socketID].disconnect(true);
                 } else {
                     mainSocket.to(socketID).emit(event, payload);
                 }
             }
-        });
+        } catch (_e) {
+            logger.error('ESocket: Error trying to get clients on socket', _e);
+        }
     }
 };
 

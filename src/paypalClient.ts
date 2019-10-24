@@ -28,8 +28,14 @@ export function client() {
 function environment() {
     console.log('Ambiente', envVars.ENVIRONMENT);
     if (envVars.ENVIRONMENT === 'production') {
-        return new checkoutNodeJssdk.core.LiveEnvironment(envVars.PAYPAL_CLIENT_ID, envVars.PAYPAL_CLIENT_SECRET);
+        return new checkoutNodeJssdk.core.LiveEnvironment(
+            envVars.PAYPAL_CLIENT_ID,
+            envVars.PAYPAL_CLIENT_SECRET,
+        );
     } else {
-        return new checkoutNodeJssdk.core.SandboxEnvironment(envVars.PAYPAL_CLIENT_ID, envVars.PAYPAL_CLIENT_SECRET);
+        return new checkoutNodeJssdk.core.SandboxEnvironment(
+            envVars.PAYPAL_CLIENT_ID,
+            envVars.PAYPAL_CLIENT_SECRET,
+        );
     }
 }
