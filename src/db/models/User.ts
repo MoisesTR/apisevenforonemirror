@@ -5,9 +5,10 @@ import {IUserDocument, IUserModel} from '../interfaces/IUser';
 import {ObjectId} from 'bson';
 import crypto from 'crypto';
 import {EModelNames} from '../interfaces/EModelNames';
+import {EValidGenders} from '../enums/EValidGenders';
 
 const validGenders = {
-    values: ['M', 'F'],
+    values: [EValidGenders.F, EValidGenders.M, EValidGenders.O],
     message: '{VALUE} es un genero incorrecto!',
 };
 
@@ -103,9 +104,6 @@ userSchema.pre<IUserDocument>('save', async function(next) {
 userSchema.methods.changedPasswordAfter = function(JWTTimestamp: number) {
     if (this.passwordChangedAt) {
         const changedTimestampt = this.passwordChangedAt.getTime() / 1000;
-
-        console.log(this.passwordChangedAt, changedTimestampt, JWTTimestamp, new Date(JWTTimestamp * 1000));
-
         return JWTTimestamp < changedTimestampt;
     }
     // false Means not changed

@@ -3,16 +3,15 @@ import mongoose, {model, Schema} from 'mongoose';
 import {IGroupGameDocument, IMember, IMemberDocument} from '../interfaces/IGroupGame';
 import envVars from '../../global/environment';
 import {ObjectId} from 'bson';
-import {ENotificationTypes} from './Notification';
-import {gameGroups, mainSocket} from '../../sockets/socket';
-import {redisPub} from '../../redis/redis';
+import {gameGroups, mainSocket, sendMessageToConnectedUser} from '../../sockets/socket';
 import {IUserDocument} from '../interfaces/IUser';
 import {EGameEvents} from '../../sockets/constants/game';
 import {EMainEvents} from '../../sockets/constants/main';
-import DynamicKey from '../../redis/keys/dynamics';
 import AppError from '../../classes/AppError';
 import {EModelNames} from '../interfaces/EModelNames';
 import {winnerNotificationMail} from '../../services/email';
+import logger from '../../services/logger';
+import {ENotificationTypes} from '../enums/ENotificationTypes';
 
 export const memberSchema: Schema = new Schema(
     {
@@ -28,9 +27,9 @@ export const memberSchema: Schema = new Schema(
             type: Schema.Types.String,
         },
         email: {
+            required: false,
             type: String,
-            required: false
-        }
+        },
     },
     {
         timestamps: true,
@@ -78,12 +77,7 @@ const groupSchema: Schema = new Schema(
     },
 );
 
-groupSchema.methods.removeMember = async function (memberId: string | ObjectId) {
-    // const memberIdObj = ( typeof memberId === "string") ? new ObjectId( memberId) : memberId;
-    // console.log(Types.ObjectId(memberId));
-    // this.members.forEach((member: IMemberDocument) => {
-    //     console.log(member.userId.equals(memberIdObj));
-    // });
+groupSchema.methods.removeMember = async function(memberId: string | ObjectId) {
     const removeMember = this.members.find((member: IMemberDocument) => member.userId.equals(memberId));
     if (!removeMember) {
         throw new AppError('Este usuario no es miembro de este grupo!', 404, '');
@@ -93,13 +87,15 @@ groupSchema.methods.removeMember = async function (memberId: string | ObjectId) 
     return this.save();
 };
 
-groupSchema.methods.addMember = async function (memberData: IMember, payReference: string) {
+groupSchema.methods.addMember = async function(memberData: IMember, payReference: string) {
     const session = await mongoose.startSession();
     try {
         session.startTransaction();
         const membersSize = this.members.length;
         if (!!this.uniqueChance) {
-            const alreadyIndex = this.members.find((member: IMemberDocument) => member.userId.equals(memberData.userId));
+            const alreadyIndex = this.members.find((member: IMemberDocument) =>
+                member.userId.equals(memberData.userId),
+            );
             if (!!alreadyIndex) {
                 throw new AppError('Este usuario ya es miembro!', 409, 'AEXIST');
             }
@@ -132,10 +128,9 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             try {
                 await winnerNotificationMail(winner, this.initialInvertion.toFixed(), '');
             } catch (_err) {
-                //TODO: handle with error log file
-                console.log('Error sending email to the winner', _err);
+                logger.error('EMail: Error sending the email', _err);
             }
-            const userHistory = this.model('purchaseHistory')({
+            const UserHistory = this.model('purchaseHistory')({
                 userId: winner.userId,
                 action: 'win',
                 groupId: this._id,
@@ -144,29 +139,21 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             });
             this.winners++;
 
-            const socketWinner = await redisPub.hget(DynamicKey.hash.socketsUser(winner.userName), 'main');
             mainSocket.to('admins').emit(EMainEvents.SOMEONE_WIN, {
                 message: 'Someone user has won!',
                 groupId: this._id,
                 userId: winner._id,
             });
-            console.log('socket del ganador', socketWinner);
-            // @ts-ignore
-            mainSocket.of('/').adapter.clients((err, clientes) => {
-                if (!!socketWinner && clientes.includes(socketWinner)) {
 
-                    mainSocket.to(socketWinner).emit(EMainEvents.WIN_EVENT, {
-                        userId: winner.userId,
-                        content: `Felicitaciones has sido ganador en el grupo de $${this.initialInvertion}!`,
-                        date: new Date(),
-                    });
-                }
-                console.log('clientes actuales', clientes);
-
-                console.log('los sids', mainSocket.of('/').adapter.sids)
+            await sendMessageToConnectedUser(winner.userName, EMainEvents.WIN_EVENT, {
+                userId: winner.userId,
+                content: `Felicitaciones has sido ganador en el grupo de $${this.initialInvertion}!`,
+                date: new Date(),
             });
+
+            console.log('los sids', mainSocket.of('/').adapter.sids);
             await newNotification.save();
-            await userHistory.save();
+            await UserHistory.save();
         }
         this.members.push({...memberData});
 
@@ -177,7 +164,7 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
             action: 'invest',
             groupId: this._id,
             quantity: this.initialInvertion,
-            payReference: payReference,
+            payReference,
         });
         await userHistory.save();
         // TODO: Save notification user win
@@ -194,8 +181,8 @@ groupSchema.methods.addMember = async function (memberData: IMember, payReferenc
     }
 };
 
-groupSchema.methods.changeActiveState = function (enabled: boolean) {
-    if ((this.members.length > 0) && !enabled) {
+groupSchema.methods.changeActiveState = function(enabled: boolean) {
+    if (this.members.length > 0 && !enabled) {
         throw new AppError('This action cannot be performed first, get the group members empty.', 403);
     }
     this.enabled = enabled;

@@ -1,19 +1,11 @@
 import {model, Schema} from 'mongoose';
-import {INotificationDocument, INotificationModel} from '../interfaces/INotification';
 import {ObjectId} from 'bson';
+import {INotificationDocument, INotificationModel} from '../interfaces/INotification';
 import {EModelNames} from '../interfaces/EModelNames';
 import {User} from './index';
-import {redisPub} from '../../redis/redis';
-import DynamicKey from '../../redis/keys/dynamics';
 import {EMainEvents} from '../../sockets/constants/main';
-import {mainSocket} from '../../sockets/socket';
-
-export enum ENotificationTypes {
-    DEFAULT = 'DEFAULT',
-    POSITION_CHANGE = 'POSITION_CHANGE',
-    WIN = 'WIN',
-    INACTIVITY = 'INACTIVITY',
-}
+import {sendMessageToConnectedUser} from '../../sockets/socket';
+import {ENotificationTypes} from '../enums/ENotificationTypes';
 
 const NotificationSchema = new Schema(
     {
@@ -52,19 +44,14 @@ const NotificationSchema = new Schema(
         timestamps: true,
     },
 );
-NotificationSchema.post<INotificationDocument>('save', async function (doc, next) {
+
+NotificationSchema.post<INotificationDocument>('save', async function(doc, next) {
     if (doc.isNew) {
         const user = await User.findById(doc.userId);
         if (!user) {
             return;
         }
-        const socketWinner = await redisPub.hget(DynamicKey.hash.socketsUser(user.userName), 'main');
-        // @ts-ignore
-        mainSocket.of('/').adapter.clients((err, clientes) => {
-            if (!!socketWinner && clientes.includes(socketWinner)) {
-                mainSocket.to(socketWinner).emit(EMainEvents.NOTIFICATION, {notificationId: doc._id});
-            }
-        });
+        await sendMessageToConnectedUser(user.userName, EMainEvents.NOTIFICATION, {notificationId: doc._id});
     }
     next();
 });

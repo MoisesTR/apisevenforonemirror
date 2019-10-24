@@ -3,11 +3,7 @@
 import {model, Schema} from 'mongoose';
 import {IRoleDocument, IRoleModel} from '../interfaces/IRole';
 import {EModelNames} from '../interfaces/EModelNames';
-
-export enum ERoles {
-    ADMIN = 'ADMIN',
-    USER = 'USER',
-}
+import {ERoles} from '../enums/ERoles';
 
 const validRoles = {
     values: [ERoles.ADMIN, ERoles.USER],

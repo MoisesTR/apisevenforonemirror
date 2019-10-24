@@ -6,8 +6,8 @@ export enum EModelNames {
     Notification = 'Notification',
     PurchaseHistory = 'purchaseHistory',
     Role = 'role',
-    UserActivity =  'userActivityLog',
+    UserActivity = 'userActivityLog',
     PaymentRequest = 'paymentRequest',
     ActivityTypes = 'activityTypes',
-    CreditGame = 'creditGame'
+    CreditGame = 'creditGame',
 }

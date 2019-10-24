@@ -7,13 +7,4 @@ import Role from './Role';
 import UserActivityLog from './UserActivityLog';
 import User from './User';
 
-export {
-    ActivityTypes,
-    GroupGame,
-    Menu,
-    Notification,
-    PurchaseHistory,
-    Role,
-    User,
-    UserActivityLog
-};
+export {ActivityTypes, GroupGame, Menu, Notification, PurchaseHistory, Role, User, UserActivityLog};

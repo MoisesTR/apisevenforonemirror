@@ -1,14 +1,13 @@
 import {ObjectId} from 'bson';
 import {Document, Model} from 'mongoose';
-import {IRole} from './IRole';
-import {ENotificationTypes} from '../models/Notification';
+import {ENotificationTypes} from '../enums/ENotificationTypes';
 
 export interface INotification {
     userId: ObjectId;
     notificationType: ENotificationTypes;
     content: string;
     read: boolean;
-    groupId:  ObjectId | string;
+    groupId: ObjectId | string;
     createdAt: Date;
     updatedAt: Date;
 }
