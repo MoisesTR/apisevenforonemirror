@@ -61,7 +61,7 @@
     "xss-clean": "0.1.1"
   },
   "engines": {
-    "node": "10.15.3",
+    "node": "~10.15.3",
     "yarn": "~1.17.0"
   },
   "devDependencies": {
