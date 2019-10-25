@@ -6,6 +6,7 @@ import {ensureAuth} from '../services/jwt';
 
 const router = Express.Router();
 router
+    .get('/orders/:orderID', ensureAuth, paypalController.getOrderDetails)
     .post(
         '/create-paypal-transaction',
         ensureAuth,
@@ -13,8 +14,12 @@ router
         validsParams,
         paypalController.createPaypalTransaction,
     )
-    .post('/authorize-paypal-transaction', ensureAuth, paypalController.createAuthorizationTransaction)
     .post('/payout', ensureAuth, paypalValidations.createPayout, validsParams, paypalController.payout)
-    .post('/capture-authorization', ensureAuth, paypalController.captureAuthorization);
+    .post(
+        '/capture-transaction',
+        ensureAuth,
+        paypalValidations.captureTransaction,
+        paypalController.captureTransaction,
+    );
 
 export default router;

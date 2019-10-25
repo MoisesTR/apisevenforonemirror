@@ -4,6 +4,9 @@ export const createPaypalTransaction = [
     body('finalPrice', 'El monto a invertir es requerido!').isInt(),
     sanitize('finalPrice').toInt(),
 ];
+
+export const captureTransaction = [body('orderID', 'El id de la orden es requerido!').isString()];
+
 export const createPayout = [
     body('amountMoneyToPay', 'El monto a pagar es requerido!').isInt(),
     body('paypalEmail', 'El correo de paypal es requerido!').isString(),
