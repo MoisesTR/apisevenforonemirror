@@ -96,7 +96,7 @@ export const removeMemberFromGroup = catchAsync(
     async (req: Express.Request, res: Express.Response, next: (err: any) => void) => {
         const relationData = matchedData(req);
 
-        let group = await GroupGame.findById(relationData.groupId);
+        const group = await GroupGame.findById(relationData.groupId);
         if (!group) {
             return next(new AppError('Grupo no encontrado', 404, 'NEXIST'));
         }
@@ -114,7 +114,7 @@ export const getPurchaseHistory = catchAsync(
             return next(new AppError('User not found!', 404, 'UNFOUND'));
         }
 
-        const history = await user.getPurchaseHistoryById(userId);
+        const history = await user.getPurchaseHistoryById(new ObjectId(userId));
         res.status(200).json(history);
     },
 );
@@ -123,7 +123,7 @@ export const getGroupWinnersTop = catchAsync(
     async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const {quantity, groupId} = req.params;
         console.log(req.params);
-        let result = await PurchaseHistory.aggregate([
+        const result = await PurchaseHistory.aggregate([
             {$match: {action: 'win', groupId: new ObjectId(groupId)}}, // agregale el id del grupo si queres para mas seguridad y me confirmas o me decis que cambiar
             {$limit: +quantity},
             {$sort: {createdAt: -1}},
@@ -179,8 +179,8 @@ export const getGroupWinnersTop = catchAsync(
 export const getTopWinners = catchAsync(
     async (req: Express.Request, res: Express.Response, next: NextFunction) => {
         const {quantity, groupId, times} = matchedData(req, {locations: ['query', 'params']});
-        let sortOrder: any = {};
-        let match: any = {action: 'win'};
+        const sortOrder: any = {};
+        const match: any = {action: 'win'};
         if (!!groupId) {
             match.groupId = new ObjectId(groupId);
         }
@@ -190,7 +190,7 @@ export const getTopWinners = catchAsync(
             sortOrder.totalWon = -1;
         }
 
-        let result = await PurchaseHistory.aggregate([
+        const result = await PurchaseHistory.aggregate([
             {$match: {...match}},
             {$lookup: {from: 'users', localField: 'userId', foreignField: '_id', as: 'userInfo'}},
             {$unwind: {path: '$userInfo', preserveNullAndEmptyArrays: true}},

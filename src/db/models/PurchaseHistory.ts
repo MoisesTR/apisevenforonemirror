@@ -1,12 +1,9 @@
 import {model, Schema} from 'mongoose';
-import {IPurchaseHistory, IPurchaseHistoryDocument, IPurchaseHistoryModel} from '../interfaces/IPurchaseHistory';
+import {IPurchaseHistoryDocument, IPurchaseHistorySchema} from '../interfaces/IPurchaseHistory';
 import {EModelNames} from '../interfaces/EModelNames';
-export enum EPurchaseHistoryAction {
-    WIN = 'win',
-    INVEST = 'invest',
-}
+import {EPurchaseAction} from '../enums/EPurchaseAction';
 
-const purchaseHistory = new Schema(
+const purchaseHistory = new Schema<IPurchaseHistorySchema>(
     {
         userId: {
             type: Schema.Types.ObjectId,
@@ -19,24 +16,24 @@ const purchaseHistory = new Schema(
             required: true,
         },
         action: {
-            type: String,
-            enum: [EPurchaseHistoryAction.WIN, EPurchaseHistoryAction.INVEST],
+            enum: [EPurchaseAction.WIN, EPurchaseAction.INVEST],
             required: true,
+            type: String,
         },
         moneyDirection: {
             type: Schema.Types.Boolean,
             required: true,
-            default: function() {
+            default() {
                 // @ts-ignore
-                return this.action === EPurchaseHistoryAction.WIN;
+                return this.action === EPurchaseAction.WIN;
             },
         },
         payReference: {
             type: String,
         },
         quantity: {
-            type: Schema.Types.Decimal128,
             required: true,
+            type: Schema.Types.Decimal128,
         },
     },
     {

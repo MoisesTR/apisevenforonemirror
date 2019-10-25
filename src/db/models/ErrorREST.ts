@@ -5,7 +5,7 @@ export const Errors = {
     },
     NotFound: {
         status: 404,
-        message: 'Route not found!'
+        message: 'Route not found!',
     },
     Unauthorized: {
         status: 401,

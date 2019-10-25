@@ -16,7 +16,10 @@ const commonPasswordAndConfirmation = [
 ];
 export const forgotPassword = [
     oneOf([
-        body('userName', 'El nombre de usuario debe contener un minimo de 3 y maximo de 40 caracteres!').isLength({
+        body(
+            'userName',
+            'El nombre de usuario debe contener un minimo de 3 y maximo de 40 caracteres!',
+        ).isLength({
             min: 4,
             max: 40,
         }),
@@ -122,7 +125,11 @@ export const verifyUser = [query('token').isLength({min: 7}), query('userName').
 
 export const refreshToken = [body('refreshToken').isLength({min: 15}), body('userName').exists()];
 
-export const changeStateUser = [param('userId').custom(isObjectId), query('enabled').isBoolean(), sanitize('enabled').toBoolean()];
+export const changeStateUser = [
+    param('userId').custom(isObjectId),
+    query('enabled').isBoolean(),
+    sanitize('enabled').toBoolean(),
+];
 export const changePassword = [param('userId').custom(isObjectId), ...commonPasswordAndConfirmation];
 export const verifyChangePassword = [param('userId').custom(isObjectId), body('password')];
 

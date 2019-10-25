@@ -7,7 +7,7 @@ import i18n from 'i18n';
 import ENV from './global/environment';
 import envVars from './global/environment';
 import cors from 'cors';
-import {Core} from './db/core';
+import {connnectDb} from './db/core';
 // middlewares
 import * as ErrorMiddleware from './middlewares/error-middlewares';
 import * as ThirdPartyMiddlewares from './middlewares/thirdparty-middlewares';
@@ -73,10 +73,7 @@ export {app, httpServer};
 export default class Server {
     private static _intance: Server;
 
-    public dbCore: Core;
-
     private constructor() {
-        this.dbCore = new Core();
         listenSockets(httpServer);
         listenGroupSocket();
     }

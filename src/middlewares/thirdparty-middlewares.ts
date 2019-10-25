@@ -15,10 +15,10 @@ export const apply = (app: express.Application, baseDir: string) => {
     // Set security HTTP Headers
     app.use(helmet({noCache: true}));
     app.use(compression());
-    //Data Sanitization against XSS
+    // Data Sanitization against XSS
     app.use(xss());
     // Body parser, reading data from body into req.body
-    app.use(express.json({ limit: '20kb'}));
+    app.use(express.json({limit: '20kb'}));
     app.use(express.urlencoded({extended: true}));
     // Serving statics files
     app.use(express.static(path.join(baseDir, '..', 'public')));

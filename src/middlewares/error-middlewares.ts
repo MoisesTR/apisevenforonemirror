@@ -3,7 +3,7 @@ import {Errors} from '../db/models/ErrorREST';
 import AppError from '../classes/AppError';
 
 export const apply = (app: Express.Application) => {
-    app.use(function (req: Express.Request, res: Express.Response, next: NextFunction) {
+    app.use(function(req: Express.Request, res: Express.Response, next: NextFunction) {
         const err = new AppError(Errors.NotFound.message, Errors.NotFound.status);
         next(err);
     });
@@ -17,7 +17,7 @@ export const apply = (app: Express.Application) => {
         });
     };
     // error handler
-    app.use(function (err: AppError, req: Express.Request, res: Express.Response, next: NextFunction) {
+    app.use(function(err: AppError, req: Express.Request, res: Express.Response, next: NextFunction) {
         // set locals, only providing error in development
         console.log('Middleware errores', process.env.NODE_ENV, err);
         const error = {...err};
