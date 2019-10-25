@@ -8,9 +8,8 @@ import {OAuth2Client} from 'google-auth-library';
 import {IUserDocument} from '../db/interfaces/IUser';
 import {IActivityTypesDocument} from '../db/interfaces/IActivityTypes';
 import envVars from '../global/environment';
-import {redisPub} from '../redis/redis';
+import {redisClient} from '../redis/redis';
 import DynamicKeys from '../redis/keys/dynamics';
-import DynamicKey from '../redis/keys/dynamics';
 import {recoverAccountEmail, sendConfirmationEmail} from '../services/email';
 import {IRoleDocument} from '../db/interfaces/IRole';
 import {UserForLoginType} from './interfaces/UserForLoginType';
@@ -173,12 +172,12 @@ export const createUserWithSocialLogin: (userData: any, socialUser: any) => Prom
 
     logger.info('Token de usuario creado');
 
-    await redisPub.setex(
+    await redisClient.setex(
         DynamicKeys.set.accessTokenKey(user.userName),
         remainigTimeInSeconds(expiration),
         accessTokenGen,
     );
-    await redisPub.setex(
+    await redisClient.setex(
         DynamicKeys.set.refreshKey(user.userName),
         remainigTimeInSeconds(expirationRefresh),
         refreshTokenGen,
@@ -344,12 +343,12 @@ export const getResponseToSendToLogin = async (
     });
     // TODO: come back implement the browser agent store
     console.log(ECookies, process.env.NODE_ENV);
-    await redisPub.setex(
+    await redisClient.setex(
         DynamicKeys.set.refreshKey(user.userName),
         remainigTimeInSeconds(expirationRefres),
         _tokenRefresh,
     );
-    await redisPub.setex(
+    await redisClient.setex(
         DynamicKeys.set.accessTokenKey(user.userName),
         remainigTimeInSeconds(expiration),
         tokenGen,
@@ -515,7 +514,7 @@ export const refreshTokenMiddleware = catchAsync(
             return next(new AppError('Tu usuario se encuentra deshabilitado!', 403, 'UDESH'));
         }
         // get token username
-        const redisRefreshToken = await redisPub.get(DynamicKeys.set.refreshKey(user.userName));
+        const redisRefreshToken = await redisClient.get(DynamicKeys.set.refreshKey(user.userName));
         if (!redisRefreshToken) {
             await sendMessageToConnectedUser(user.userName, EMainEvents.CLOSE_SESSION, {});
             return next(new AppError('Tu token de actualización ha expirado!', 401, 'ETOKEN'));
@@ -531,7 +530,7 @@ export const refreshTokenMiddleware = catchAsync(
             );
         }
         const {_token: tokenGen, expiration} = await createAccessToken(user);
-        await redisPub.setex(
+        await redisClient.setex(
             DynamicKeys.set.accessTokenKey(user.userName),
             remainigTimeInSeconds(expiration),
             tokenGen,

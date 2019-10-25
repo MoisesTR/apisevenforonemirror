@@ -1,7 +1,7 @@
 import socketIO from 'socket.io';
 import redisAdapter from 'socket.io-redis';
 import http from 'http';
-import {redisPub, redisSub} from '../redis/redis';
+import {redisClient, redisSocketSub, redisSocketPub} from '../redis/redis';
 import {EMainEvents} from './constants/main';
 import DynamicKey from '../redis/keys/dynamics';
 import * as game from '../controllers/game';
@@ -18,7 +18,7 @@ const options: socketIO.ServerOptions = {
 
 mainSocket = socketIO(options);
 
-mainSocket.adapter(redisAdapter({pubClient: redisPub, subClient: redisSub}));
+mainSocket.adapter(redisAdapter({pubClient: redisSocketPub, subClient: redisSocketSub}));
 // @ts-ignore
 mainSocket.of('/').adapter.clients = promisify(mainSocket.of('/').adapter.clients);
 gameGroups = mainSocket.of('groups');
@@ -52,7 +52,7 @@ export const listenSockets = (httpServer: http.Server) => {
 
         socket.on(EMainEvents.REGISTER_USER, username => {
             console.log('Registrando user', username, socket.id);
-            redisPub
+            redisClient
                 .hget(DynamicKey.hash.socketsUser(username), 'main')
                 .then(socketID => {
                     if (!!socketID) {
@@ -62,7 +62,7 @@ export const listenSockets = (httpServer: http.Server) => {
                             mainSocket.sockets.connected[socketID].disconnect();
                         }
                     }
-                    redisPub
+                    redisClient
                         .hset(DynamicKey.hash.socketsUser(username), 'main', socket.id)
                         .then(() => {
                             console.log('Key is set', socket.id);
@@ -96,7 +96,7 @@ export const listenGroupSocket = () => {
     gameGroups = mainSocket.of('groupGames');
     gameGroups.on('connection', async socketGame => {
         console.log('Socket game connectado', socketGame.id);
-        const gameSocketId = await redisPub.hget(
+        const gameSocketId = await redisClient.hget(
             DynamicKey.hash.socketsUser(socketGame.handshake.query.userName),
             'game',
         );
@@ -104,7 +104,7 @@ export const listenGroupSocket = () => {
             gameGroups.sockets[gameSocketId].disconnect(true);
             console.log('Ya tenes una sesion abierta', gameSocketId, gameGroups.sockets);
         }
-        await redisPub.hset(
+        await redisClient.hset(
             DynamicKey.hash.socketsUser(socketGame.handshake.query.userName),
             'game',
             socketGame.id,
@@ -138,7 +138,7 @@ export const listenGroupSocket = () => {
 };
 
 export const sendMessageToConnectedUser = async (userName: string, event: EMainEvents, payload: any) => {
-    const socketID = await redisPub.hget(DynamicKey.hash.socketsUser(userName), 'main');
+    const socketID = await redisClient.hget(DynamicKey.hash.socketsUser(userName), 'main');
     if (!!socketID) {
         try {
             // @ts-ignore
