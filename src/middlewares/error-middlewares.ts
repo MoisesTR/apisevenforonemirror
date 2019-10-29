@@ -1,6 +1,7 @@
 import Express, {NextFunction} from 'express';
 import {Errors} from '../db/models/ErrorREST';
 import AppError from '../classes/AppError';
+import logger from '../services/logger';
 
 export const apply = (app: Express.Application) => {
     app.use(function(req: Express.Request, res: Express.Response, next: NextFunction) {
@@ -18,13 +19,18 @@ export const apply = (app: Express.Application) => {
     };
     // error handler
     app.use(function(err: AppError, req: Express.Request, res: Express.Response, next: NextFunction) {
+        const isDevelopment = process.env.NODE_ENV !== 'production';
         // set locals, only providing error in development
-        console.log('Middleware errores', process.env.NODE_ENV, err);
+        if (isDevelopment) {
+            console.log('Middleware errores: ' + process.env.NODE_ENV, err);
+        } else {
+            logger.error('Middleware errores: ' + process.env.NODE_ENV, err);
+        }
         const error = {...err};
         error.message = err.message;
         res.locals.message = err.message;
         res.locals.error = req.app.get('env') === 'development' ? err : {};
-        if (process.env.NODE_ENV === 'development') {
+        if (isDevelopment) {
             sendErrorDEv(error, res);
         } else if (process.env.NODE_ENV === 'production') {
             if (error.isOperational) {
