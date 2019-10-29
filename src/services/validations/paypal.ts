@@ -1,7 +1,11 @@
 import {body, sanitize} from '../../utils/defaultImports';
+import {isObjectId} from '../../utils/genericsValidations';
 
 export const createPaypalTransaction = [
-    body('finalPrice', 'El monto a invertir es requerido!').isInt(),
+    body('finalPrice', 'El monto a invertir debe ser entero mayor a 0!').isInt({gt: 0}),
+    body('groupId')
+        .custom(isObjectId)
+        .optional({nullable: true}),
     sanitize('finalPrice').toInt(),
 ];
 
