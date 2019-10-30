@@ -46,10 +46,7 @@ connnectDb()
         const adminRole = await Role.findOne({name: ERoles.ADMIN});
         const userRole = await Role.findOne({name: ERoles.USER});
         if (!adminRole) {
-            throw new AppError(
-                "The server cannot start doesn't be find the admin role in the database.",
-                500,
-            );
+            throw new AppError("The server cannot start doesn't be find the admin role in the database.", 500);
         }
         if (!userRole) {
             throw new AppError("The server cannot start doesn't be find the user role in the database.", 500);

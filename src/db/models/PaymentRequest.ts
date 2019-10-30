@@ -1,6 +1,8 @@
 import {model, Schema, Types} from 'mongoose';
 import {EModelNames} from '../interfaces/EModelNames';
-import {ObjectId} from 'bson';
+import {EPaymentRequestState} from '../enums/PaymentRequestState';
+
+const {ObjectId, Decimal128} = Types;
 
 const PaymentSchema = new Schema(
     {
@@ -14,9 +16,19 @@ const PaymentSchema = new Schema(
             required: true,
             ref: EModelNames.User,
         },
-        state: {
-            type: String,
+        quantity: {
             required: true,
+            type: Decimal128,
+        },
+        state: {
+            enum: [
+                EPaymentRequestState.ACCEPTED,
+                EPaymentRequestState.CANCEL,
+                EPaymentRequestState.CREATED,
+                EPaymentRequestState.DENIED,
+            ],
+            required: true,
+            type: String,
         },
     },
     {

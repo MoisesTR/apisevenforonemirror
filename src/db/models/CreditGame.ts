@@ -1,6 +1,7 @@
-import {Schema, model, Types} from 'mongoose';
+import {model, Schema, Types} from 'mongoose';
 import {EModelNames} from '../interfaces/EModelNames';
 import {ECreditOrigin} from '../enums/ECreditOrigin';
+
 const {ObjectId, Decimal128} = Types;
 
 const CreditGameSchema = new Schema(
@@ -11,7 +12,8 @@ const CreditGameSchema = new Schema(
             ref: EModelNames.User,
         },
         origin: {
-            type: ECreditOrigin,
+            type: String,
+            enum: [ECreditOrigin.BONIFICATION, ECreditOrigin.PRIZE_GW, ECreditOrigin.REFOUND],
             required: false,
         },
         quantity: {
