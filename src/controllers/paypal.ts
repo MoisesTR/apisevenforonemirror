@@ -73,7 +73,7 @@ function createRequest(moneyCode: string, finalPrice: number, nameItemBuy: strin
     request.prefer('return=minimal');
     request.requestBody({
         currency: moneyCode,
-        intent: 'CAPTURE',
+        intent: 'AUTHORIZE',
         locale: 'en_US',
         purchase_units: [
             {
@@ -106,6 +106,31 @@ function createRequest(moneyCode: string, finalPrice: number, nameItemBuy: strin
 
     return request;
 }
+
+export const createAuthorization = catchAsync(async (req: Express.Request, res: Express.Response) => {
+    const orderID = req.body.orderID;
+
+    // 3. Call PayPal to create the authorization
+    const request = new checkoutNodeJssdk.orders.OrdersAuthorizeRequest(orderID);
+    let authorization;
+    let authorizationID;
+    request.requestBody({});
+
+    try {
+        authorization = await client().execute(request);
+
+        // 4. Save the authorization ID to your database
+        authorizationID = authorization.result.purchase_units[0].payments.authorizations[0].id;
+        // await database.saveAuthorizationID(authorizationID);
+    } catch (err) {
+        // 5. Handle any errors from the call
+        console.error(err);
+        return res.status(500);
+    }
+
+    // 6. Return a successful response to the client
+    res.status(200).json({authorization});
+});
 
 export const getOrderDetails = catchAsync(async (req: Express.Request, res: Express.Response) => {
     // 2a. Get the order ID from the request body

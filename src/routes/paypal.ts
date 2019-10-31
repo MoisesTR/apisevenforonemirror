@@ -14,6 +14,13 @@ router
         validsParams,
         paypalController.createPaypalTransaction,
     )
+    .post(
+        '/authorize-paypal-transaction',
+        ensureAuth,
+        paypalValidations.authorizePaypalTransaction,
+        validsParams,
+        paypalController.createAuthorization,
+    )
     .post('/payout', ensureAuth, paypalValidations.createPayout, validsParams, paypalController.payout);
 
 export default router;
