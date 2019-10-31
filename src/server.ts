@@ -14,6 +14,7 @@ import * as ThirdPartyMiddlewares from './middlewares/thirdparty-middlewares';
 // Routers
 import GroupGamesRouter from './routes/group-games';
 import PaypalRouter from './routes/paypal';
+import WebhookRouter from './routes/webhook';
 import PurchaseHistory from './routes/purchase-history';
 import authRoutes from './routes/authRoutes';
 import rolesRoutes from './routes/rolesRoutes';
@@ -125,6 +126,9 @@ export default class Server {
         app.use('/api/users', usersRoutes);
         // Roles routes
         app.use('/api/roles', rolesRoutes);
+
+        // Webhook routes
+        app.use('/api', WebhookRouter);
     }
 
     public start(callback: (port: number) => void) {

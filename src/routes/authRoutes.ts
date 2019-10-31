@@ -18,8 +18,8 @@ router
     .post('/refreshtoken', validations.refreshToken, validsParams, authController.refreshTokenMiddleware)
     .post('/verifyemail/:token', authController.verifyEmail)
     .post('/forgotPasswd', validations.forgotPassword, validsParams, authController.forgotPassword)
-    .patch('/resetPasswd/:token', validations.resetPassword, validsParams, authController.resetPassword);
-
+    .patch('/resetPasswd/:token', validations.resetPassword, validsParams, authController.resetPassword)
+    .get('/getImage/:folder/:img', authController.getImage);
 router.use(ensureAuth);
 
 router
@@ -27,7 +27,6 @@ router
     .get('/activities', authController.getActivityTypes)
     .get('/me', authController.getAuthenticateUserInfo)
     .post('/admin', validations.createAdmin, validsParams, authController.createAdminUser)
-    .get('/getImage/:folder/:img', authController.getImage)
     .patch('/pwd/:userId', validations.changePassword, validsParams, authController.changePassword)
     .post(
         '/verifyPwd/:userId',
