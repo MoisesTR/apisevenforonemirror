@@ -4,6 +4,9 @@ import * as mongoose from 'mongoose';
 import {Document, QueryPopulateOptions} from 'mongoose';
 import APIFeatures from '../utils/APIFeatures';
 import {matchedData} from 'express-validator/filter';
+import {ICacheOptions} from './interfaces/CacheOptions';
+import {getQueryCache, setQueryCache} from '../redis/redis';
+import logger from '../services/logger';
 
 export const deleteOne = <T extends Document>(Model: mongoose.Model<T>) =>
     catchAsync(async (req, res, next) => {
@@ -76,7 +79,7 @@ export const getOne = <T extends Document>(
         // });
     });
 
-export const getAll = <T extends Document>(Model: mongoose.Model<T>, long?: boolean) =>
+export const getAll = <T extends Document>(Model: mongoose.Model<T>, long?: boolean, cacheOptions?: ICacheOptions) =>
     catchAsync(async (req, res, next) => {
         // To allow role population (hack)
         let populateRole = false;
@@ -84,7 +87,9 @@ export const getAll = <T extends Document>(Model: mongoose.Model<T>, long?: bool
         console.log('query', req.query);
         const filter = {};
         if (req.query.populateRole) {
-            if (req.query.populateRole === 'true') populateRole = true;
+            if (req.query.populateRole === 'true') {
+                populateRole = true;
+            }
             delete req.query.populateRole;
         }
 
@@ -93,17 +98,34 @@ export const getAll = <T extends Document>(Model: mongoose.Model<T>, long?: bool
             .sort()
             .limitFields()
             .paginate();
-        if (populateRole) features.query.populate('role');
+        if (populateRole) {
+            features.query.populate('role');
+        }
+        let docs;
+        if (cacheOptions) {
+            const cacheOb = await getQueryCache(cacheOptions.key, cacheOptions.extra);
+            if (cacheOb) {
+                docs = JSON.parse(cacheOb);
+                if (process.env.NODE_ENV !== 'production') {
+                    logger.info('using cache for ', cacheOptions);
+                }
+            }
+        }
+        if (!docs) {
+            docs = await features.query;
+            if (cacheOptions) {
+                await setQueryCache(cacheOptions.key, cacheOptions.extra, JSON.stringify(docs));
+            }
+        }
 
-        const doc = await features.query;
         if (!long) {
-            return res.status(200).json(doc);
+            return res.status(200).json(docs);
         }
         res.status(200).json({
             status: 'success',
-            results: doc.length,
+            results: docs.length,
             data: {
-                data: doc,
+                data: docs,
             },
         });
     });

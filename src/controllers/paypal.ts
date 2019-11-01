@@ -49,11 +49,6 @@ export const createPaypalTransaction = catchAsync(
             const request = createRequest(moneyCode, finalPrice.toString(), nameItemBuy, descriptionItem);
 
             order = await client().execute(request);
-
-            await getToken(next).then((body: any) => {
-                const bodyParsed = JSON.parse(body);
-                console.log('token', bodyParsed.access_token);
-            });
         } catch (err) {
             // 4. Handle any errors from the call
             logger.error('Error Paypal', err);
@@ -69,6 +64,7 @@ export const createPaypalTransaction = catchAsync(
             // return next(new AppError(messageError, 500, err.code))
         }
 
+        console.log('ID DE LA ORDEN,', {orderId: order.result.id});
         // 5. Return a successful response to the client with the order ID
         res.status(200).json({
             orderID: order.result.id,
@@ -78,7 +74,7 @@ export const createPaypalTransaction = catchAsync(
 
 function createRequest(moneyCode: string, finalPrice: number, nameItemBuy: string, descriptionItem: string) {
     const request = new paypal.orders.OrdersCreateRequest();
-    request.prefer('return=representation');
+    request.prefer('return=minimal');
     request.requestBody({
         currency: moneyCode,
         intent: 'CAPTURE',
@@ -114,33 +110,6 @@ function createRequest(moneyCode: string, finalPrice: number, nameItemBuy: strin
 
     return request;
 }
-
-export const captureTransaction = catchAsync(async (req: Express.Request, res: Express.Response) => {
-    // 2a. Get the order ID from the request body
-    const orderID = req.body.orderID;
-
-    // 3. Call PayPal to capture the order
-    const request = new checkoutNodeJssdk.orders.OrdersCaptureRequest(orderID);
-    request.requestBody({});
-
-    try {
-        const capture = await client().execute(request);
-
-        // 4. Save the capture ID to your database. Implement logic to save capture to your database for future reference.
-        const captureID = capture.result.purchase_units[0].payments.captures[0].id;
-        console.log({captureID});
-        // await database.saveCaptureID(captureID);
-    } catch (err) {
-        // 5. Handle any errors from the call
-        console.error(err);
-        return res.status(500);
-    }
-
-    // 6. Return a successful response to the client
-    res.status(200).json({
-        message: 'Capture Transaction sucessfully!',
-    });
-});
 
 export const getOrderDetails = catchAsync(async (req: Express.Request, res: Express.Response) => {
     // 2a. Get the order ID from the request body

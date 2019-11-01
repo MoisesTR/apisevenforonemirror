@@ -1,5 +1,7 @@
 import Redis from 'ioredis';
 import envVars from '../global/environment';
+import {EQueryCache} from '../controllers/enums/EQueryCache';
+import {mquery, Query} from 'mongoose';
 
 export const redisClient = new Redis({
     host: envVars.REDIS_HOST,
@@ -25,3 +27,31 @@ if (process.env.NODE_ENV === 'development') {
         console.log('Receive message %s from channel %s', message, channel);
     });
 }
+
+export const getQueryCache = (query: EQueryCache, extra?: string) => {
+    return redisClient.get('query-' + query + extra);
+};
+
+export const setQueryCache = (query: EQueryCache, extra: string, value: any, expiration: number = 300) => {
+    return redisClient.setex('query-' + query + extra, expiration, value);
+};
+
+export const clearQueryCache = (query: EQueryCache, extra?: string) => {
+    return redisClient.del('query-' + query + extra);
+};
+//
+// export const getCacheIfExist = async <Q extends Query<any>>(
+//     mdQuery: Q,
+//     query: EQueryCache,
+//     extra: string,
+//     expiration: number = 1000,
+// ) => {
+//     let data: Q | string;
+//     const cacheObject = await getQueryCache(query, extra);
+//     if (!cacheObject) {
+//         data = await mdQuery.exec();
+//         await setQueryCache(query, extra, JSON.stringify(data), expiration);
+//         return data;
+//     }
+//     return cacheObject;
+// };
