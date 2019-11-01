@@ -12,6 +12,8 @@ import {EModelNames} from '../interfaces/EModelNames';
 import {winnerNotificationMail} from '../../services/email';
 import logger from '../../services/logger';
 import {ENotificationTypes} from '../enums/ENotificationTypes';
+import {clearQueryCache} from '../../redis/redis';
+import {EQueryCache} from '../../controllers/enums/EQueryCache';
 
 export const memberSchema: Schema = new Schema(
     {
@@ -144,7 +146,7 @@ groupSchema.methods.addMember = async function(memberData: IMember, payReference
                 groupId: this._id,
                 userId: winner._id,
             });
-
+            await clearQueryCache(EQueryCache.getGameGroups, winner.id);
             await sendMessageToConnectedUser(winner.userName, EMainEvents.WIN_EVENT, {
                 userId: winner.userId,
                 content: `Felicitaciones has sido ganador en el grupo de $${this.initialInvertion}!`,

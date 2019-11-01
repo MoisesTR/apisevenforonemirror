@@ -2,10 +2,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 console.log('Environment', process.env.NODE_ENV);
 dotenv.config({path: path.resolve(__dirname, '../', '.env')});
+import logger from './services/logger';
 import Server, {app, httpServer} from './server';
 import Role from './db/models/Role';
 import AppError from './classes/AppError';
-import logger from './services/logger';
 import {ERoles} from './db/enums/ERoles';
 import {connnectDb} from './db/core';
 
@@ -46,10 +46,7 @@ connnectDb()
         const adminRole = await Role.findOne({name: ERoles.ADMIN});
         const userRole = await Role.findOne({name: ERoles.USER});
         if (!adminRole) {
-            throw new AppError(
-                "The server cannot start doesn't be find the admin role in the database.",
-                500,
-            );
+            throw new AppError("The server cannot start doesn't be find the admin role in the database.", 500);
         }
         if (!userRole) {
             throw new AppError("The server cannot start doesn't be find the user role in the database.", 500);
