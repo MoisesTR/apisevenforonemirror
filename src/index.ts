@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
-console.log('Environment', process.env.NODE_ENV);
 dotenv.config({path: path.resolve(__dirname, '../', '.env')});
+console.log('Environment', process.env.NODE_ENV);
 import logger from './services/logger';
 import Server, {app, httpServer} from './server';
 import Role from './db/models/Role';

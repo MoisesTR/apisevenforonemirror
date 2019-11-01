@@ -62,3 +62,6 @@ typings/
 
 #Jetbrains webstorm
 .idea
+
+#Production env vars
+.production.env

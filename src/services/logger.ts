@@ -1,8 +1,7 @@
 import path from 'path';
-import envVars from '../global/environment';
 import {config, createLogger, format, transports} from 'winston';
 
-const isDevelopment = envVars.ENVIRONMENT !== 'production';
+const isDevelopment = process.env.NODE_ENV !== 'production';
 
 const baseDir = path.resolve(__dirname, '../../');
 const logger = createLogger({
@@ -35,5 +34,6 @@ if (isDevelopment) {
         }),
     );
 }
+logger.exitOnError = false;
 
 export default logger;
