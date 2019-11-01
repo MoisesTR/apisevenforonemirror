@@ -61,9 +61,9 @@ export const resizeUserImages = catchAsync(async (req, res, next) => {
 
 export const updateUser = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const userData = matchedData(req, {
+        includeOptionals: false,
         locations: ['body', 'query', 'params'],
         onlyValidData: true,
-        includeOptionals: false,
     });
     console.log('user data', userData);
     // Detect is image is coming
@@ -89,7 +89,6 @@ export const updateUser = catchAsync(async (req: Express.Request, res: Express.R
                 }
             } catch (_err) {
                 throw new AppError('Ha ocurrido un error al eliminar la imagen anterior!', 400, 'ERRIMGDEL');
-                console.log(new AppError('Ha ocurrido un error al eliminar la imagen anterior!', 400, 'ERRIMGDEL'));
             }
         }
     }

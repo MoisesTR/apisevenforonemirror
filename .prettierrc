@@ -3,7 +3,7 @@
  "bracketSpacing": false,
  "endOfLine": "lf",
  "jsxBracketSameLine": false,
- "printWidth": 110,
+ "printWidth": 120,
  "proseWrap": "preserve",
  "requirePragma": false,
  "semi": true,

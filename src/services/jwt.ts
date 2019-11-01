@@ -137,7 +137,7 @@ export const ensureAuth = catchAsync(async (req: Express.Request, res: Express.R
         return next(new AppError('Usuario no encontrado', 404, 'UNFOUND'));
     } else {
         // Si encontramos el usuario
-        if (user.enabled === false) {
+        if (!user.enabled) {
             // si el usuario se encuentra deshabilitado
             return next(new AppError('Usuario deshabilitado, contacte con el soporte de 7x1!.', 400, 'EPUSER'));
         }
