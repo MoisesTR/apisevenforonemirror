@@ -1,0 +1,11 @@
+FROM node:12.13.0-alpine
+
+WORKDIR /usr/app
+
+COPY package.json ./
+
+RUN yarn install
+
+COPY ./ /usr/app
+
+CMD ["yarn", "run", "start:dev"]
