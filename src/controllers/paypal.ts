@@ -38,11 +38,7 @@ export const createPaypalTransaction = catchAsync(
         try {
             if (finalPrice <= 0) {
                 return next(
-                    new AppError(
-                        'El precio de la compra no puede ser menor o igual a cero!',
-                        400,
-                        'EERPAYPALPRICE',
-                    ),
+                    new AppError('El precio de la compra no puede ser menor o igual a cero!', 400, 'EERPAYPALPRICE'),
                 );
             }
 
@@ -141,76 +137,66 @@ export const getOrderDetails = catchAsync(async (req: Express.Request, res: Expr
     res.status(200).json({order});
 });
 
-export const payout = catchAsync(
-    async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-        const amountMoneyToPay = req.body.amountMoneyToPay;
-        const emailPaypal = req.body.paypalEmail;
-        // const email = 'gerencia@fumipgreen.com';
+export const payout = catchAsync(async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+    const amountMoneyToPay = req.body.amountMoneyToPay;
+    const emailPaypal = req.body.paypalEmail;
+    // const email = 'gerencia@fumipgreen.com';
 
-        getToken(next).then((resp: any) => {
-            const uriPayout =
-                envVars.ENVIRONMENT === 'production'
-                    ? 'https://api.paypal.com/v1/payments/payouts'
-                    : 'https://api.sandbox.paypal.com/v1/payments/payouts';
-            const senderBatchId = crypto.randomBytes(12).toString('hex');
-            const token = JSON.parse(resp);
-            requestPaypal.post(
-                {
-                    uri: uriPayout,
-                    headers: {
-                        'content-type': 'application/json',
-                        Authorization: 'Bearer ' + token.access_token,
+    getToken(next).then((resp: any) => {
+        const uriPayout =
+            envVars.ENVIRONMENT === 'production'
+                ? 'https://api.paypal.com/v1/payments/payouts'
+                : 'https://api.sandbox.paypal.com/v1/payments/payouts';
+        const senderBatchId = crypto.randomBytes(12).toString('hex');
+        const token = JSON.parse(resp);
+        requestPaypal.post(
+            {
+                uri: uriPayout,
+                headers: {
+                    'content-type': 'application/json',
+                    Authorization: 'Bearer ' + token.access_token,
+                },
+                body: JSON.stringify({
+                    sender_batch_header: {
+                        sender_batch_id: senderBatchId,
+                        email_subject: 'Tienes un pago!',
+                        email_message: 'Has recibido un pago! Gracias por jugar!!',
                     },
-                    body: JSON.stringify({
-                        sender_batch_header: {
-                            sender_batch_id: senderBatchId,
-                            email_subject: 'Tienes un pago!',
-                            email_message: 'Has recibido un pago! Gracias por jugar!!',
-                        },
-                        items: [
-                            {
-                                recipient_type: 'EMAIL',
-                                amount: {
-                                    value: amountMoneyToPay,
-                                    currency: 'USD',
-                                },
-                                note: 'Gracias por jugar!!',
-                                receiver: emailPaypal,
+                    items: [
+                        {
+                            recipient_type: 'EMAIL',
+                            amount: {
+                                value: amountMoneyToPay,
+                                currency: 'USD',
                             },
-                        ],
-                    }),
-                },
-                (err, response: any, body) => {
-                    const payoutBody = JSON.parse(body);
-                    console.log(payoutBody); // TODO REEMPLAZAR POR EL LOGGER
+                            note: 'Gracias por jugar!!',
+                            receiver: emailPaypal,
+                        },
+                    ],
+                }),
+            },
+            (err, response: any, body) => {
+                const payoutBody = JSON.parse(body);
+                console.log(payoutBody); // TODO REEMPLAZAR POR EL LOGGER
 
-                    if (response.statusCode === 201) {
-                        // LUEGO DE QUE EL PAGO SE HAYA ENVIADO AGREGAR FUNCIONALIDAD PARA DEDUCIR DEL DINERO RESTANTE LO QUE SE LE PAGO AL USUARIO
-                        // Y SACARLO DE LA LISTA DE SOLICITADOS DE RECLAMO DE PAGO, LA CUAL ESTAS SOLICITADES ESTARIAN EN DOCUMENTO APARTE
-                        return res.status(201).json({message: 'El pago se ha realizado correctamente!'});
+                if (response.statusCode === 201) {
+                    // LUEGO DE QUE EL PAGO SE HAYA ENVIADO AGREGAR FUNCIONALIDAD PARA DEDUCIR DEL DINERO RESTANTE LO QUE SE LE PAGO AL USUARIO
+                    // Y SACARLO DE LA LISTA DE SOLICITADOS DE RECLAMO DE PAGO, LA CUAL ESTAS SOLICITADES ESTARIAN EN DOCUMENTO APARTE
+                    return res.status(201).json({message: 'El pago se ha realizado correctamente!'});
+                } else {
+                    const error = JSON.parse(body);
+                    console.log('Error Paypal', error); // TODO REEMPLAZAR POR EL LOGGER
+
+                    if (error.name === INSUFFICIENT_FUNDS) {
+                        return next(new AppError('Fondos insuficientes para realizar el pago!', 400, 'PAYPALERROR'));
                     } else {
-                        const error = JSON.parse(body);
-                        console.log('Error Paypal', error); // TODO REEMPLAZAR POR EL LOGGER
-
-                        if (error.name === INSUFFICIENT_FUNDS) {
-                            return next(
-                                new AppError(
-                                    'Fondos insuficientes para realizar el pago!',
-                                    400,
-                                    'PAYPALERROR',
-                                ),
-                            );
-                        } else {
-                            return next(
-                                new AppError('Ha ocurrido un error al realizar el pago!', 400, 'PAYPALERROR'),
-                            );
-                        }
+                        return next(new AppError('Ha ocurrido un error al realizar el pago!', 400, 'PAYPALERROR'));
                     }
-                },
-            );
-        });
-    },
-);
+                }
+            },
+        );
+    });
+});
 
 function getToken(next: Express.NextFunction) {
     const uri =

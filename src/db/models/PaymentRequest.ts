@@ -1,14 +1,11 @@
-import {model, Schema, Types} from 'mongoose';
+import {model, Schema} from 'mongoose';
 import {EModelNames} from '../interfaces/EModelNames';
 import {ObjectId} from 'bson';
+import {EPaymentRequestState} from '../enums/EPaymentRequestState';
+import {IPaymentRequestDocument, IPaymentRequestModel} from '../interfaces/PaymentRequest';
 
 const PaymentSchema = new Schema(
     {
-        uniqueId: {
-            type: String,
-            unique: true,
-            required: true,
-        },
         userId: {
             type: ObjectId,
             required: true,
@@ -16,7 +13,31 @@ const PaymentSchema = new Schema(
         },
         state: {
             type: String,
+            enum: [
+                EPaymentRequestState.CREATED,
+                EPaymentRequestState.ACCEPT,
+                EPaymentRequestState.DENIED,
+                EPaymentRequestState.PENDING,
+            ],
+            index: true,
             required: true,
+        },
+        paypalId: {
+            type: ObjectId,
+            unique: true,
+        },
+        payer: {
+            type: ObjectId,
+            ref: EModelNames.User,
+        },
+        requireReview: {
+            type: Boolean,
+            required: true,
+            default: false,
+        },
+        reviewer: {
+            type: ObjectId,
+            ref: EModelNames.User,
         },
     },
     {
@@ -27,4 +48,4 @@ const PaymentSchema = new Schema(
     },
 );
 
-export default model(EModelNames.PaymentRequest, PaymentSchema);
+export default model<IPaymentRequestDocument, IPaymentRequestModel>(EModelNames.PaymentRequest, PaymentSchema);
