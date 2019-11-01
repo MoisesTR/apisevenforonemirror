@@ -28,11 +28,6 @@ router
     .get('/me', authController.getAuthenticateUserInfo)
     .post('/admin', validations.createAdmin, validsParams, authController.createAdminUser)
     .patch('/pwd/:userId', validations.changePassword, validsParams, authController.changePassword)
-    .post(
-        '/verifyPwd/:userId',
-        validations.verifyChangePassword,
-        validsParams,
-        authController.verifyChangePassword,
-    );
+    .post('/verifyPwd/:userId', validations.verifyChangePassword, validsParams, authController.verifyChangePassword);
 
 export default router;
