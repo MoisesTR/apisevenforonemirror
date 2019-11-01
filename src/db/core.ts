@@ -7,6 +7,7 @@ export const connnectDb = async () => {
     await mongoose.connect(dbConfig.mongoURI, {
         useNewUrlParser: true,
         useCreateIndex: true,
+        autoIndex: process.env.NODE_ENV !== 'production',
     });
     logger.info('Mongo is Connected');
     process.on('SIGTERM', () => {

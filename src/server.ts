@@ -19,6 +19,8 @@ import PurchaseHistory from './routes/purchase-history';
 import authRoutes from './routes/authRoutes';
 import rolesRoutes from './routes/rolesRoutes';
 import usersRoutes from './routes/usersRoutes';
+import paymentRequestRoutes from './routes/payment-request';
+import creditGameRoutes from './routes/credit-game';
 // Socket
 import {listenGroupSocket, listenSockets} from './sockets/socket';
 import {onError, onListening} from './utils/errorCallbacks';
@@ -104,11 +106,7 @@ export default class Server {
     }
 
     public registerRouter() {
-        app.get('/$|/api$', function(
-            req: Express.Request,
-            res: Express.Response,
-            next: Express.NextFunction,
-        ) {
+        app.get('/$|/api$', function(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
             res.status(200).json({
                 message: 'Welcome to 7x1',
             });
@@ -126,6 +124,10 @@ export default class Server {
         app.use('/api/users', usersRoutes);
         // Roles routes
         app.use('/api/roles', rolesRoutes);
+        // Credit Game routes
+        app.use('/api/credit-game', creditGameRoutes);
+        // Payment request
+        app.use('/api/payment-request', paymentRequestRoutes);
 
         // Webhook routes
         app.use('/api', WebhookRouter);

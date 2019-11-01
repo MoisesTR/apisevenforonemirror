@@ -2,7 +2,7 @@
 import mongoose, {model, Schema} from 'mongoose';
 import {IGroupGameDocument, IMember, IMemberDocument} from '../interfaces/IGroupGame';
 import envVars from '../../global/environment';
-import {ObjectId} from 'bson';
+import {Decimal128, ObjectId} from 'bson';
 import {gameGroups, mainSocket, sendMessageToConnectedUser} from '../../sockets/socket';
 import {IUserDocument} from '../interfaces/IUser';
 import {EGameEvents} from '../../sockets/constants/game';
@@ -14,6 +14,10 @@ import logger from '../../services/logger';
 import {ENotificationTypes} from '../enums/ENotificationTypes';
 import {clearQueryCache} from '../../redis/redis';
 import {EQueryCache} from '../../controllers/enums/EQueryCache';
+import CreditGame from './CreditGame';
+import {updateValids} from '../helpers';
+import {ICreditGame} from '../interfaces/CreditGame';
+import {ECreditType} from '../enums/ECreditType';
 
 export const memberSchema: Schema = new Schema(
     {
@@ -127,6 +131,14 @@ groupSchema.methods.addMember = async function(memberData: IMember, payReference
                 content: `Felicitaciones ${winner.userName} usted ha sido el ganador en el grupo de $${this.initialInvertion}!`,
                 groupId: this.groupId,
             });
+            await CreditGame.create(
+                updateValids<ICreditGame>({
+                    groupId: this._id,
+                    userId: winner._id,
+                    quantity: Decimal128.fromString((this.initialInvertion * 6).toString()),
+                    creditType: ECreditType.DEPOSIT,
+                }),
+            );
             try {
                 await winnerNotificationMail(winner, this.initialInvertion.toFixed(), '');
             } catch (_err) {
