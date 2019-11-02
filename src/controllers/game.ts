@@ -228,7 +228,8 @@ const getGroupsByUser = async (userId: string | ObjectID, res: Express.Response,
     if (!!cacheObject) {
         const arrayObt = JSON.parse(cacheObject);
         if (Array.isArray(arrayObt)) {
-            groups = arrayObt.map((el: any) => new GroupGame(JSON.parse(el)));
+            // GroupGame
+            groups = arrayObt.map((el: any) => new GroupGame(el));
         }
     }
 
