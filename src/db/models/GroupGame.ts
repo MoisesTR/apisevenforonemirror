@@ -131,14 +131,14 @@ groupSchema.methods.addMember = async function(memberData: IMember, payReference
                 content: `Felicitaciones ${winner.userName} usted ha sido el ganador en el grupo de $${this.initialInvertion}!`,
                 groupId: this.groupId,
             });
-            await CreditGame.create(
-                updateValids<ICreditGame>({
-                    groupId: this._id,
-                    userId: winner._id,
-                    quantity: Decimal128.fromString((this.initialInvertion * 6).toString()),
-                    creditType: ECreditType.DEPOSIT,
-                }),
-            );
+            // await CreditGame.create(
+            //     updateValids<ICreditGame>({
+            //         groupId: this._id,
+            //         userId: winner._id,
+            //         quantity: Decimal128.fromString((this.initialInvertion * 6).toString()),
+            //         creditType: ECreditType.DEPOSIT,
+            //     }),
+            // );
             try {
                 await winnerNotificationMail(winner, this.initialInvertion.toFixed(), '');
             } catch (_err) {

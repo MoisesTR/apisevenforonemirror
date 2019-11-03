@@ -32,6 +32,7 @@ export const createPaypalTransaction = catchAsync(
         const nameItemBuy = 'Inversion Grupo';
 
         logger.info('Creando transaccion paypal');
+        logger.info({groupId, finalPrice});
 
         let order;
 
@@ -73,7 +74,7 @@ function createRequest(moneyCode: string, finalPrice: number, nameItemBuy: strin
     request.prefer('return=minimal');
     request.requestBody({
         currency: moneyCode,
-        intent: 'AUTHORIZE',
+        intent: 'CAPTURE',
         locale: 'en_US',
         purchase_units: [
             {

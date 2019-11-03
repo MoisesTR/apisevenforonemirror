@@ -1,23 +1,25 @@
-import Express, {NextFunction} from 'express';
-import sharp = require('sharp');
-import fs = require('fs');
-import path = require('path');
-import envVars from '../global/environment';
+import Express from 'express';
 import catchAsync from '../utils/catchAsync';
-import {User} from '../db/models';
-import {resultOrNotFound} from '../utils/defaultImports';
-import {matchedData} from 'express-validator/filter';
-import AppError from '../classes/AppError';
-import {IUserDocument} from '../db/interfaces/IUser';
-import {createOne, getAll, getOne} from './factory';
-import {upload} from '../routes/image-loader';
-import {promisify} from 'util';
-import {ESRCH} from 'constants';
 
-export const webhook = catchAsync(
-    async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-        console.log(req.body);
+export const webhook = catchAsync(async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+    console.log(req.body);
+    const ev = req.body;
+    const idWebhook = ev.id;
 
-        res.status(200).json({message: 'Todo Marcha Bien'});
-    },
-);
+    switch (ev.event_type) {
+        case 'PAYMENT.CAPTURE.COMPLETED':
+            const orderId = ev.resource.id;
+            // Handle payment completed
+            break;
+        case 'PAYMENT.CAPTURE.PENDING':
+            break;
+        case 'PAYMENT.CAPTURE.DENIED':
+            // Handle payment denied
+            break;
+        // Handle other webhooks
+        default:
+            console.log(`El evento ${ev.event_type} no esta considerado`);
+            break;
+    }
+    res.status(200).json({message: 'Todo Marcha Bien'});
+});

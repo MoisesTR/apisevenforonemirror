@@ -73,6 +73,7 @@ export const getGroupMembers = catchAsync(
 export const addMemberToGroup = catchAsync(async (req: Express.Request, res: Express.Response, next: NextFunction) => {
     const relationData = matchedData(req);
 
+    console.log('Add member to group');
     const group = await GroupGame.findById(relationData.groupId);
     if (!group) {
         return next(new AppError('Grupo no encontrado', 404, 'NEXIST'));
