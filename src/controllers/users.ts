@@ -13,6 +13,7 @@ import {EQueryCache} from './enums/EQueryCache';
 import sharp = require('sharp');
 import fs = require('fs');
 import path = require('path');
+import logger from '../services/logger';
 
 export const getUsers = getAll(User);
 
@@ -80,7 +81,13 @@ export const updateUser = catchAsync(async (req: Express.Request, res: Express.R
                 await promisify(fs.access)(oldPrimaryPath, fs.constants.F_OK);
 
                 await promisify(fs.unlink)(oldPrimaryPath);
-
+            } catch (_err) {
+                logger.error(
+                    'Eliminando primary photo',
+                    new AppError('Ha ocurrido un error al eliminar la imagen anterior!', 400, 'ERRIMGDEL'),
+                );
+            }
+            try {
                 if (req.user.thumbnail) {
                     const oldThumbnail = path.resolve(__dirname, `../uploads/user/${req.user.thumbnail}`);
                     await promisify(fs.access)(oldThumbnail, fs.constants.F_OK);
@@ -88,7 +95,10 @@ export const updateUser = catchAsync(async (req: Express.Request, res: Express.R
                     await promisify(fs.unlink)(oldThumbnail);
                 }
             } catch (_err) {
-                throw new AppError('Ha ocurrido un error al eliminar la imagen anterior!', 400, 'ERRIMGDEL');
+                logger.error(
+                    'Eliminando thumbnail photo',
+                    new AppError('Ha ocurrido un error al eliminar la imagen anterior!', 400, 'ERRIMGDEL'),
+                );
             }
         }
     }
